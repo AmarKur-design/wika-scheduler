@@ -233,6 +233,17 @@ let workOrders = [];
                 if (currentUser.role === 'technician' && currentUser.technicianId) {
                     technicians = technicians.filter(t => t.id === currentUser.technicianId);
                 }
+            } else {
+                technicians = [
+                    { id: 1, name: 'Andres Correa', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+                    { id: 2, name: 'Thomas de Graaf', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+                    { id: 3, name: 'Joju Gregorious', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
+                ];
+                
+                // Filter technicians based on user role
+                if (currentUser.role === 'technician' && currentUser.technicianId) {
+                    technicians = technicians.filter(t => t.id === currentUser.technicianId);
+                }
             }
             
             if (storedWorkOrders) {

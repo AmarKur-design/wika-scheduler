@@ -307,6 +307,12 @@ let workOrders = [];
             
             if (storedTechnicians) {
                 technicians = JSON.parse(storedTechnicians);
+            } else {
+                technicians = [
+                    { id: 1, name: 'Andres Correa', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+                    { id: 2, name: 'Thomas de Graaf', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+                    { id: 3, name: 'Joju Gregorious', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
+                ];
             }
             
             if (storedWorkOrders) {
