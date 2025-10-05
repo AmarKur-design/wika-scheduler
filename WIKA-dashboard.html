@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Dashboard - Technician Scheduler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-scheduled { background-color: #dbeafe; color: #1e40af; }
+        .status-in-progress { background-color: #fef3c7; color: #92400e; }
+        .status-completed { background-color: #d1fae5; color: #065f46; }
+        .status-waiting-on-certs { background-color: #e9d5ff; color: #6b21a8; }
+        .overdue { background-color: #fee2e2; color: #dc2626; }
+        .productivity-high { background-color: #d1fae5; color: #065f46; }
+        .productivity-medium { background-color: #fef3c7; color: #92400e; }
+        .productivity-low { background-color: #fee2e2; color: #dc2626; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Productivity Dashboard</h1>
+                <p class="text-sm text-gray-600">Welcome, <span id="userName"></span> (<span id="userRole"></span>)</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="calendar.html" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-calendar mr-2"></i>Calendar
+                </a>
+                <a href="work-orders.html" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-list mr-2"></i>Work Orders
+                </a>
+                <button onclick="refreshData()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                </button>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Overview Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i class="fas fa-users text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Technicians</p>
+                        <p id="totalTechnicians" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i class="fas fa-check-circle text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Completed Orders</p>
+                        <p id="completedOrders" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Overdue Orders</p>
+                        <p id="overdueOrders" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <i class="fas fa-clock text-purple-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Avg Completion Rate</p>
+                        <p id="avgCompletionRate" class="text-2xl font-bold text-gray-900">0%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technician Productivity -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Technician Productivity</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scheduled Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed Hours</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="technicianProductivityTable" class="bg-white divide-y divide-gray-200">
+                        <!-- Technician productivity data will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Overdue Work Orders -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Overdue Work Orders</h2>
+            <div id="overdueWorkOrders" class="space-y-3">
+                <!-- Overdue work orders will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Weekly Performance -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">This Week's Performance</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Total Hours Scheduled</span>
+                        <span id="thisWeekScheduled" class="text-lg font-bold text-blue-600">0h</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Total Hours Completed</span>
+                        <span id="thisWeekCompleted" class="text-lg font-bold text-green-600">0h</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Completion Rate</span>
+                        <span id="thisWeekRate" class="text-lg font-bold text-purple-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="thisWeekProgress" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Next Week's Forecast</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Hours Scheduled</span>
+                        <span id="nextWeekScheduled" class="text-lg font-bold text-blue-600">0h</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Available Capacity</span>
+                        <span id="nextWeekCapacity" class="text-lg font-bold text-green-600">0h</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Capacity Utilization</span>
+                        <span id="nextWeekUtilization" class="text-lg font-bold text-purple-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="nextWeekProgress" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Work Order Status Distribution -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Work Order Status Distribution</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600" id="scheduledCount">0</div>
+                    <div class="text-sm text-gray-600">Scheduled</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-yellow-600" id="inProgressCount">0</div>
+                    <div class="text-sm text-gray-600">In Progress</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600" id="completedCount">0</div>
+                    <div class="text-sm text-gray-600">Completed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-600" id="waitingCount">0</div>
+                    <div class="text-sm text-gray-600">Waiting on Certs</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Check if user is logged in
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+if (!currentUser) {
+    window.location.href = 'login.html';
+}
+
+let technicians = [];
+let workOrders = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupUserInfo();
+            loadData();
+            updateDashboard();
+        });
+
+        function setupUserInfo() {
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+        }
+
+        function logout() {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+
+        // Data management
+        function loadData() {
+            const storedTechnicians = localStorage.getItem('technicians');
+            const storedWorkOrders = localStorage.getItem('workOrders');
+            
+            if (storedTechnicians) {
+                technicians = JSON.parse(storedTechnicians);
+                
+                // Filter technicians based on user role
+                if (currentUser.role === 'technician' && currentUser.technicianId) {
+                    technicians = technicians.filter(t => t.id === currentUser.technicianId);
+                }
+            } else {
+                technicians = [
+                    { id: 1, name: 'Andres Correa', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+                    { id: 2, name: 'Thomas de Graaf', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+                    { id: 3, name: 'Joju Gregorious', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
+                ];
+                
+                // Filter technicians based on user role
+                if (currentUser.role === 'technician' && currentUser.technicianId) {
+                    technicians = technicians.filter(t => t.id === currentUser.technicianId);
+                }
+            }
+            
+            if (storedWorkOrders) {
+                workOrders = JSON.parse(storedWorkOrders);
+                
+                // Filter work orders based on user role
+                if (currentUser.role === 'technician' && currentUser.technicianId) {
+                    workOrders = workOrders.filter(wo => wo.technicianId === currentUser.technicianId);
+                }
+            }
+        }
+
+        function refreshData() {
+            loadData();
+            updateDashboard();
+        }
+
+        // Dashboard update functions
+        function updateDashboard() {
+            updateOverviewStats();
+            updateTechnicianProductivity();
+            updateOverdueWorkOrders();
+            updateWeeklyPerformance();
+            updateStatusDistribution();
+        }
+
+        function updateOverviewStats() {
+            const totalTechnicians = technicians.length;
+            const completedOrders = workOrders.filter(wo => wo.status === 'completed').length;
+            const overdueOrders = getOverdueWorkOrders().length;
+            const avgCompletionRate = calculateAverageCompletionRate();
+
+            document.getElementById('totalTechnicians').textContent = totalTechnicians;
+            document.getElementById('completedOrders').textContent = completedOrders;
+            document.getElementById('overdueOrders').textContent = overdueOrders;
+            document.getElementById('avgCompletionRate').textContent = avgCompletionRate + '%';
+        }
+
+        function updateTechnicianProductivity() {
+            const tbody = document.getElementById('technicianProductivityTable');
+            tbody.innerHTML = '';
+
+            technicians.forEach(technician => {
+                const technicianWorkOrders = workOrders.filter(wo => wo.technicianId === technician.id);
+                const scheduledHours = technicianWorkOrders.reduce((sum, wo) => sum + wo.hoursRequired, 0);
+                const completedHours = technicianWorkOrders
+                    .filter(wo => wo.status === 'completed')
+                    .reduce((sum, wo) => sum + wo.hoursRequired, 0);
+                
+                const utilization = technician.dailyHours > 0 ? (scheduledHours / technician.dailyHours * 100) : 0;
+                const completionRate = scheduledHours > 0 ? (completedHours / scheduledHours * 100) : 0;
+                
+                const productivityStatus = getProductivityStatus(utilization, completionRate);
+                const statusClass = getProductivityStatusClass(productivityStatus);
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${technician.name}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${technician.dailyHours}h
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${scheduledHours.toFixed(1)}h
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${completedHours.toFixed(1)}h
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${utilization.toFixed(1)}%
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${completionRate.toFixed(1)}%
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="status-badge ${statusClass}">
+                            ${productivityStatus}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateOverdueWorkOrders() {
+            const overdueContainer = document.getElementById('overdueWorkOrders');
+            const overdueOrders = getOverdueWorkOrders();
+
+            if (overdueOrders.length === 0) {
+                overdueContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-check-circle text-4xl mb-2"></i>
+                        <p>No overdue work orders!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            overdueContainer.innerHTML = '';
+            overdueOrders.forEach(workOrder => {
+                const technician = technicians.find(t => t.id === workOrder.technicianId);
+                const technicianName = technician ? technician.name : 'Unknown';
+                const daysOverdue = getDaysOverdue(workOrder.startDate);
+
+                const overdueItem = document.createElement('div');
+                overdueItem.className = 'flex justify-between items-center p-4 border border-red-200 rounded-lg bg-red-50';
+                overdueItem.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-900">${workOrder.workOrderNumber}</h3>
+                                <p class="text-sm text-gray-600">${workOrder.customerName}</p>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                <p><strong>Technician:</strong> ${technicianName}</p>
+                                <p><strong>Hours:</strong> ${workOrder.hoursRequired}h</p>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                <p><strong>Due Date:</strong> ${new Date(workOrder.startDate).toLocaleDateString()}</p>
+                                <p><strong>Status:</strong> <span class="status-badge status-${workOrder.status?.replace(' ', '-') || 'scheduled'}">${getStatusText(workOrder.status)}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-red-600">${daysOverdue} days</div>
+                        <div class="text-sm text-gray-500">overdue</div>
+                    </div>
+                `;
+                overdueContainer.appendChild(overdueItem);
+            });
+        }
+
+        function updateWeeklyPerformance() {
+            const thisWeekData = getWeeklyData('this-week');
+            const nextWeekData = getWeeklyData('next-week');
+
+            // This week
+            document.getElementById('thisWeekScheduled').textContent = thisWeekData.scheduledHours.toFixed(1) + 'h';
+            document.getElementById('thisWeekCompleted').textContent = thisWeekData.completedHours.toFixed(1) + 'h';
+            document.getElementById('thisWeekRate').textContent = thisWeekData.completionRate.toFixed(1) + '%';
+            document.getElementById('thisWeekProgress').style.width = thisWeekData.completionRate + '%';
+
+            // Next week
+            document.getElementById('nextWeekScheduled').textContent = nextWeekData.scheduledHours.toFixed(1) + 'h';
+            document.getElementById('nextWeekCapacity').textContent = nextWeekData.availableCapacity.toFixed(1) + 'h';
+            document.getElementById('nextWeekUtilization').textContent = nextWeekData.utilization.toFixed(1) + '%';
+            document.getElementById('nextWeekProgress').style.width = nextWeekData.utilization + '%';
+        }
+
+        function updateStatusDistribution() {
+            const scheduled = workOrders.filter(wo => wo.status === 'scheduled' || !wo.status).length;
+            const inProgress = workOrders.filter(wo => wo.status === 'in-progress').length;
+            const completed = workOrders.filter(wo => wo.status === 'completed').length;
+            const waiting = workOrders.filter(wo => wo.status === 'waiting-on-certs').length;
+
+            document.getElementById('scheduledCount').textContent = scheduled;
+            document.getElementById('inProgressCount').textContent = inProgress;
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('waitingCount').textContent = waiting;
+        }
+
+        // Helper functions
+        function getOverdueWorkOrders() {
+            const today = new Date();
+            return workOrders.filter(workOrder => {
+                const workOrderDate = new Date(workOrder.startDate);
+                return workOrderDate < today && workOrder.status !== 'completed';
+            });
+        }
+
+        function getDaysOverdue(startDate) {
+            const today = new Date();
+            const workOrderDate = new Date(startDate);
+            const diffTime = today - workOrderDate;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        function calculateAverageCompletionRate() {
+            if (technicians.length === 0) return 0;
+            
+            let totalRate = 0;
+            technicians.forEach(technician => {
+                const technicianWorkOrders = workOrders.filter(wo => wo.technicianId === technician.id);
+                const scheduledHours = technicianWorkOrders.reduce((sum, wo) => sum + wo.hoursRequired, 0);
+                const completedHours = technicianWorkOrders
+                    .filter(wo => wo.status === 'completed')
+                    .reduce((sum, wo) => sum + wo.hoursRequired, 0);
+                
+                const completionRate = scheduledHours > 0 ? (completedHours / scheduledHours * 100) : 0;
+                totalRate += completionRate;
+            });
+            
+            return (totalRate / technicians.length).toFixed(1);
+        }
+
+        function getProductivityStatus(utilization, completionRate) {
+            if (utilization >= 80 && completionRate >= 80) return 'High';
+            if (utilization >= 60 && completionRate >= 60) return 'Medium';
+            return 'Low';
+        }
+
+        function getProductivityStatusClass(status) {
+            switch(status) {
+                case 'High': return 'productivity-high';
+                case 'Medium': return 'productivity-medium';
+                case 'Low': return 'productivity-low';
+                default: return 'productivity-low';
+            }
+        }
+
+        function getWeeklyData(weekType) {
+            const today = new Date();
+            let weekStart, weekEnd;
+            
+            switch(weekType) {
+                case 'this-week':
+                    weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay());
+                    weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+                    break;
+                case 'next-week':
+                    weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay() + 7);
+                    weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+                    break;
+            }
+
+            const weekWorkOrders = workOrders.filter(wo => {
+                const workOrderDate = new Date(wo.startDate);
+                return workOrderDate >= weekStart && workOrderDate <= weekEnd;
+            });
+
+            const scheduledHours = weekWorkOrders.reduce((sum, wo) => sum + wo.hoursRequired, 0);
+            const completedHours = weekWorkOrders
+                .filter(wo => wo.status === 'completed')
+                .reduce((sum, wo) => sum + wo.hoursRequired, 0);
+            
+            const completionRate = scheduledHours > 0 ? (completedHours / scheduledHours * 100) : 0;
+            
+            // Calculate available capacity
+            const workingDays = 5; // Monday to Friday
+            const totalCapacity = technicians.reduce((sum, tech) => sum + (tech.dailyHours * workingDays), 0);
+            const availableCapacity = totalCapacity - scheduledHours;
+            const utilization = totalCapacity > 0 ? (scheduledHours / totalCapacity * 100) : 0;
+
+            return {
+                scheduledHours,
+                completedHours,
+                completionRate,
+                availableCapacity,
+                utilization
+            };
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'completed': return 'Completed';
+                case 'in-progress': return 'In Progress';
+                case 'waiting-on-certs': return 'Waiting on Certs';
+                default: return 'Scheduled';
+            }
+        }
+    </script>
+</body>
+</html>
