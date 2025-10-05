@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technician Scheduler - Fixed Weekly View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 500px; max-height: 90%; overflow-y: auto; }
+        .work-order { 
+            background: #3b82f6; 
+            color: white; 
+            padding: 0.15rem 0.3rem; 
+            margin: 0.1rem 0; 
+            border-radius: 0.25rem; 
+            cursor: pointer; 
+            font-size: 0.6rem; 
+            line-height: 1.1;
+            min-height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .weekly-calendar .work-order {
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            text-align: left;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            min-height: 2.5rem;
+            padding: 0.2rem 0.4rem;
+        }
+        .work-order.status-completed { background: #10b981; }
+        .work-order.status-in-progress { background: #f59e0b; }
+        .work-order.status-pending { background: #6b7280; }
+        .work-order.status-waiting-on-certs { background: #8b5cf6; }
+        .work-order.location-in-lab { background: #3b82f6; }
+        .work-order.location-onsite { background: #f97316; }
+        .weekly-calendar { display: grid; grid-template-columns: 80px repeat(7, 1fr); gap: 1px; background: #d1d5db; }
+        .weekly-day-header { background: white; padding: 0.5rem; text-align: center; border-bottom: 2px solid #d1d5db; }
+        .weekly-time-label { background: #f9fafb; padding: 0.5rem 0.25rem; font-size: 0.75rem; text-align: center; border-right: 2px solid #d1d5db }
+        .weekly-time-slot { background: white; padding: 0.25rem; min-height: 30px; position: relative; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Same header, buttons, calendar, etc. but with working weekly view -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">WIKA Scheduler</h1>
+                <p class="text-sm text-gray-600">Welcome, <span id="userName"></span> (<span id="userRole"></span>)</p>
+            </div>
+            <div class="flex space-x-4">
+                <button id="manageTechniciansBtn" onclick="showManageTechnicians()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Manage Technicians
+                </button>
+                <button id="createWorkOrderBtn" onclick="showCreateWorkOrder()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    Create New Work Order
+                </button>
+                <a href="work-orders.html" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-list mr-2"></i>Work Orders List
+                </a>
+                <a href="dashboard.html" class="bg-orange-500 hover:bg-orange-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-chart-line mr-2"></i>Productivity Dashboard
+                </a>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Technician Selector -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Technician</label>
+            <select id="technicianSelect" class="w-full md:w-1/3 border border-gray-300 rounded px-3 py-2" onchange="loadCalendar()">
+                <option value="">Choose a technician...</option>
+            </select>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="mb-6">
+            <div class="flex space-x-2">
+                <button onclick="switchView('month')" class="px-4 py-2 rounded" id="monthViewBtn">Month View</button>
+                <button onclick="switchView('week')" class="px-4 py-2 rounded bg-gray-200" id="weekViewBtn">Week View</button>
+            </div>
+        </div>
+
+        <!-- Calendar Container -->
+        <div id="calendarPlaceholder">
+            <div class="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+                <i class="fas fa-calendar-times text-6xl mb-4"></i>
+                <p class="text-xl">Select a technician to view their schedule</p>
+            </div>
+        </div>
+
+        <!-- Monthly Calendar View -->
+        <div id="monthCalendarContainer" class="hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="monthCalendarTitle" class="text-xl font-semibold"></h2>
+                    <div class="flex space-x-2">
+                        <button onclick="previousMonth()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button onclick="nextMonth()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="monthGrid" class="grid grid-cols-7 gap-1 text-sm">
+                    <!-- Calendar days will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Calendar View -->
+        <div id="weekCalendarContainer" class="hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="weekCalendarTitle" class="text-xl font-semibold"></h2>
+                    <div class="flex space-x-2">
+                        <button onclick="previousWeek()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button onclick="currentWeek()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">
+                            This Week
+                        </button>
+                        <button onclick="nextWeek()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="weeklyGrid" class="weekly-calendar border border-gray-300 rounded-lg overflow-hidden">
+                    <!-- Weekly calendar will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tech Management Modal -->
+    <div id="manageTechniciansModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Manage Technicians</h2>
+            <div id="techniciansList" class="mb-4">
+                <!-- Technicians list will be rendered here -->
+            </div>
+            <div class="border-t pt-4">
+                <h3 class="text-lg font-semibold mb-2">Add New Technician</h3>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <input id="newTechnicianName" type="text" placeholder="Technician Name" class="border border-gray-300 rounded px-3 py-2">
+                    <input id="newTechnicianHours" type="number" step="0.1" value="7.6" placeholder="Daily Hours" class="border border-gray-300 rounded px-3 py-2">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2"><strong>Working Days:</strong></label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label><input type="checkbox" id="workingMon" checked> Monday</label>
+                        <label><input type="checkbox" id="workingTue" checked> Tuesday</label>
+                        <label><input type="checkbox" id="workingWed" checked> Wednesday</label>
+                        <label><input type="checkbox" id="workingThu" checked> Thursday</label>
+                        <label><input type="checkbox" id="workingFri" checked> Friday</label>
+                        <label><input type="checkbox" id="workingSat"> Saturday</label>
+                        <label><input type="checkbox" id="workingSun"> Sunday</label>
+                    </div>
+                </div>
+                <button onclick="addTechnician()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">Add Technician</button>
+                <button onclick="closeModals()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Technician Modal -->
+    <div id="editTechnicianModal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Technician</h2>
+            <form onsubmit="updateTechnician(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input id="editTechnicianName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Daily Hours</label>
+                    <input id="editTechnicianHours" type="number" step="0.1" required class="w-full border border-gray-300 rounded px-3 py-2">
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                        <input id="editTechnicianStartTime" type="time" required class="w-full border border-gray-300 rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                        <input id="editTechnicianEndTime" type="time" required class="w-full border border-gray-300 rounded px-3 py-2">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Working Days</label>
+                    <div class="grid grid-cols-7 gap-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editWorkingMon" class="mr-1"> Mon
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editWorkingTue" class="mr-1"> Tue
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editWorkingWed" class="mr-1"> Wed
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editWorkingThu" class="mr-1"> Thu
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editWorkingFri" class="mr-1"> Fri
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editWorkingSat" class="mr-1"> Sat
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editWorkingSun" class="mr-1"> Sun
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModals()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        Update Technician
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Work Order Modal -->
+    <div id="createWorkOrderModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Create New Work Order</h2>
+                </button>
+                <a href="work_orders_list.html" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-list mr-2"></i>Work Orders List
+                </a>            <form onsubmit="createWorkOrder(event)">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Order Number</label>
+                        <input id="workOrderNumber" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="WO-2024-001">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Technician</label>
+                        <select id="technicianDropdown" required class="w-full border border-gray-300 rounded px-3 py-2" onchange="updateSuggestedStartTime()">
+                            <option value="">Select Technician</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Work Type</label>
+                    <input id="workType" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Calibration, Maintenance, Installation">
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                        <input id="customerName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Customer Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hours Required</label>
+                        <input id="hoursRequired" type="number" step="0.1" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="2.5">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                    <input id="startTime" type="time" class="w-full border border-gray-300 rounded px-3 py-2" value="08:00" onchange="updateSuggestedStartTime()">
+                    <p class="text-xs text-gray-500 mt-1">Auto-suggests next available slot</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input id="startDate" type="date" required class="w-full border border-gray-300 rounded px-3 py-2" onchange="updateSuggestedStartTime()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="workOrderStatus" class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="scheduled">Scheduled</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="waiting-on-certs">Waiting on Certs</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                    <select id="workOrderLocation" class="w-full border border-gray-300 rounded px-3 py-2">
+                        <option value="in-lab">In Lab</option>
+                        <option value="onsite">Onsite</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea id="workOrderNotes" rows="3" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Add notes about this work order..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Attachment</label>
+                    <input id="workOrderAttachment" type="file" class="w-full border border-gray-300 rounded px-3 py-2" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                    <p class="text-sm text-gray-500 mt-1">PDF, Word docs, or image files</p>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModals()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        Create Work Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+// Check if user is logged in
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+if (!currentUser) {
+    window.location.href = 'login.html';
+}
+
+let technicians = [
+    { id: 1, name: 'Andres Correa', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+    { id: 2, name: 'Thomas de Graaf', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+    { id: 3, name: 'Joju Gregorious', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
+];
+let workOrders = [];
+let currentDate = new Date();
+let currentWeekStart = null;
+let currentView = 'month';
+
+// Role-based access control functions
+function setupRoleBasedAccess() {
+    // Update user info display
+    document.getElementById('userName').textContent = currentUser.name;
+    document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    
+    // Hide/show buttons based on role
+    const manageTechniciansBtn = document.getElementById('manageTechniciansBtn');
+    const createWorkOrderBtn = document.getElementById('createWorkOrderBtn');
+    const technicianSelector = document.getElementById('technicianSelect').parentElement;
+    
+    if (currentUser.role === 'viewer') {
+        // Viewers can't create or manage
+        manageTechniciansBtn.style.display = 'none';
+        createWorkOrderBtn.style.display = 'none';
+    } else if (currentUser.role === 'technician') {
+        // Technicians can't manage technicians
+        manageTechniciansBtn.style.display = 'none';
+        // Hide technician selector for technicians - they only see their own calendar
+        technicianSelector.style.display = 'none';
+    }
+    
+    // Filter technicians for technician role
+    if (currentUser.role === 'technician' && currentUser.technicianId) {
+        technicians = technicians.filter(t => t.id === currentUser.technicianId);
+    }
+}
+
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'login.html';
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    setupRoleBasedAccess();
+    loadData();
+    assignStartTimesToExistingWorkOrders(); // Fix existing work orders without start times
+    renderTechnicianSelector();
+    updateTechnicianDropdown();
+    initCurrentWeek();
+    
+    // Auto-load calendar for technicians
+    if (currentUser.role === 'technician' && currentUser.technicianId) {
+        document.getElementById('technicianSelect').value = currentUser.technicianId;
+        loadCalendar();
+    }
+});
+
+// Data management
+function saveData() {
+    localStorage.setItem('technicians', JSON.stringify(technicians));
+    localStorage.setItem('workOrders', JSON.stringify(workOrders));
+}
+
+function loadData() {
+    const storedTechnicians = localStorage.getItem('technicians');
+    const storedWorkOrders = localStorage.getItem('workOrders');
+    
+    if (storedTechnicians) {
+        technicians = JSON.parse(storedTechnicians);
+    } else {
+        technicians = [
+            { id: 1, name: 'John Smith', dailyHours: 7.6 },
+            { id: 2, name: 'Sarah Johnson', dailyHours: 7.6 },
+            { id: 3, name: 'Mike Wilson', dailyHours: 7.6 }
+        ];
+    }
+    
+    if (storedWorkOrders) {
+        workOrders = JSON.parse(storedWorkOrders);
+        
+        // Filter work orders based on user role
+        if (currentUser.role === 'technician' && currentUser.technicianId) {
+            workOrders = workOrders.filter(wo => wo.technicianId === currentUser.technicianId);
+        }
+    }
+}
+
+// UI functions
+function reassignAllStartTimes() {
+    if (confirm('This will reassign start times for all work orders to ensure proper sequencing. Continue?')) {
+        assignStartTimesToExistingWorkOrders();
+        loadCalendar();
+        alert('Start times have been reassigned successfully!');
+    }
+}
+
+function showManageTechnicians() {
+    document.getElementById('manageTechniciansModal').classList.add('show');
+    renderTechniciansList();
+}
+
+function showCreateWorkOrder() {
+    document.getElementById('createWorkOrderModal').classList.add('show');
+    updateTechnicianDropdown();
+    
+    // Set today's date without timezone issues
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    document.getElementById('startDate').value = `${year}-${month}-${day}`;
+    
+    // Wait a moment for the dropdown to populate, then suggest start time
+    setTimeout(() => {
+        updateSuggestedStartTime();
+    }, 100);
+}
+
+function updateSuggestedStartTime() {
+    // Don't auto-suggest start time when editing existing work orders
+    const editingId = document.getElementById('createWorkOrderModal').getAttribute('data-editing-id');
+    if (editingId) {
+        return; // Skip auto-suggestion for edits
+    }
+    
+    const technicianId = document.getElementById('technicianDropdown').value;
+    const startDate = document.getElementById('startDate').value;
+    
+    if (technicianId && startDate) {
+        const suggestedTime = calculateOptimalStartTime(parseInt(technicianId), startDate, 0);
+        document.getElementById('startTime').value = suggestedTime;
+    }
+}
+
+function showWorkOrderDetails(workOrder) {
+    // Check if user can edit this work order
+    const canEdit = currentUser.role === 'admin' || 
+                   currentUser.role === 'manager' || 
+                   (currentUser.role === 'technician' && workOrder.technicianId === currentUser.technicianId);
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Work Order Details</h3>
+            <div class="text-sm text-gray-600 mb-4">
+                <p><strong>Work Order:</strong> ${workOrder.workOrderNumber}</p>
+                <p><strong>Customer:</strong> ${workOrder.customerName}</p>
+                <p><strong>Type:</strong> ${workOrder.workType}</p>
+                <p><strong>Location:</strong> ${workOrder.location || 'Not specified'}</p>
+                <p><strong>Status:</strong> ${workOrder.status || 'scheduled'}</p>
+                <p><strong>Start Time:</strong> ${workOrder.startTime || '08:00'}</p>
+                <p><strong>Hours:</strong> ${workOrder.hoursRequired}h</p>
+                <p><strong>Notes:</strong> ${workOrder.notes || 'None'}</p>
+            </div>
+            <div class="flex justify-end space-x-2">
+                ${canEdit ? `
+                <button onclick="editWorkOrder(${workOrder.id})" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Edit
+                </button>
+                ` : ''}
+                <button onclick="closeWorkOrderDetails()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function closeWorkOrderDetails() {
+    const modal = document.querySelector('.modal.show');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function editWorkOrder(workOrderId) {
+    const workOrder = workOrders.find(wo => wo.id === workOrderId);
+    if (!workOrder) return;
+    
+    // Close the details modal
+    closeWorkOrderDetails();
+    
+    // Populate the create work order form with existing data
+    document.getElementById('workOrderNumber').value = workOrder.workOrderNumber;
+    document.getElementById('technicianDropdown').value = workOrder.technicianId;
+    document.getElementById('workType').value = workOrder.workType;
+    document.getElementById('customerName').value = workOrder.customerName;
+    document.getElementById('hoursRequired').value = workOrder.hoursRequired;
+    document.getElementById('startDate').value = workOrder.startDate;
+    document.getElementById('startTime').value = workOrder.startTime || '08:00';
+    document.getElementById('workOrderStatus').value = workOrder.status || 'scheduled';
+    document.getElementById('workOrderLocation').value = workOrder.location || 'in-lab';
+    document.getElementById('workOrderNotes').value = workOrder.notes || '';
+    
+    // Store the work order ID for updating
+    document.getElementById('createWorkOrderModal').setAttribute('data-editing-id', workOrderId);
+    
+    // Change the form title and button
+    document.querySelector('#createWorkOrderModal h2').textContent = 'Edit Work Order';
+    document.querySelector('#createWorkOrderModal button[type="submit"]').textContent = 'Update Work Order';
+    
+    // Show the modal
+    document.getElementById('createWorkOrderModal').classList.add('show');
+}
+
+function closeModals() {
+    document.getElementById('manageTechniciansModal').classList.remove('show');
+    document.getElementById('createWorkOrderModal').classList.remove('show');
+    document.getElementById('editTechnicianModal').classList.remove('show');
+    closeWorkOrderDetails();
+}
+
+function renderTechnicianSelector() {
+    const select = document.getElementById('technicianSelect');
+    select.innerHTML = '<option value="">Choose a technician...</option>';
+    
+    technicians.forEach(technician => {
+        const option = document.createElement('option');
+        option.value = technician.id;
+        option.textContent = `${technician.name} (${technician.dailyHours}h/day)`;
+        select.appendChild(option);
+    });
+}
+
+function updateTechnicianDropdown() {
+    const dropdown = document.getElementById('technicianDropdown');
+    if (!dropdown) return;
+    
+    dropdown.innerHTML = '<option value="">Select Technician</option>';
+    technicians.forEach(technician => {
+        const option = document.createElement('option');
+        option.value = technician.id;
+        option.textContent = technician.name;
+        dropdown.appendChild(option);
+    });
+    
+    // Auto-select first technician if available
+    if (technicians.length > 0) {
+        dropdown.value = technicians[0].id;
+    }
+}
+
+function renderTechniciansList() {
+    const container = document.getElementById('techniciansList');
+    container.innerHTML = '';
+    
+    technicians.forEach(technician => {
+        const div = document.createElement('div');
+        div.className = 'flex justify-between items-center p-3 border border-gray-300 rounded mb-2';
+        div.innerHTML = `
+            <div>
+                <strong>${technician.name}</strong> - ${technician.dailyHours}h/day
+                <div class="text-sm text-gray-600">
+                    Working Days: ${technician.workingDays ? technician.workingDays.join(', ') : 'Monday-Friday'}
+                </div>
+                <div class="text-sm text-gray-600">
+                    Hours: ${technician.startTime || '08:00'} - ${technician.endTime || '16:00'}
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="editTechnician(${technician.id})" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteTechnician(${technician.id})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function editTechnician(technicianId) {
+    const technician = technicians.find(t => t.id === technicianId);
+    if (!technician) return;
+    
+    // Populate the edit form
+    document.getElementById('editTechnicianName').value = technician.name;
+    document.getElementById('editTechnicianHours').value = technician.dailyHours;
+    document.getElementById('editTechnicianStartTime').value = technician.startTime || '08:00';
+    document.getElementById('editTechnicianEndTime').value = technician.endTime || '16:00';
+    
+    // Set working days checkboxes
+    const dayCheckboxes = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    dayCheckboxes.forEach(day => {
+        const checkbox = document.getElementById(`editWorking${day}`);
+        if (checkbox) {
+            checkbox.checked = technician.workingDays && technician.workingDays.includes(day);
+        }
+    });
+    
+    // Store the technician ID for updating
+    document.getElementById('editTechnicianModal').setAttribute('data-editing-id', technicianId);
+    
+    // Show the modal
+    document.getElementById('editTechnicianModal').classList.add('show');
+}
+
+function updateTechnician(event) {
+    event.preventDefault();
+    
+    const technicianId = parseInt(document.getElementById('editTechnicianModal').getAttribute('data-editing-id'));
+    const technician = technicians.find(t => t.id === technicianId);
+    
+    if (!technician) return;
+    
+    // Get form values
+    const name = document.getElementById('editTechnicianName').value;
+    const hours = parseFloat(document.getElementById('editTechnicianHours').value);
+    const startTime = document.getElementById('editTechnicianStartTime').value;
+    const endTime = document.getElementById('editTechnicianEndTime').value;
+    
+    // Get working days
+    const workingDays = [];
+    const dayCheckboxes = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    dayCheckboxes.forEach(day => {
+        if (document.getElementById(`editWorking${day}`).checked) {
+            workingDays.push(day);
+        }
+    });
+    
+    // Update technician
+    technician.name = name;
+    technician.dailyHours = hours;
+    technician.startTime = startTime;
+    technician.endTime = endTime;
+    technician.workingDays = workingDays;
+    
+    // Save and refresh
+    saveData();
+    renderTechnicianSelector();
+    renderTechniciansList();
+    updateTechnicianDropdown();
+    
+    // Close modal
+    document.getElementById('editTechnicianModal').classList.remove('show');
+    document.getElementById('editTechnicianModal').removeAttribute('data-editing-id');
+    
+    alert('Technician updated successfully!');
+}
+
+function addTechnician() {
+    const name = document.getElementById('newTechnicianName').value;
+    const hours = parseFloat(document.getElementById('newTechnicianHours').value);
+    
+    if (!name || !hours) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    const workingDays = [];
+    const dayCheckboxes = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    dayCheckboxes.forEach(day => {
+        if (document.getElementById(`working${day}`).checked) {
+            workingDays.push(day);
+        }
+    });
+    
+    const technician = {
+        id: Date.now(),
+        name,
+        dailyHours: hours,
+        startTime: '08:00',
+        endTime: '16:00',
+        workingDays
+    };
+    
+    technicians.push(technician);
+    saveData();
+    renderTechnicianSelector();
+    renderTechniciansList();
+    
+    // Clear form
+    document.getElementById('newTechnicianName').value = '';
+    document.getElementById('newTechnicianHours').value = '7.6';
+}
+
+function checkTimeConflict(technicianId, startDate, startTime, hoursRequired, excludeWorkOrderId = null) {
+    const startHour = parseInt(startTime.split(':')[0]);
+    const endHour = startHour + hoursRequired;
+    
+    const conflictingWorkOrders = workOrders.filter(wo => {
+        // Skip the work order being edited
+        if (excludeWorkOrderId && wo.id == excludeWorkOrderId) {
+            return false;
+        }
+        
+        // Check if same technician and date
+        if (wo.technicianId !== technicianId || wo.startDate !== startDate) {
+            return false;
+        }
+        
+        const woStartHour = wo.startTime ? parseInt(wo.startTime.split(':')[0]) : 8;
+        const woEndHour = woStartHour + (wo.hoursRequired || 0);
+        
+        // Check for time overlap
+        return !(endHour <= woStartHour || startHour >= woEndHour);
+    });
+    
+    return {
+        hasConflict: conflictingWorkOrders.length > 0,
+        conflictingWorkOrders: conflictingWorkOrders
+    };
+}
+
+function checkTechnicianCapacity(technicianId, date, newHours) {
+    const technician = technicians.find(t => t.id === technicianId);
+    if (!technician) return { isOverCapacity: false, currentHours: 0, capacity: 0 };
+    
+    // Calculate current scheduled hours for this technician on this date
+    const currentHours = workOrders
+        .filter(wo => wo.technicianId === technicianId && wo.startDate === date)
+        .reduce((total, wo) => total + (wo.hoursRequired || 0), 0);
+    
+    const totalHours = currentHours + newHours;
+    const capacity = technician.dailyHours || 7.6;
+    
+    return {
+        isOverCapacity: totalHours > capacity,
+        currentHours: currentHours,
+        capacity: capacity,
+        totalHours: totalHours,
+        overtimeHours: Math.max(0, totalHours - capacity)
+    };
+}
+
+function assignStartTimesToExistingWorkOrders() {
+    // Group work orders by technician and date
+    const workOrdersByTechnicianAndDate = {};
+    
+    workOrders.forEach(workOrder => {
+        const key = `${workOrder.technicianId}-${workOrder.startDate}`;
+        if (!workOrdersByTechnicianAndDate[key]) {
+            workOrdersByTechnicianAndDate[key] = [];
+        }
+        workOrdersByTechnicianAndDate[key].push(workOrder);
+    });
+    
+    // Only reassign start times to work orders that don't have manually set times
+    Object.keys(workOrdersByTechnicianAndDate).forEach(key => {
+        const dayWorkOrders = workOrdersByTechnicianAndDate[key];
+        
+        // Sort by ID to maintain creation order
+        dayWorkOrders.sort((a, b) => a.id - b.id);
+        
+        let currentTime = 8; // Start at 8 AM
+        
+        dayWorkOrders.forEach(workOrder => {
+            // Only reassign if the work order doesn't have a manually set start time
+            // We can detect this by checking if the start time matches the calculated time
+            const calculatedHours = Math.floor(currentTime);
+            const calculatedMinutes = Math.round((currentTime - calculatedHours) * 60);
+            const calculatedTime = `${calculatedHours.toString().padStart(2, '0')}:${calculatedMinutes.toString().padStart(2, '0')}`;
+            
+            // If the work order doesn't have a start time, or if it matches the calculated time, reassign it
+            if (!workOrder.startTime || workOrder.startTime === calculatedTime) {
+                workOrder.startTime = calculatedTime;
+            }
+            
+            // Always update currentTime based on the actual start time (whether manual or calculated)
+            const actualStartTime = workOrder.startTime ? 
+                parseFloat(workOrder.startTime.split(':')[0]) + (parseFloat(workOrder.startTime.split(':')[1]) / 60) : 
+                currentTime;
+            currentTime = actualStartTime + (workOrder.hoursRequired || 0);
+        });
+    });
+    
+    // Save the updated work orders
+    saveData();
+}
+
+function calculateOptimalStartTime(technicianId, date, hoursRequired) {
+    // Get all work orders for this technician on this date, sorted by start time
+    const dayWorkOrders = workOrders
+        .filter(wo => wo.technicianId === technicianId && wo.startDate === date)
+        .sort((a, b) => {
+            const timeA = a.startTime ? parseFloat(a.startTime.split(':')[0]) + (parseFloat(a.startTime.split(':')[1]) / 60) : 8;
+            const timeB = b.startTime ? parseFloat(b.startTime.split(':')[0]) + (parseFloat(b.startTime.split(':')[1]) / 60) : 8;
+            return timeA - timeB;
+        });
+    
+    if (dayWorkOrders.length === 0) {
+        return '08:00'; // First work order starts at 8 AM
+    }
+    
+    // Find the next available slot
+    let currentTime = 8; // Start at 8 AM
+    
+    for (let workOrder of dayWorkOrders) {
+        const workOrderStart = workOrder.startTime ? 
+            parseFloat(workOrder.startTime.split(':')[0]) + (parseFloat(workOrder.startTime.split(':')[1]) / 60) : 8;
+        const workOrderEnd = workOrderStart + (workOrder.hoursRequired || 0);
+        
+        // If there's a gap before this work order, use it
+        if (currentTime + hoursRequired <= workOrderStart) {
+            const hours = Math.floor(currentTime);
+            const minutes = Math.round((currentTime - hours) * 60);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        
+        // Move to after this work order
+        currentTime = workOrderEnd;
+    }
+    
+    // If we get here, schedule after the last work order
+    const hours = Math.floor(currentTime);
+    const minutes = Math.round((currentTime - hours) * 60);
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+function createWorkOrder(event) {
+    event.preventDefault();
+    
+    // First, assign start times to any existing work orders that don't have them
+    assignStartTimesToExistingWorkOrders();
+    
+    const technicianId = parseInt(document.getElementById('technicianDropdown').value);
+    const startDate = document.getElementById('startDate').value;
+    const hoursRequired = parseFloat(document.getElementById('hoursRequired').value);
+    const manualStartTime = document.getElementById('startTime').value;
+    
+    // Calculate optimal start time if not manually specified
+    const startTime = manualStartTime || calculateOptimalStartTime(technicianId, startDate, hoursRequired);
+    
+    // Check if we're editing an existing work order
+    const editingId = document.getElementById('createWorkOrderModal').getAttribute('data-editing-id');
+    
+    if (editingId) {
+        // Check for time conflicts when editing
+        const conflictCheck = checkTimeConflict(technicianId, startDate, startTime, hoursRequired, editingId);
+        
+        if (conflictCheck.hasConflict) {
+            const technician = technicians.find(t => t.id === technicianId);
+            const conflictingDetails = conflictCheck.conflictingWorkOrders.map(wo => 
+                `• ${wo.workOrderNumber} (${wo.startTime} - ${wo.hoursRequired}h) - ${wo.customerName}`
+            ).join('\n');
+            
+            const conflictMessage = `⚠️ TIME CONFLICT WARNING ⚠️\n\n` +
+                `Technician: ${technician.name}\n` +
+                `Date: ${startDate}\n` +
+                `Start Time: ${startTime}\n` +
+                `Duration: ${hoursRequired}h\n\n` +
+                `This time slot conflicts with existing work orders:\n${conflictingDetails}\n\n` +
+                `Do you want to update this work order to this time? It will be displayed side-by-side with the conflicting work orders.`;
+            
+            if (!confirm(conflictMessage)) {
+                return; // User cancelled, don't update work order
+            }
+        }
+        
+        // Update existing work order
+        const workOrderIndex = workOrders.findIndex(wo => wo.id == editingId);
+        if (workOrderIndex !== -1) {
+            workOrders[workOrderIndex] = {
+                ...workOrders[workOrderIndex],
+                workOrderNumber: document.getElementById('workOrderNumber').value,
+                technicianId: technicianId,
+                workType: document.getElementById('workType').value,
+                customerName: document.getElementById('customerName').value,
+                hoursRequired: hoursRequired,
+                startDate: startDate,
+                startTime: startTime,
+                status: document.getElementById('workOrderStatus').value,
+                location: document.getElementById('workOrderLocation').value,
+                notes: document.getElementById('workOrderNotes').value,
+                attachment: document.getElementById('workOrderAttachment').files[0]?.name || ''
+            };
+            saveData();
+            
+            alert('Work order updated successfully!');
+        }
+    } else {
+        // Check for time conflicts first
+        const conflictCheck = checkTimeConflict(technicianId, startDate, startTime, hoursRequired);
+        
+        if (conflictCheck.hasConflict) {
+            const technician = technicians.find(t => t.id === technicianId);
+            const conflictingDetails = conflictCheck.conflictingWorkOrders.map(wo => 
+                `• ${wo.workOrderNumber} (${wo.startTime} - ${wo.hoursRequired}h) - ${wo.customerName}`
+            ).join('\n');
+            
+            const conflictMessage = `⚠️ TIME CONFLICT WARNING ⚠️\n\n` +
+                `Technician: ${technician.name}\n` +
+                `Date: ${startDate}\n` +
+                `Start Time: ${startTime}\n` +
+                `Duration: ${hoursRequired}h\n\n` +
+                `This time slot conflicts with existing work orders:\n${conflictingDetails}\n\n` +
+                `Do you want to schedule this work order at the same time? It will be displayed side-by-side with the conflicting work orders.`;
+            
+            if (!confirm(conflictMessage)) {
+                return; // User cancelled, don't create work order
+            }
+        }
+        
+        // Check capacity before creating work order
+        const capacityCheck = checkTechnicianCapacity(technicianId, startDate, hoursRequired);
+        
+        if (capacityCheck.isOverCapacity) {
+            const technician = technicians.find(t => t.id === technicianId);
+            const confirmMessage = `⚠️ CAPACITY WARNING ⚠️\n\n` +
+                `Technician: ${technician.name}\n` +
+                `Date: ${startDate}\n` +
+                `Start Time: ${startTime}\n` +
+                `Current scheduled hours: ${capacityCheck.currentHours.toFixed(2)}h\n` +
+                `Daily capacity: ${capacityCheck.capacity}h\n` +
+                `New work order: ${hoursRequired}h\n` +
+                `Total will be: ${capacityCheck.totalHours.toFixed(2)}h\n` +
+                `Overtime: ${capacityCheck.overtimeHours.toFixed(2)}h\n\n` +
+                `This technician is at capacity! Do you want to schedule this work order anyway? This will result in overtime.`;
+            
+            if (!confirm(confirmMessage)) {
+                return; // User cancelled, don't create work order
+            }
+        }
+        
+        // Create new work order
+        const workOrder = {
+            id: Date.now(),
+            workOrderNumber: document.getElementById('workOrderNumber').value,
+            technicianId: technicianId,
+            workType: document.getElementById('workType').value,
+            customerName: document.getElementById('customerName').value,
+            hoursRequired: hoursRequired,
+            startDate: startDate,
+            startTime: startTime,
+            status: document.getElementById('workOrderStatus').value,
+            location: document.getElementById('workOrderLocation').value,
+            notes: document.getElementById('workOrderNotes').value,
+            attachment: document.getElementById('workOrderAttachment').files[0]?.name || ''
+        };
+        
+        workOrders.push(workOrder);
+        saveData();
+        alert(`Work order created successfully!\nScheduled at: ${startTime}`);
+    }
+    
+    // Reset form
+    document.getElementById('workOrderNumber').value = '';
+    document.getElementById('workType').value = '';
+    document.getElementById('customerName').value = '';
+    document.getElementById('hoursRequired').value = '';
+    document.getElementById('startTime').value = '';
+    // Reset date without timezone issues
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    document.getElementById('startDate').value = `${year}-${month}-${day}`;
+    document.getElementById('workOrderStatus').value = 'scheduled';
+    document.getElementById('workOrderLocation').value = 'in-lab';
+    document.getElementById('workOrderNotes').value = '';
+    document.getElementById('workOrderAttachment').value = '';
+    
+    // Reset form title and button
+    document.querySelector('#createWorkOrderModal h2').textContent = 'Create New Work Order';
+    document.querySelector('#createWorkOrderModal button[type="submit"]').textContent = 'Create Work Order';
+    document.getElementById('createWorkOrderModal').removeAttribute('data-editing-id');
+    
+    // Close modal and refresh calendar
+    closeModals();
+    loadCalendar();
+}
+
+function loadCalendar() {
+    const selectedTechnicianId = document.getElementById('technicianSelect').value;
+    
+    if (!selectedTechnicianId) {
+        document.getElementById('calendarPlaceholder').style.display = 'block';
+        document.getElementById('monthCalendarContainer').classList.add('hidden');
+        document.getElementById('weekCalendarContainer').classList.add('hidden');
+        return;
+    }
+    
+    const technician = technicians.find(t => t.id.toString() === selectedTechnicianId);
+    
+    if (currentView === 'month') {
+        document.getElementById('calendarPlaceholder').style.display = 'none';
+        document.getElementById('monthCalendarContainer').classList.remove('hidden');
+        document.getElementById('weekCalendarContainer').classList.add('hidden');
+        renderMonthlyCalendar(technician);
+    } else {
+        document.getElementById('calendarPlaceholder').style.display = 'none';
+        document.getElementById('monthCalendarContainer').classList.add('hidden');
+        document.getElementById('weekCalendarContainer').classList.remove('hidden');
+        renderWeeklyCalendar(technician);
+    }
+}
+
+function renderMonthlyCalendar(technician) {
+    document.getElementById('monthCalendarTitle').textContent = `${technician.name} - ${currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+    
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const grid = document.getElementById('monthGrid');
+    grid.innerHTML = '';
+    
+    // Header
+    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'bg-gray-100 font-semibold text-center py-2';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
+    
+    // Days
+    for (let i = 0; i < 42; i++) {
+        const day = new Date(startDate);
+        day.setDate(startDate.getDate() + i);
+        // Use reliable date formatting without timezone issues
+        const year = day.getFullYear();
+        const month = String(day.getMonth() + 1).padStart(2, '0');
+        const dayNum = String(day.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${dayNum}`;
+        
+        const dayElement = document.createElement('div');
+        dayElement.className = 'bg-white min-h-20 p-2 border border-gray-200';
+        
+        const dayNumber = document.createElement('div');
+        dayNumber.textContent = day.getDate();
+        dayNumber.className = day.getMonth() !== currentDate.getMonth() ? 'text-gray-400' : 'font-semibold';
+        dayElement.appendChild(dayNumber);
+        
+        // Work orders for this day
+        const dayWorkOrders = workOrders.filter(wo => 
+            wo.technicianId === technician.id && wo.startDate === dateString);
+        
+        dayWorkOrders.forEach(workOrder => {
+            const workOrderElement = document.createElement('div');
+            workOrderElement.className = `work-order ${workOrder.location ? 'location-' + workOrder.location : ''}`;
+            workOrderElement.textContent = workOrder.customerName;
+            workOrderElement.onclick = () => showWorkOrderDetails(workOrder);
+            dayElement.appendChild(workOrderElement);
+        });
+        
+        // Add capacity indicator
+        const totalScheduledHours = dayWorkOrders.reduce((total, wo) => total + (wo.hoursRequired || 0), 0);
+        const capacity = technician.dailyHours || 7.6;
+        if (totalScheduledHours > 0) {
+            const capacityIndicator = document.createElement('div');
+            capacityIndicator.className = 'text-xs mt-1 p-1 rounded';
+            if (totalScheduledHours > capacity) {
+                capacityIndicator.className += ' bg-red-100 text-red-800';
+                capacityIndicator.textContent = `⚠️ ${totalScheduledHours.toFixed(2)}h/${capacity}h (Overtime)`;
+            } else if (totalScheduledHours === capacity) {
+                capacityIndicator.className += ' bg-yellow-100 text-yellow-800';
+                capacityIndicator.textContent = `📊 ${totalScheduledHours.toFixed(2)}h/${capacity}h (Full)`;
+            } else {
+                capacityIndicator.className += ' bg-green-100 text-green-800';
+                capacityIndicator.textContent = `✅ ${totalScheduledHours.toFixed(2)}h/${capacity}h`;
+            }
+            dayElement.appendChild(capacityIndicator);
+        }
+        
+        grid.appendChild(dayElement);
+    }
+}
+
+// FIXED WEEKLY CALENDAR FUNCTION - WITH SPANNING WORK ORDERS
+function renderWeeklyCalendar(technician) {
+    const weekEnd = new Date(currentWeekStart);
+    weekEnd.setDate(currentWeekStart.getDate() + 6);
+    
+    document.getElementById('weekCalendarTitle').textContent = `${technician.name} - Week of ${currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} to ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    
+    const weeklyGrid = document.getElementById('weeklyGrid');
+    weeklyGrid.innerHTML = '';
+    
+    // Add time column header (empty)
+    const timeHeader = document.createElement('div');
+    timeHeader.className = 'weekly-day-header';
+    weeklyGrid.appendChild(timeHeader);
+    
+    // Add day headers
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(currentWeekStart);
+        day.setDate(currentWeekStart.getDate() + i);
+        
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'weekly-day-header';
+        dayHeader.innerHTML = `
+            <div style="font-size: 12px; color: #6b7280;">${dayNames[i]}</div>
+            <div style="font-size: 16px; font-weight: 700;">${day.getDate()}</div>
+        `;
+        weeklyGrid.appendChild(dayHeader);
+    }
+    
+    // Add time slots (8 AM - 5 PM)
+    for (let hour = 8; hour <= 17; hour++) {
+        // Time label
+        const timeLabel = document.createElement('div');
+        timeLabel.className = 'weekly-time-label';
+        timeLabel.textContent = `${hour % 12 === 0 ? 12 : hour % 12}:00${hour < 12 ? 'AM' : 'PM'}`;
+        weeklyGrid.appendChild(timeLabel);
+        
+        // Weekly time slots for each day
+        for (let i = 0; i < 7; i++) {
+            const day = new Date(currentWeekStart);
+            day.setDate(currentWeekStart.getDate() + i);
+            // Use reliable date formatting without timezone issues
+            const year = day.getFullYear();
+            const month = String(day.getMonth() + 1).padStart(2, '0');
+            const dayNum = String(day.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${dayNum}`;
+            
+            const timeSlot = document.createElement('div');
+            timeSlot.className = 'weekly-time-slot';
+            
+            // Show work orders that start at this hour
+            const dayWorkOrders = workOrders.filter(wo => {
+                if (wo.technicianId !== technician.id || wo.startDate !== dateString) {
+                    return false;
+                }
+                
+                const workOrderStartHour = wo.startTime ? parseInt(wo.startTime.split(':')[0]) : 8;
+                return hour === workOrderStartHour;
+            });
+            
+            // Group overlapping work orders and display them side-by-side
+            if (dayWorkOrders.length > 0) {
+                const workOrderWidth = Math.floor(100 / dayWorkOrders.length); // Divide width equally
+                
+                dayWorkOrders.forEach((workOrder, index) => {
+                    const workOrderElement = document.createElement('div');
+                    const workOrderDuration = workOrder.hoursRequired || 1; // Use each work order's own duration
+                    
+                    workOrderElement.className = `work-order ${workOrder.location ? 'location-' + workOrder.location : ''}`;
+                    workOrderElement.style.position = 'absolute';
+                    workOrderElement.style.top = '2px';
+                    workOrderElement.style.left = `${(index * workOrderWidth) + 2}px`;
+                    workOrderElement.style.width = `calc(${workOrderWidth}% - 4px)`;
+                    workOrderElement.style.height = `calc(${workOrderDuration * 30}px - 4px)`;
+                    workOrderElement.style.zIndex = '10';
+                    workOrderElement.innerHTML = `
+                        <div class="font-semibold text-xs leading-tight">${workOrder.workOrderNumber}</div>
+                        <div class="text-xs opacity-90 leading-tight">${workOrder.customerName}</div>
+                        <div class="text-xs opacity-75 leading-tight">${workOrder.workType}</div>
+                    `;
+                    workOrderElement.onclick = () => showWorkOrderDetails(workOrder);
+                    timeSlot.appendChild(workOrderElement);
+                });
+            }
+            
+            weeklyGrid.appendChild(timeSlot);
+        }
+    }
+}
+
+// Calendar navigation
+function previousMonth() {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    loadCalendar();
+}
+
+function nextMonth() {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    loadCalendar();
+}
+
+function initCurrentWeek() {
+    const today = new Date();
+    currentWeekStart = new Date(today);
+    // Set to Monday (day 1) instead of Sunday (day 0)
+    const dayOfWeek = today.getDay();
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday (0), go back 6 days to Monday
+    currentWeekStart.setDate(today.getDate() + daysToMonday);
+}
+
+function previousWeek() {
+    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+    loadCalendar();
+}
+
+function currentWeek() {
+    const today = new Date();
+    currentWeekStart = new Date(today);
+    // Set to Monday (day 1) instead of Sunday (day 0)
+    const dayOfWeek = today.getDay();
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday (0), go back 6 days to Monday
+    currentWeekStart.setDate(today.getDate() + daysToMonday);
+    loadCalendar();
+}
+
+function nextWeek() {
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    loadCalendar();
+}
+
+function switchView(view) {
+    currentView = view;
+    
+    document.getElementById('monthViewBtn').className = 'px-4 py-2 rounded' + (view === 'month' ? ' bg-gray-200' : '');
+    document.getElementById('weekViewBtn').className = 'px-4 py-2 rounded' + (view === 'week' ? ' bg-gray-200' : '');
+    
+    loadCalendar();
+}
+
+function deleteTechnician(id) {
+    if (confirm('Are you sure you want to delete this technician?')) {
+        technicians = technicians.filter(t => t.id !== id);
+        workOrders = workOrders.filter(wo => wo.technicianId !== id);
+        saveData();
+        renderTechnicianSelector();
+        renderTechniciansList();
+        loadCalendar();
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technician Scheduler - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .input-focus:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="login-container rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-calendar-alt text-white text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">WIKA Scheduler</h1>
+            <p class="text-gray-600">Please sign in to continue</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-gray-400"></i>
+                    </div>
+                    <input id="username" type="text" required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent input-focus" 
+                           placeholder="Enter your username">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-lock text-gray-400"></i>
+                    </div>
+                    <input id="password" type="password" required 
+                           class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent input-focus" 
+                           placeholder="Enter your password">
+                </div>
+            </div>
+
+            <button type="submit" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                <i class="fas fa-sign-in-alt mr-2"></i>
+                Sign In
+            </button>
+        </form>
+
+        <div id="errorMessage" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded hidden">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span id="errorText"></span>
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-sm text-gray-600">Demo Accounts:</p>
+            <div class="mt-2 space-y-1 text-xs text-gray-500">
+                <div><strong>Admin:</strong> admin / admin123</div>
+                <div><strong>Manager:</strong> manager / manager123</div>
+                <div><strong>Andres:</strong> andres / andres123</div>
+                <div><strong>Thomas:</strong> thomas / thomas123</div>
+                <div><strong>Joju:</strong> joju / joju123</div>
+                <div><strong>Viewer:</strong> viewer / viewer123</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default users with different access levels
+        const users = [
+            {
+                id: 1,
+                username: 'admin',
+                password: 'admin123',
+                role: 'admin',
+                name: 'System Administrator',
+                technicianId: null // Admin can see all technicians
+            },
+            {
+                id: 2,
+                username: 'manager',
+                password: 'manager123',
+                role: 'manager',
+                name: 'Schedule Manager',
+                technicianId: null // Manager can see all technicians
+            },
+            {
+                id: 3,
+                username: 'andres',
+                password: 'andres123',
+                role: 'technician',
+                name: 'Andres Correa',
+                technicianId: 1 // Andres can only see technician with ID 1
+            },
+            {
+                id: 4,
+                username: 'thomas',
+                password: 'thomas123',
+                role: 'technician',
+                name: 'Thomas de Graaf',
+                technicianId: 2 // Thomas can only see technician with ID 2
+            },
+            {
+                id: 5,
+                username: 'joju',
+                password: 'joju123',
+                role: 'technician',
+                name: 'Joju Gregorious',
+                technicianId: 3 // Joju can only see technician with ID 3
+            },
+            {
+                id: 6,
+                username: 'viewer',
+                password: 'viewer123',
+                role: 'viewer',
+                name: 'View Only User',
+                technicianId: null // Viewer can see all but can't edit
+            }
+        ];
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Find user
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                // Store user session
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                
+                // Redirect to main application
+                window.location.href = 'calendar.html';
+            } else {
+                // Show error
+                const errorDiv = document.getElementById('errorMessage');
+                const errorText = document.getElementById('errorText');
+                errorText.textContent = 'Invalid username or password';
+                errorDiv.classList.remove('hidden');
+                
+                // Clear password field
+                document.getElementById('password').value = '';
+            }
+        });
+
+        // Check if already logged in
+        if (sessionStorage.getItem('currentUser')) {
+            window.location.href = 'calendar.html';
+        }
+    </script>
+</body>
+</html>
