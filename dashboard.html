@@ -479,6 +479,14 @@ let workOrders = [];
             }
         }
 
+        function parseYMD(dateStr) {
+            // Expecting YYYY-MM-DD, avoid timezone shifts
+            if (!dateStr || typeof dateStr !== 'string') return null;
+            const [y, m, d] = dateStr.split('-').map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d, 0, 0, 0, 0);
+        }
+
         function getWeeklyDataByOffset(offset) {
             const today = new Date();
             // Start from Monday for consistency
@@ -491,7 +499,8 @@ let workOrders = [];
             weekEnd.setDate(weekStart.getDate() + 6);
 
             const weekWorkOrders = workOrders.filter(wo => {
-                const workOrderDate = new Date(wo.startDate);
+                const workOrderDate = parseYMD(wo.startDate);
+                if (!workOrderDate) return false;
                 return workOrderDate >= weekStart && workOrderDate <= weekEnd;
             });
 
