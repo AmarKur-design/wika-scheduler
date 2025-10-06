@@ -43,13 +43,14 @@
                     <input id="workOrderNumberFilter" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Search by work order number..." onkeyup="filterWorkOrders()">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Status (multi-select)</label>
-                    <div id="statusFilterMulti" class="grid grid-cols-1 gap-1 text-sm">
-                        <label class="inline-flex items-center"><input type="checkbox" value="scheduled" onchange="filterWorkOrders()" class="mr-2">Scheduled</label>
-                        <label class="inline-flex items-center"><input type="checkbox" value="in-progress" onchange="filterWorkOrders()" class="mr-2">In Progress</label>
-                        <label class="inline-flex items-center"><input type="checkbox" value="completed" onchange="filterWorkOrders()" class="mr-2">Completed</label>
-                        <label class="inline-flex items-center"><input type="checkbox" value="waiting-on-certs" onchange="filterWorkOrders()" class="mr-2">Waiting on Certs</label>
-                    </div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="statusFilterMulti" multiple class="w-full border border-gray-300 rounded px-3 py-2" onchange="filterWorkOrders()" size="4">
+                        <option value="scheduled">Scheduled</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="waiting-on-certs">Waiting on Certs</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Tip: Hold Ctrl (Windows) or Cmd (Mac) to select multiple</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Technician</label>
@@ -287,14 +288,10 @@ let workOrders = [];
             document.getElementById('weekFilter').value = 'this-week';
             // Allow multi-select status via checkboxes (added below), fallback to single-select if not present
             const statusMulti = document.getElementById('statusFilterMulti');
-            if (statusMulti) {
-                // select default three statuses
-                Array.from(statusMulti.querySelectorAll('input[type="checkbox"]')).forEach(cb => {
-                    cb.checked = ['scheduled','in-progress','waiting-on-certs'].includes(cb.value);
+            if (statusMulti && statusMulti.tagName === 'SELECT') {
+                Array.from(statusMulti.options).forEach(opt => {
+                    opt.selected = ['scheduled','in-progress','waiting-on-certs'].includes(opt.value);
                 });
-            } else {
-                const single = document.getElementById('statusFilter');
-                if (single) single.value = '';
             }
             populateTechnicianFilter();
             filterWorkOrders();
@@ -357,7 +354,9 @@ let workOrders = [];
             // Support multi-select checkboxes; fallback to single-select if present
             let selectedStatuses = [];
             const multi = document.getElementById('statusFilterMulti');
-            if (multi) {
+            if (multi && multi.tagName === 'SELECT') {
+                selectedStatuses = Array.from(multi.selectedOptions).map(o => o.value);
+            } else if (multi) {
                 selectedStatuses = Array.from(multi.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
             } else {
                 const single = document.getElementById('statusFilter');
