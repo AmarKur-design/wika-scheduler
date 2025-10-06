@@ -146,8 +146,8 @@
                 // Store user session
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
                 
-                // Redirect to main application
-                window.location.href = 'calendar.html';
+                // Redirect to home
+                window.location.href = 'home.html';
             } else {
                 // Show error
                 const errorDiv = document.getElementById('errorMessage');
@@ -162,7 +162,7 @@
 
         // Check if already logged in
         if (sessionStorage.getItem('currentUser')) {
-            window.location.href = 'calendar.html';
+            window.location.href = 'home.html';
         }
     </script>
 </body>
