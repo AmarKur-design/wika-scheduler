@@ -214,7 +214,7 @@ let workOrders = [];
 
         function logout() {
             sessionStorage.removeItem('currentUser');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         }
 
         // Data management
@@ -504,10 +504,10 @@ let workOrders = [];
                 return workOrderDate >= weekStart && workOrderDate <= weekEnd;
             });
 
-            const scheduledHours = weekWorkOrders.reduce((sum, wo) => sum + wo.hoursRequired, 0);
+            const scheduledHours = weekWorkOrders.reduce((sum, wo) => sum + (parseFloat(wo.hoursRequired) || 0), 0);
             const completedHours = weekWorkOrders
                 .filter(wo => wo.status === 'completed')
-                .reduce((sum, wo) => sum + wo.hoursRequired, 0);
+                .reduce((sum, wo) => sum + (parseFloat(wo.hoursRequired) || 0), 0);
             
             const completionRate = scheduledHours > 0 ? (completedHours / scheduledHours * 100) : 0;
             
