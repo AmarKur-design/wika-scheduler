@@ -43,14 +43,13 @@
                     <input id="workOrderNumberFilter" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Search by work order number..." onkeyup="filterWorkOrders()">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <select id="statusFilter" class="w-full border border-gray-300 rounded px-3 py-2" onchange="filterWorkOrders()">
-                        <option value="">All Status</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="waiting-on-certs">Waiting on Certs</option>
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status (multi-select)</label>
+                    <div id="statusFilterMulti" class="grid grid-cols-1 gap-1 text-sm">
+                        <label class="inline-flex items-center"><input type="checkbox" value="scheduled" onchange="filterWorkOrders()" class="mr-2">Scheduled</label>
+                        <label class="inline-flex items-center"><input type="checkbox" value="in-progress" onchange="filterWorkOrders()" class="mr-2">In Progress</label>
+                        <label class="inline-flex items-center"><input type="checkbox" value="completed" onchange="filterWorkOrders()" class="mr-2">Completed</label>
+                        <label class="inline-flex items-center"><input type="checkbox" value="waiting-on-certs" onchange="filterWorkOrders()" class="mr-2">Waiting on Certs</label>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Technician</label>
@@ -284,6 +283,19 @@ let workOrders = [];
         document.addEventListener('DOMContentLoaded', function() {
             setupUserInfo();
             loadData();
+            // Preload defaults: this week + statuses Scheduled/In Progress/Waiting on Certs
+            document.getElementById('weekFilter').value = 'this-week';
+            // Allow multi-select status via checkboxes (added below), fallback to single-select if not present
+            const statusMulti = document.getElementById('statusFilterMulti');
+            if (statusMulti) {
+                // select default three statuses
+                Array.from(statusMulti.querySelectorAll('input[type="checkbox"]')).forEach(cb => {
+                    cb.checked = ['scheduled','in-progress','waiting-on-certs'].includes(cb.value);
+                });
+            } else {
+                const single = document.getElementById('statusFilter');
+                if (single) single.value = '';
+            }
             populateTechnicianFilter();
             filterWorkOrders();
             updateSummaryStats();
@@ -307,12 +319,6 @@ let workOrders = [];
             
             if (storedTechnicians) {
                 technicians = JSON.parse(storedTechnicians);
-            } else {
-                technicians = [
-                    { id: 1, name: 'Andres Correa', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
-                    { id: 2, name: 'Thomas de Graaf', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
-                    { id: 3, name: 'Joju Gregorious', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
-                ];
             }
             
             if (storedWorkOrders) {
@@ -348,7 +354,15 @@ let workOrders = [];
 
         function filterWorkOrders() {
             const workOrderNumberFilter = document.getElementById('workOrderNumberFilter').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
+            // Support multi-select checkboxes; fallback to single-select if present
+            let selectedStatuses = [];
+            const multi = document.getElementById('statusFilterMulti');
+            if (multi) {
+                selectedStatuses = Array.from(multi.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            } else {
+                const single = document.getElementById('statusFilter');
+                selectedStatuses = single && single.value ? [single.value] : [];
+            }
             const technicianFilter = document.getElementById('technicianFilter').value;
             const customerFilter = document.getElementById('customerFilter').value.toLowerCase();
             const dateFilter = document.getElementById('dateFilter').value;
@@ -356,7 +370,7 @@ let workOrders = [];
             
             filteredWorkOrders = workOrders.filter(workOrder => {
                 const matchesWorkOrderNumber = !workOrderNumberFilter || workOrder.workOrderNumber.toLowerCase().includes(workOrderNumberFilter);
-                const matchesStatus = !statusFilter || workOrder.status === statusFilter;
+                const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(workOrder.status || 'scheduled');
                 const matchesTechnician = !technicianFilter || workOrder.technicianId.toString() === technicianFilter;
                 const matchesCustomer = !customerFilter || workOrder.customerName.toLowerCase().includes(customerFilter);
                 const matchesDate = !dateFilter || workOrder.startDate === dateFilter;
