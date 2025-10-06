@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WIKA Calibration - Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="min-h-screen bg-gray-100">
+  <div class="container mx-auto px-4 py-10">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800">WIKA Calibration</h1>
+        <p class="text-sm text-gray-600">Welcome, <span id="userName"></span> (<span id="userRole"></span>)</p>
+      </div>
+      <div class="space-x-3">
+        <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+          <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <a href="calendar.html" class="block bg-white rounded-xl shadow hover:shadow-md transition p-8 text-center">
+        <div class="text-blue-600 text-4xl mb-3"><i class="fas fa-calendar-alt"></i></div>
+        <div class="text-xl font-semibold">Scheduler</div>
+        <div class="text-gray-500 mt-1">Open the technician scheduler</div>
+      </a>
+
+      <button disabled class="block bg-white rounded-xl shadow p-8 text-center opacity-60 cursor-not-allowed">
+        <div class="text-emerald-600 text-4xl mb-3"><i class="fas fa-vial"></i></div>
+        <div class="text-xl font-semibold">Calibration</div>
+        <div class="text-gray-500 mt-1">Coming soon</div>
+      </button>
+
+      <button disabled class="block bg-white rounded-xl shadow p-8 text-center opacity-60 cursor-not-allowed">
+        <div class="text-amber-600 text-4xl mb-3"><i class="fas fa-warehouse"></i></div>
+        <div class="text-xl font-semibold">Warehousing</div>
+        <div class="text-gray-500 mt-1">Coming soon</div>
+      </button>
+
+      <button disabled class="block bg-white rounded-xl shadow p-8 text-center opacity-60 cursor-not-allowed">
+        <div class="text-purple-600 text-4xl mb-3"><i class="fas fa-chart-line"></i></div>
+        <div class="text-xl font-semibold">Dashboard</div>
+        <div class="text-gray-500 mt-1">Coming soon</div>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (!currentUser) {
+      window.location.href = 'index.html';
+    }
+    document.getElementById('userName').textContent = currentUser?.name || '';
+    document.getElementById('userRole').textContent = currentUser?.role ? (currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1)) : '';
+
+    function logout() {
+      sessionStorage.removeItem('currentUser');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
