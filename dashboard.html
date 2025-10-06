@@ -127,10 +127,23 @@
         </div>
 
         <!-- Weekly Performance -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">This Week's Performance</h2>
-                <div class="space-y-4">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold">
+                    <span id="weekTitle">This Week's Performance</span>
+                </h2>
+                <div class="flex items-center space-x-2">
+                    <button onclick="changeWeek(-1)" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded" title="Previous week">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button onclick="resetWeek()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded" title="Current week">This Week</button>
+                    <button onclick="changeWeek(1)" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded" title="Next week">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <input type="date" id="weekDatePicker" onchange="jumpToDate(this.value)" class="border border-gray-300 rounded px-2 py-1 text-sm" title="Jump to week of selected date" />
+                </div>
+            </div>
+            <div class="space-y-4">
                     <div class="flex justify-between items-center">
                         <span class="text-sm font-medium text-gray-600">Total Hours Scheduled</span>
                         <span id="thisWeekScheduled" class="text-lg font-bold text-blue-600">0h</span>
@@ -140,33 +153,16 @@
                         <span id="thisWeekCompleted" class="text-lg font-bold text-green-600">0h</span>
                     </div>
                     <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Available Capacity</span>
+                        <span id="thisWeekCapacity" class="text-lg font-bold text-emerald-600">0h</span>
+                    </div>
+                    <div class="flex justify-between items-center">
                         <span class="text-sm font-medium text-gray-600">Completion Rate</span>
                         <span id="thisWeekRate" class="text-lg font-bold text-purple-600">0%</span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div id="thisWeekProgress" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
                     </div>
-                </div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">Next Week's Forecast</h2>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-gray-600">Hours Scheduled</span>
-                        <span id="nextWeekScheduled" class="text-lg font-bold text-blue-600">0h</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-gray-600">Available Capacity</span>
-                        <span id="nextWeekCapacity" class="text-lg font-bold text-green-600">0h</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium text-gray-600">Capacity Utilization</span>
-                        <span id="nextWeekUtilization" class="text-lg font-bold text-purple-600">0%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div id="nextWeekProgress" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -228,17 +224,6 @@ let workOrders = [];
             
             if (storedTechnicians) {
                 technicians = JSON.parse(storedTechnicians);
-                
-                // Filter technicians based on user role
-                if (currentUser.role === 'technician' && currentUser.technicianId) {
-                    technicians = technicians.filter(t => t.id === currentUser.technicianId);
-                }
-            } else {
-                technicians = [
-                    { id: 1, name: 'Andres Correa', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
-                    { id: 2, name: 'Thomas de Graaf', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
-                    { id: 3, name: 'Joju Gregorious', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
-                ];
                 
                 // Filter technicians based on user role
                 if (currentUser.role === 'technician' && currentUser.technicianId) {
@@ -378,21 +363,59 @@ let workOrders = [];
             });
         }
 
+        let weekOffset = 0; // 0 = current week, 1 = next week, -1 = previous week
+
+        function changeWeek(delta) {
+            // Limit to viewing 4 weeks ahead and 4 weeks back
+            const next = weekOffset + delta;
+            if (next < -4 || next > 4) return;
+            weekOffset = next;
+            updateWeeklyPerformance();
+        }
+
+        function resetWeek() {
+            weekOffset = 0;
+            updateWeeklyPerformance();
+        }
+
         function updateWeeklyPerformance() {
-            const thisWeekData = getWeeklyData('this-week');
-            const nextWeekData = getWeeklyData('next-week');
+            const data = getWeeklyDataByOffset(weekOffset);
 
-            // This week
-            document.getElementById('thisWeekScheduled').textContent = thisWeekData.scheduledHours.toFixed(1) + 'h';
-            document.getElementById('thisWeekCompleted').textContent = thisWeekData.completedHours.toFixed(1) + 'h';
-            document.getElementById('thisWeekRate').textContent = thisWeekData.completionRate.toFixed(1) + '%';
-            document.getElementById('thisWeekProgress').style.width = thisWeekData.completionRate + '%';
+            const title = weekOffset === 0 ? "This Week's Performance" :
+                (weekOffset > 0 ? `Week +${weekOffset}` : `Week ${weekOffset}`);
+            document.getElementById('weekTitle').textContent = title;
 
-            // Next week
-            document.getElementById('nextWeekScheduled').textContent = nextWeekData.scheduledHours.toFixed(1) + 'h';
-            document.getElementById('nextWeekCapacity').textContent = nextWeekData.availableCapacity.toFixed(1) + 'h';
-            document.getElementById('nextWeekUtilization').textContent = nextWeekData.utilization.toFixed(1) + '%';
-            document.getElementById('nextWeekProgress').style.width = nextWeekData.utilization + '%';
+            document.getElementById('thisWeekScheduled').textContent = data.scheduledHours.toFixed(1) + 'h';
+            document.getElementById('thisWeekCompleted').textContent = data.completedHours.toFixed(1) + 'h';
+            document.getElementById('thisWeekCapacity').textContent = data.availableCapacity.toFixed(1) + 'h';
+            document.getElementById('thisWeekRate').textContent = data.completionRate.toFixed(1) + '%';
+            document.getElementById('thisWeekProgress').style.width = data.completionRate + '%';
+        }
+
+        function jumpToDate(dateStr) {
+            if (!dateStr) return;
+            const target = new Date(dateStr);
+            const today = new Date();
+            // Normalize to the Monday of each week
+            function toMonday(d) {
+                const dd = new Date(d);
+                const day = dd.getDay();
+                const diffToMonday = day === 0 ? -6 : 1 - day;
+                dd.setDate(dd.getDate() + diffToMonday);
+                dd.setHours(0,0,0,0);
+                return dd;
+            }
+            const baseMonday = toMonday(today);
+            const targetMonday = toMonday(target);
+            const diffMs = targetMonday - baseMonday;
+            const weeks = Math.round(diffMs / (1000 * 60 * 60 * 24 * 7));
+            if (weeks < -4 || weeks > 4) {
+                // clamp to range
+                weekOffset = Math.max(-4, Math.min(4, weeks));
+            } else {
+                weekOffset = weeks;
+            }
+            updateWeeklyPerformance();
         }
 
         function updateStatusDistribution() {
@@ -456,24 +479,16 @@ let workOrders = [];
             }
         }
 
-        function getWeeklyData(weekType) {
+        function getWeeklyDataByOffset(offset) {
             const today = new Date();
-            let weekStart, weekEnd;
-            
-            switch(weekType) {
-                case 'this-week':
-                    weekStart = new Date(today);
-                    weekStart.setDate(today.getDate() - today.getDay());
-                    weekEnd = new Date(weekStart);
-                    weekEnd.setDate(weekStart.getDate() + 6);
-                    break;
-                case 'next-week':
-                    weekStart = new Date(today);
-                    weekStart.setDate(today.getDate() - today.getDay() + 7);
-                    weekEnd = new Date(weekStart);
-                    weekEnd.setDate(weekStart.getDate() + 6);
-                    break;
-            }
+            // Start from Monday for consistency
+            const monday = new Date(today);
+            const day = monday.getDay();
+            const diffToMonday = day === 0 ? -6 : 1 - day; // Sunday -> back 6, else to Monday
+            monday.setDate(monday.getDate() + diffToMonday + (offset * 7));
+            const weekStart = new Date(monday);
+            const weekEnd = new Date(monday);
+            weekEnd.setDate(weekStart.getDate() + 6);
 
             const weekWorkOrders = workOrders.filter(wo => {
                 const workOrderDate = new Date(wo.startDate);
