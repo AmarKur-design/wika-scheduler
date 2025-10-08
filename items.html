@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Items - WIKA Calibration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 0.5rem; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Items Database</h1>
+                <p class="text-sm text-gray-600">Welcome, <span id="userName"></span> (<span id="userRole"></span>)</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="database.html" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Database
+                </a>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-4 mb-6">
+            <button onclick="showAddItemModal()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                <i class="fas fa-plus mr-2"></i>Add Item
+            </button>
+            <button onclick="document.getElementById('excelFileInput').click()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                <i class="fas fa-file-excel mr-2"></i>Import from Excel
+            </button>
+            <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display: none;" onchange="importExcel(event)">
+            <button onclick="exportToExcel()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                <i class="fas fa-download mr-2"></i>Export to Excel
+            </button>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-6">
+            <input type="text" id="searchInput" placeholder="Search items..." class="w-full border border-gray-300 rounded px-4 py-2" onkeyup="filterItems()">
+        </div>
+
+        <!-- Items Table -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold">All Items</h2>
+                <p id="itemCount" class="text-sm text-gray-600 mt-1">0 items</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Make</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Items will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Item Modal -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-4">Add Item</h2>
+            <form id="itemForm" onsubmit="saveItem(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                    <div class="flex space-x-2">
+                        <input id="barcode" type="text" required class="flex-1 border border-gray-300 rounded px-3 py-2" placeholder="Auto-generated or enter custom">
+                        <button type="button" onclick="generateBarcode()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-barcode mr-2"></i>Generate
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Unique identifier for warehouse scanning</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
+                    <input id="make" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Manufacturer">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                    <input id="model" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Model Number">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
+                    <input id="serialNumber" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Serial Number">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeItemModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+// Check if user is logged in
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+if (!currentUser) {
+    window.location.href = 'index.html';
+}
+
+let items = [];
+let filteredItems = [];
+let editingItemId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupUserInfo();
+    loadItems();
+    renderItemsTable();
+});
+
+function setupUserInfo() {
+    document.getElementById('userName').textContent = currentUser.name;
+    document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+}
+
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'index.html';
+}
+
+function loadItems() {
+    const stored = localStorage.getItem('items');
+    if (stored) {
+        items = JSON.parse(stored);
+    }
+    filteredItems = [...items];
+}
+
+function saveItems() {
+    localStorage.setItem('items', JSON.stringify(items));
+}
+
+function filterItems() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    filteredItems = items.filter(i => 
+        i.barcode.toLowerCase().includes(search) ||
+        i.make.toLowerCase().includes(search) ||
+        i.model.toLowerCase().includes(search) ||
+        i.serialNumber.toLowerCase().includes(search)
+    );
+    renderItemsTable();
+}
+
+function printBarcode(barcode) {
+    // Create a printable barcode label
+    const printWindow = window.open('', '', 'width=400,height=300');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Print Barcode</title>
+            <style>
+                body { font-family: Arial; text-align: center; padding: 20px; }
+                .barcode { font-size: 24px; font-weight: bold; margin: 20px 0; letter-spacing: 2px; }
+                .label { font-size: 14px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="label">WIKA Calibration</div>
+            <div class="barcode">${barcode}</div>
+            <div class="label">Scan for warehouse tracking</div>
+            <script>window.print(); window.close();</script>
+        </body>
+        </html>
+    `);
+}
+
+function renderItemsTable() {
+    const tbody = document.getElementById('itemsTableBody');
+    tbody.innerHTML = '';
+    
+    document.getElementById('itemCount').textContent = `${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''}`;
+    
+    if (filteredItems.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-2"></i>
+                    <p>No items found</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    filteredItems.forEach(item => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="flex items-center">
+                    <i class="fas fa-barcode text-gray-400 mr-2"></i>
+                    ${item.barcode}
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${item.make}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${item.model}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${item.serialNumber}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <button onclick="printBarcode('${item.barcode}')" class="text-purple-600 hover:text-purple-900 mr-2" title="Print Barcode">
+                    <i class="fas fa-print"></i>
+                </button>
+                <button onclick="editItem(${item.id})" class="text-blue-600 hover:text-blue-900 mr-2">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button onclick="deleteItem(${item.id})" class="text-red-600 hover:text-red-900">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function generateBarcode() {
+    // Generate a unique barcode: WIKA + timestamp + random
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const barcode = `WIKA${timestamp}${random}`;
+    document.getElementById('barcode').value = barcode;
+}
+
+function showAddItemModal() {
+    editingItemId = null;
+    document.getElementById('modalTitle').textContent = 'Add Item';
+    document.getElementById('itemForm').reset();
+    generateBarcode(); // Auto-generate barcode for new items
+    document.getElementById('itemModal').classList.add('show');
+}
+
+function editItem(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    editingItemId = itemId;
+    document.getElementById('modalTitle').textContent = 'Edit Item';
+    document.getElementById('barcode').value = item.barcode;
+    document.getElementById('make').value = item.make;
+    document.getElementById('model').value = item.model;
+    document.getElementById('serialNumber').value = item.serialNumber;
+    document.getElementById('itemModal').classList.add('show');
+}
+
+function saveItem(event) {
+    event.preventDefault();
+    
+    const itemData = {
+        id: editingItemId || Date.now(),
+        barcode: document.getElementById('barcode').value,
+        make: document.getElementById('make').value,
+        model: document.getElementById('model').value,
+        serialNumber: document.getElementById('serialNumber').value
+    };
+    
+    if (editingItemId) {
+        const index = items.findIndex(i => i.id === editingItemId);
+        if (index >= 0) {
+            items[index] = itemData;
+        }
+    } else {
+        items.push(itemData);
+    }
+    
+    saveItems();
+    filterItems();
+    closeItemModal();
+    alert('Item saved successfully!');
+}
+
+function deleteItem(itemId) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        items = items.filter(i => i.id !== itemId);
+        saveItems();
+        filterItems();
+        alert('Item deleted successfully!');
+    }
+}
+
+function closeItemModal() {
+    document.getElementById('itemModal').classList.remove('show');
+    document.getElementById('itemForm').reset();
+    editingItemId = null;
+}
+
+function importExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+            
+            let imported = 0;
+            jsonData.forEach(row => {
+                if (row['Make'] || row['Model'] || row['Serial Number']) {
+                    const timestamp = Date.now().toString().slice(-8);
+                    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                    items.push({
+                        id: Date.now() + imported,
+                        barcode: row['Barcode'] || `WIKA${timestamp}${random}${imported}`,
+                        make: row['Make'] || '',
+                        model: row['Model'] || '',
+                        serialNumber: row['Serial Number'] || row['Serial'] || ''
+                    });
+                    imported++;
+                }
+            });
+            
+            saveItems();
+            filterItems();
+            alert(`Successfully imported ${imported} items!`);
+        } catch (error) {
+            alert('Error importing Excel file. Please ensure it has columns: Make, Model, Serial Number');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+}
+
+function exportToExcel() {
+    const exportData = items.map(i => ({
+        'Barcode': i.barcode,
+        'Make': i.make,
+        'Model': i.model,
+        'Serial Number': i.serialNumber
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Items');
+    XLSX.writeFile(wb, `Items_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+</script>
+</body>
+</html>
+

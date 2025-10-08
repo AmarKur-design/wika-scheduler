@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Database - WIKA Calibration</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="min-h-screen bg-gray-100">
+  <div class="container mx-auto px-4 py-10">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800">Database Management</h1>
+        <p class="text-sm text-gray-600">Welcome, <span id="userName"></span> (<span id="userRole"></span>)</p>
+      </div>
+      <div class="space-x-3">
+        <a href="home.html" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+          <i class="fas fa-home mr-2"></i>Home
+        </a>
+        <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+          <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      <a href="customers.html" class="block bg-white rounded-xl shadow hover:shadow-md transition p-8 text-center">
+        <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-building"></i></div>
+        <div class="text-2xl font-semibold">Customers</div>
+        <div class="text-gray-500 mt-2">Manage customer database</div>
+      </a>
+
+      <a href="items.html" class="block bg-white rounded-xl shadow hover:shadow-md transition p-8 text-center">
+        <div class="text-green-600 text-5xl mb-4"><i class="fas fa-boxes"></i></div>
+        <div class="text-2xl font-semibold">Items</div>
+        <div class="text-gray-500 mt-2">Manage items database</div>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (!currentUser) {
+      window.location.href = 'index.html';
+    }
+    document.getElementById('userName').textContent = currentUser?.name || '';
+    document.getElementById('userRole').textContent = currentUser?.role ? (currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1)) : '';
+
+    function logout() {
+      sessionStorage.removeItem('currentUser');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
+
