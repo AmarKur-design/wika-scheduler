@@ -39,44 +39,89 @@
             </div>
         </div>
 
-        <!-- INBOUND Section (Top Half) -->
+        <!-- INBOUND Section - Full Width at Top -->
         <div class="bg-white rounded-lg shadow mb-6">
             <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-semibold text-blue-900">Inbound Items</h2>
-                        <p class="text-sm text-blue-700">Items received for calibration</p>
+                        <h2 class="text-xl font-semibold text-blue-900">Inbound</h2>
+                        <p class="text-sm text-blue-700">Items received - route to Pending, Quotation, or Lab</p>
                     </div>
                     <button onclick="showAddInboundModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
                         <i class="fas fa-plus mr-2"></i>Add Item
                     </button>
                 </div>
             </div>
-            <div id="inboundList" class="p-4 space-y-3 max-h-[500px] overflow-y-auto">
+            <div id="inboundList" class="p-4 space-y-3 max-h-[350px] overflow-y-auto">
                 <!-- Inbound items will be rendered here -->
             </div>
         </div>
 
-        <!-- OUTBOUND Section (Bottom Half) -->
-        <div class="bg-white rounded-lg shadow">
+        <!-- OUTBOUND Section - Full Width -->
+        <div class="bg-white rounded-lg shadow mb-6">
             <div class="px-6 py-4 border-b border-gray-200 bg-orange-50">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-semibold text-orange-900">Outbound Items</h2>
-                        <p class="text-sm text-orange-700">Items ready for return/pickup</p>
+                        <h2 class="text-xl font-semibold text-orange-900">Outbound</h2>
+                        <p class="text-sm text-orange-700">Items ready for pickup</p>
                     </div>
                 </div>
             </div>
-            <div id="outboundList" class="p-4 space-y-3 max-h-[500px] overflow-y-auto">
+            <div id="outboundList" class="p-4 space-y-3 max-h-[350px] overflow-y-auto">
                 <!-- Outbound items will be rendered here -->
+            </div>
+        </div>
+
+        <!-- PENDING Section - Full Width -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 bg-yellow-50">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-yellow-900">Pending</h2>
+                        <p class="text-sm text-yellow-700">Awaiting payment or other items</p>
+                    </div>
+                </div>
+            </div>
+            <div id="pendingList" class="p-4 space-y-3 max-h-[350px] overflow-y-auto">
+                <!-- Pending items will be rendered here -->
+            </div>
+        </div>
+
+        <!-- QUOTATION SHELF Section - Full Width -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-purple-900">Quotation Shelf</h2>
+                        <p class="text-sm text-purple-700">Items for quotation</p>
+                    </div>
+                </div>
+            </div>
+            <div id="quotationList" class="p-4 space-y-3 max-h-[350px] overflow-y-auto">
+                <!-- Quotation items will be rendered here -->
+            </div>
+        </div>
+
+        <!-- LAB Section - Full Width -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-green-900">Lab</h2>
+                        <p class="text-sm text-green-700">Items in calibration</p>
+                    </div>
+                </div>
+            </div>
+            <div id="labList" class="p-4 space-y-3 max-h-[350px] overflow-y-auto">
+                <!-- Lab items will be rendered here -->
             </div>
         </div>
     </div>
 
-    <!-- Add Inbound Item Modal -->
+    <!-- Add Item Modal -->
     <div id="inboundModal" class="modal">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4">Add Inbound Item</h2>
+            <h2 class="text-2xl font-bold mb-4">Add Item to Inbound</h2>
             <form id="inboundForm" onsubmit="saveInboundItem(event)">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
@@ -225,12 +270,18 @@ const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name:
 
 let inboundItems = [];
 let outboundItems = [];
+let pendingItems = [];
+let quotationItems = [];
+let labItems = [];
 let collectionHistory = [];
 let html5QrCode = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     setupUserInfo();
     loadWarehouseData();
+    renderPendingList();
+    renderQuotationList();
+    renderLabList();
     renderInboundList();
     renderOutboundList();
 });
@@ -248,6 +299,9 @@ function logout() {
 function loadWarehouseData() {
     const storedInbound = localStorage.getItem('inboundItems');
     const storedOutbound = localStorage.getItem('outboundItems');
+    const storedPending = localStorage.getItem('pendingItems');
+    const storedQuotation = localStorage.getItem('quotationItems');
+    const storedLab = localStorage.getItem('labItems');
     const storedHistory = localStorage.getItem('collectionHistory');
     
     if (storedInbound) {
@@ -255,6 +309,15 @@ function loadWarehouseData() {
     }
     if (storedOutbound) {
         outboundItems = JSON.parse(storedOutbound);
+    }
+    if (storedPending) {
+        pendingItems = JSON.parse(storedPending);
+    }
+    if (storedQuotation) {
+        quotationItems = JSON.parse(storedQuotation);
+    }
+    if (storedLab) {
+        labItems = JSON.parse(storedLab);
     }
     if (storedHistory) {
         collectionHistory = JSON.parse(storedHistory);
@@ -264,7 +327,186 @@ function loadWarehouseData() {
 function saveWarehouseData() {
     localStorage.setItem('inboundItems', JSON.stringify(inboundItems));
     localStorage.setItem('outboundItems', JSON.stringify(outboundItems));
+    localStorage.setItem('pendingItems', JSON.stringify(pendingItems));
+    localStorage.setItem('quotationItems', JSON.stringify(quotationItems));
+    localStorage.setItem('labItems', JSON.stringify(labItems));
     localStorage.setItem('collectionHistory', JSON.stringify(collectionHistory));
+}
+
+// Render Functions for New Sections
+function renderPendingList() {
+    const container = document.getElementById('pendingList');
+    
+    if (pendingItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-clock text-4xl mb-2"></i>
+                <p class="text-sm">No pending items</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+                <tr class="border-b border-gray-200">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">PO/Quote</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Received</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                ${pendingItems.map((item, index) => `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 text-sm text-gray-900">${item.companyName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            ${item.contactPerson ? `<div>${item.contactPerson}</div>` : ''}
+                            ${item.phoneNumber ? `<div class="text-xs">${item.phoneNumber}</div>` : ''}
+                            ${!item.contactPerson && !item.phoneNumber ? '-' : ''}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.poNumber || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.receivedDate).toLocaleDateString()}</td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex justify-end space-x-1">
+                                <button onclick="movePendingToInbound(${index})" title="Move to Inbound" class="bg-blue-500 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-inbox"></i>
+                                </button>
+                                <button onclick="movePendingToOutbound(${index})" title="Move to Outbound" class="bg-orange-500 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-truck"></i>
+                                </button>
+                                <button onclick="movePendingToQuotation(${index})" title="Move to Quotation" class="bg-purple-500 hover:bg-purple-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-file-invoice"></i>
+                                </button>
+                                <button onclick="movePendingToLab(${index})" title="Create Work Order" class="bg-green-500 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-flask"></i>
+                                </button>
+                                <button onclick="deletePending(${index})" title="Delete" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderQuotationList() {
+    const container = document.getElementById('quotationList');
+    
+    if (quotationItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-file-invoice text-4xl mb-2"></i>
+                <p class="text-sm">No items for quotation</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+                <tr class="border-b border-gray-200">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">PO/Quote</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Received</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                ${quotationItems.map((item, index) => `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 text-sm text-gray-900">${item.companyName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            ${item.contactPerson ? `<div>${item.contactPerson}</div>` : ''}
+                            ${item.phoneNumber ? `<div class="text-xs">${item.phoneNumber}</div>` : ''}
+                            ${!item.contactPerson && !item.phoneNumber ? '-' : ''}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.poNumber || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.receivedDate).toLocaleDateString()}</td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex justify-end space-x-1">
+                                <button onclick="moveQuotationToLab(${index})" title="Create Work Order" class="bg-green-500 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-flask"></i>
+                                </button>
+                                <button onclick="moveQuotationToOutbound(${index})" title="Move to Outbound" class="bg-orange-500 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-truck"></i>
+                                </button>
+                                <button onclick="deleteQuotation(${index})" title="Delete" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderLabList() {
+    const container = document.getElementById('labList');
+    
+    if (labItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-flask text-4xl mb-2"></i>
+                <p class="text-sm">No items in lab</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+                <tr class="border-b border-gray-200">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Work Order</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">In Lab Since</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                ${labItems.map((item, index) => `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 text-sm text-gray-900">${item.companyName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
+                        <td class="px-4 py-3 text-sm text-blue-600">${item.workOrderNumber || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.labDate).toLocaleDateString()}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="deleteLab(${index})" title="Delete" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
 }
 
 function renderInboundList() {
@@ -315,14 +557,20 @@ function renderInboundList() {
                         <td class="px-4 py-3 text-sm text-gray-600">${item.poNumber || '-'}</td>
                         <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.receivedDate).toLocaleDateString()}<br>${new Date(item.receivedDate).toLocaleTimeString()}</td>
                         <td class="px-4 py-3 text-right">
-                            <div class="flex justify-end space-x-2">
-                                <button onclick="convertToWorkOrder(${index})" title="Convert to Work Order" class="bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
-                                    <i class="fas fa-arrow-right"></i>
+                            <div class="flex justify-end space-x-1">
+                                <button onclick="moveInboundToPending(${index})" title="Move to Pending" class="bg-yellow-500 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-clock"></i>
                                 </button>
-                                <button onclick="moveToOutbound(${index})" title="Move to Outbound" class="bg-orange-500 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm">
+                                <button onclick="moveInboundToQuotation(${index})" title="Move to Quotation" class="bg-purple-500 hover:bg-purple-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-file-invoice"></i>
+                                </button>
+                                <button onclick="moveInboundToLab(${index})" title="Create Work Order" class="bg-green-500 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-flask"></i>
+                                </button>
+                                <button onclick="moveInboundToOutbound(${index})" title="Move to Outbound" class="bg-orange-500 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs">
                                     <i class="fas fa-truck"></i>
                                 </button>
-                                <button onclick="deleteInbound(${index})" title="Delete" class="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                                <button onclick="deleteInbound(${index})" title="Delete" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -457,7 +705,7 @@ function saveInboundItem(event) {
         }
     }
     
-    const inboundItem = {
+    const newItem = {
         id: Date.now(),
         companyName: document.getElementById('companyName').value,
         woNumber: document.getElementById('woNumber').value,
@@ -473,31 +721,55 @@ function saveInboundItem(event) {
         status: 'inbound'
     };
     
-    inboundItems.push(inboundItem);
+    inboundItems.push(newItem);
     saveWarehouseData();
     
     // Add to items database if it doesn't exist
     if (!existingItem) {
-        const newItem = {
+        const itemForDb = {
             barcode: barcode || `WIKA${Date.now()}${Math.floor(Math.random() * 1000)}`,
             make: make,
             model: model,
             serialNumber: serialNumber
         };
-        items.push(newItem);
+        items.push(itemForDb);
         localStorage.setItem('items', JSON.stringify(items));
     }
     
     renderInboundList();
     closeInboundModal();
-    alert('Item added to inbound successfully and saved to items database!');
+    alert('Item added to Inbound section successfully!');
 }
 
-function convertToWorkOrder(index) {
+// Movement Functions Between Sections
+function moveInboundToPending(index) {
     const item = inboundItems[index];
-    if (!item) return;
+    item.status = 'pending';
+    item.pendingDate = new Date().toISOString();
+    pendingItems.push(item);
+    inboundItems.splice(index, 1);
+    saveWarehouseData();
+    renderInboundList();
+    renderPendingList();
+    alert('Item moved to Pending!');
+}
+
+function moveInboundToQuotation(index) {
+    const item = inboundItems[index];
+    item.status = 'quotation';
+    item.quotationDate = new Date().toISOString();
+    quotationItems.push(item);
+    inboundItems.splice(index, 1);
+    saveWarehouseData();
+    renderInboundList();
+    renderQuotationList();
+    alert('Item moved to Quotation Shelf!');
+}
+
+function moveInboundToLab(index) {
+    const item = inboundItems[index];
     
-    // Create URL with pre-filled data
+    // Create URL with pre-filled data and redirect to calendar
     const params = new URLSearchParams({
         companyName: item.companyName,
         woNumber: item.woNumber || '',
@@ -510,10 +782,163 @@ function convertToWorkOrder(index) {
         email: item.email || '',
         poNumber: item.poNumber || '',
         from: 'warehouse',
-        itemId: item.id
+        itemId: item.id,
+        source: 'inbound'
     });
     
+    // Store item temporarily
+    sessionStorage.setItem('warehouseToLabItem', JSON.stringify(item));
+    sessionStorage.setItem('warehouseToLabIndex', index);
+    sessionStorage.setItem('warehouseToLabSource', 'inbound');
+    
     window.location.href = `calendar.html?${params.toString()}`;
+}
+
+function moveInboundToOutbound(index) {
+    if (confirm('Move this item directly to outbound (ready for pickup)?')) {
+        const item = inboundItems[index];
+        item.outboundDate = new Date().toISOString();
+        item.status = 'outbound';
+        
+        outboundItems.push(item);
+        inboundItems.splice(index, 1);
+        
+        saveWarehouseData();
+        renderInboundList();
+        renderOutboundList();
+        alert('Item moved to outbound!');
+    }
+}
+
+function movePendingToInbound(index) {
+    const item = pendingItems[index];
+    item.status = 'inbound';
+    inboundItems.push(item);
+    pendingItems.splice(index, 1);
+    saveWarehouseData();
+    renderPendingList();
+    renderInboundList();
+    alert('Item moved to Inbound!');
+}
+
+function movePendingToOutbound(index) {
+    if (confirm('Move this item directly to outbound (ready for pickup)?')) {
+        const item = pendingItems[index];
+        item.status = 'outbound';
+        item.outboundDate = new Date().toISOString();
+        outboundItems.push(item);
+        pendingItems.splice(index, 1);
+        saveWarehouseData();
+        renderPendingList();
+        renderOutboundList();
+        alert('Item moved to Outbound!');
+    }
+}
+
+function movePendingToQuotation(index) {
+    const item = pendingItems[index];
+    item.status = 'quotation';
+    item.quotationDate = new Date().toISOString();
+    quotationItems.push(item);
+    pendingItems.splice(index, 1);
+    saveWarehouseData();
+    renderPendingList();
+    renderQuotationList();
+    alert('Item moved to Quotation Shelf!');
+}
+
+function movePendingToLab(index) {
+    const item = pendingItems[index];
+    
+    // Create URL with pre-filled data and redirect to calendar
+    const params = new URLSearchParams({
+        companyName: item.companyName,
+        woNumber: item.woNumber || '',
+        workType: `${item.make} ${item.model}`,
+        itemMake: item.make || '',
+        itemModel: item.model || '',
+        itemSerialNumber: item.serialNumber || '',
+        contactPerson: item.contactPerson || '',
+        phoneNumber: item.phoneNumber || '',
+        email: item.email || '',
+        poNumber: item.poNumber || '',
+        from: 'warehouse',
+        itemId: item.id,
+        source: 'pending'
+    });
+    
+    // Store item temporarily
+    sessionStorage.setItem('warehouseToLabItem', JSON.stringify(item));
+    sessionStorage.setItem('warehouseToLabIndex', index);
+    sessionStorage.setItem('warehouseToLabSource', 'pending');
+    
+    window.location.href = `calendar.html?${params.toString()}`;
+}
+
+function moveQuotationToLab(index) {
+    const item = quotationItems[index];
+    
+    // Create URL with pre-filled data and redirect to calendar
+    const params = new URLSearchParams({
+        companyName: item.companyName,
+        woNumber: item.woNumber || '',
+        workType: `${item.make} ${item.model}`,
+        itemMake: item.make || '',
+        itemModel: item.model || '',
+        itemSerialNumber: item.serialNumber || '',
+        contactPerson: item.contactPerson || '',
+        phoneNumber: item.phoneNumber || '',
+        email: item.email || '',
+        poNumber: item.poNumber || '',
+        from: 'warehouse',
+        itemId: item.id,
+        source: 'quotation'
+    });
+    
+    // Store item temporarily
+    sessionStorage.setItem('warehouseToLabItem', JSON.stringify(item));
+    sessionStorage.setItem('warehouseToLabIndex', index);
+    sessionStorage.setItem('warehouseToLabSource', 'quotation');
+    
+    window.location.href = `calendar.html?${params.toString()}`;
+}
+
+function moveQuotationToOutbound(index) {
+    if (confirm('Move this item directly to outbound (ready for pickup)?')) {
+        const item = quotationItems[index];
+        item.status = 'outbound';
+        item.outboundDate = new Date().toISOString();
+        outboundItems.push(item);
+        quotationItems.splice(index, 1);
+        saveWarehouseData();
+        renderQuotationList();
+        renderOutboundList();
+        alert('Item moved to Outbound!');
+    }
+}
+
+function deletePending(index) {
+    if (confirm('Delete this pending item?')) {
+        pendingItems.splice(index, 1);
+        saveWarehouseData();
+        renderPendingList();
+    }
+}
+
+function deleteQuotation(index) {
+    if (confirm('Delete this quotation item?')) {
+        quotationItems.splice(index, 1);
+        saveWarehouseData();
+        renderQuotationList();
+    }
+}
+
+function deleteLab(index) {
+    if (confirm('Delete this lab item? (Note: This will not delete the associated work order)')) {
+        labItems.splice(index, 1);
+        saveWarehouseData();
+        renderLabList();
+    }
 }
 
 function moveToOutbound(index) {

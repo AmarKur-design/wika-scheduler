@@ -97,6 +97,10 @@
                 <i class="fas fa-chart-line"></i>
                 <span>Dashboard</span>
             </a>
+            <a href="warehouse.html" class="sidebar-btn">
+                <i class="fas fa-warehouse"></i>
+                <span>Warehouse</span>
+            </a>
             <button onclick="logout()" class="sidebar-btn" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
@@ -1051,6 +1055,9 @@ function createWorkOrder(event) {
         // Update existing work order
         const workOrderIndex = workOrders.findIndex(wo => wo.id == editingId);
         if (workOrderIndex !== -1) {
+            const oldStatus = workOrders[workOrderIndex].status;
+            const newStatus = document.getElementById('workOrderStatus').value;
+            
             workOrders[workOrderIndex] = {
                 ...workOrders[workOrderIndex],
                 workOrderNumber: document.getElementById('workOrderNumber').value,
@@ -1061,7 +1068,7 @@ function createWorkOrder(event) {
                 hoursRequired: hoursRequired,
                 startDate: startDate,
                 startTime: startTime,
-                status: document.getElementById('workOrderStatus').value,
+                status: newStatus,
                 location: document.getElementById('workOrderLocation').value,
                 certificationType: document.getElementById('certificationType').value,
                 notes: document.getElementById('workOrderNotes').value,
@@ -1071,6 +1078,29 @@ function createWorkOrder(event) {
                 itemSerialNumber: document.getElementById('itemSerialNumber').value
             };
             saveData();
+            
+            // Check if status changed to "completed" - move item from Lab to Inbound
+            if (oldStatus !== 'completed' && newStatus === 'completed') {
+                const labItems = JSON.parse(localStorage.getItem('labItems') || '[]');
+                const labItemIndex = labItems.findIndex(item => item.workOrderId == editingId);
+                
+                if (labItemIndex !== -1) {
+                    const labItem = labItems[labItemIndex];
+                    const inboundItems = JSON.parse(localStorage.getItem('inboundItems') || '[]');
+                    
+                    // Move to Inbound
+                    labItem.status = 'inbound';
+                    labItem.completedDate = new Date().toISOString();
+                    inboundItems.push(labItem);
+                    
+                    // Remove from Lab
+                    labItems.splice(labItemIndex, 1);
+                    
+                    // Save updates
+                    localStorage.setItem('labItems', JSON.stringify(labItems));
+                    localStorage.setItem('inboundItems', JSON.stringify(inboundItems));
+                }
+            }
             
             alert('Work order updated successfully!');
         }
@@ -1141,6 +1171,45 @@ function createWorkOrder(event) {
         
         workOrders.push(workOrder);
         saveData();
+        
+        // Check if this work order was created from warehouse - move item to Lab
+        const warehouseItem = sessionStorage.getItem('warehouseToLabItem');
+        const warehouseSource = sessionStorage.getItem('warehouseToLabSource');
+        const warehouseIndex = sessionStorage.getItem('warehouseToLabIndex');
+        
+        if (warehouseItem && warehouseSource) {
+            const item = JSON.parse(warehouseItem);
+            const labItems = JSON.parse(localStorage.getItem('labItems') || '[]');
+            
+            // Add to Lab with work order reference
+            item.status = 'lab';
+            item.labDate = new Date().toISOString();
+            item.workOrderId = workOrder.id;
+            item.workOrderNumber = workOrder.workOrderNumber;
+            labItems.push(item);
+            localStorage.setItem('labItems', JSON.stringify(labItems));
+            
+            // Remove from source section
+            if (warehouseSource === 'inbound') {
+                const inboundItems = JSON.parse(localStorage.getItem('inboundItems') || '[]');
+                inboundItems.splice(parseInt(warehouseIndex), 1);
+                localStorage.setItem('inboundItems', JSON.stringify(inboundItems));
+            } else if (warehouseSource === 'pending') {
+                const pendingItems = JSON.parse(localStorage.getItem('pendingItems') || '[]');
+                pendingItems.splice(parseInt(warehouseIndex), 1);
+                localStorage.setItem('pendingItems', JSON.stringify(pendingItems));
+            } else if (warehouseSource === 'quotation') {
+                const quotationItems = JSON.parse(localStorage.getItem('quotationItems') || '[]');
+                quotationItems.splice(parseInt(warehouseIndex), 1);
+                localStorage.setItem('quotationItems', JSON.stringify(quotationItems));
+            }
+            
+            // Clear session storage
+            sessionStorage.removeItem('warehouseToLabItem');
+            sessionStorage.removeItem('warehouseToLabSource');
+            sessionStorage.removeItem('warehouseToLabIndex');
+        }
+        
         alert(`Work order created successfully!\nScheduled at: ${startTime}`);
     }
     
