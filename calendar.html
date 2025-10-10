@@ -373,9 +373,9 @@
                     <textarea id="workOrderNotes" rows="3" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Add notes about this work order..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Attachment</label>
-                    <input id="workOrderAttachment" type="file" class="w-full border border-gray-300 rounded px-3 py-2" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                    <p class="text-sm text-gray-500 mt-1">PDF, Word docs, or image files</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Attachment Reference</label>
+                    <input id="workOrderAttachment" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., File stored in shared drive: /Calibration/2024/WO-001.pdf">
+                    <p class="text-sm text-gray-500 mt-1">Enter file path or reference to attachment location</p>
                 </div>
                 <div class="flex justify-end space-x-4">
                     <button type="button" onclick="closeModals()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
@@ -630,6 +630,7 @@ function showWorkOrderDetails(workOrder) {
                 </div>
                 ` : ''}
                 <p class="mt-3"><strong>Notes:</strong> ${workOrder.notes || 'None'}</p>
+                ${workOrder.attachment ? `<p class="mt-2"><strong>Attachment:</strong> ${workOrder.attachment}</p>` : ''}
             </div>
             <div class="flex justify-end space-x-2">
                 ${canEdit ? `
@@ -1072,7 +1073,7 @@ function createWorkOrder(event) {
                 location: document.getElementById('workOrderLocation').value,
                 certificationType: document.getElementById('certificationType').value,
                 notes: document.getElementById('workOrderNotes').value,
-                attachment: document.getElementById('workOrderAttachment').files[0]?.name || '',
+                attachment: document.getElementById('workOrderAttachment').value || '',
                 itemMake: document.getElementById('itemMake').value,
                 itemModel: document.getElementById('itemModel').value,
                 itemSerialNumber: document.getElementById('itemSerialNumber').value

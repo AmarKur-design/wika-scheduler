@@ -558,6 +558,9 @@ function renderInboundList() {
                         <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.receivedDate).toLocaleDateString()}<br>${new Date(item.receivedDate).toLocaleTimeString()}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex justify-end space-x-1">
+                                <button onclick="editInboundItem(${index})" title="Edit Item" class="bg-gray-500 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </button>
                                 <button onclick="moveInboundToPending(${index})" title="Move to Pending" class="bg-yellow-500 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs">
                                     <i class="fas fa-clock"></i>
                                 </button>
@@ -694,15 +697,53 @@ function saveInboundItem(event) {
     const model = document.getElementById('itemModel').value;
     const barcode = document.getElementById('barcode').value;
     
-    // Check if serial number already exists in items database
+    // Check if we're editing an existing item
+    const editingIndex = document.getElementById('inboundModal').getAttribute('data-editing-index');
+    
+    if (editingIndex !== null) {
+        // Update existing item
+        inboundItems[parseInt(editingIndex)] = {
+            ...inboundItems[parseInt(editingIndex)],
+            companyName: document.getElementById('companyName').value,
+            woNumber: document.getElementById('woNumber').value,
+            make: make,
+            model: model,
+            serialNumber: serialNumber,
+            barcode: barcode,
+            contactPerson: document.getElementById('contactPerson').value,
+            phoneNumber: document.getElementById('phoneNumber').value,
+            email: document.getElementById('email').value,
+            poNumber: document.getElementById('poNumber').value
+        };
+        
+        saveWarehouseData();
+        renderInboundList();
+        
+        // Reset modal
+        document.getElementById('inboundModal').removeAttribute('data-editing-index');
+        document.querySelector('#inboundModal h2').textContent = 'Add Item to Inbound';
+        closeInboundModal();
+        alert('Item updated successfully!');
+        return;
+    }
+    
+    // Check if serial number already exists in items database (for new items only)
     const items = JSON.parse(localStorage.getItem('items') || '[]');
     const existingItem = items.find(item => item.serialNumber === serialNumber);
     
     if (existingItem) {
-        const proceed = confirm(`Warning: Serial Number "${serialNumber}" already exists in the database!\n\nExisting Item:\nMake: ${existingItem.make}\nModel: ${existingItem.model}\nSerial: ${existingItem.serialNumber}\n\nDo you want to continue adding this item?`);
-        if (!proceed) {
+        const choice = confirm(`Serial Number "${serialNumber}" already exists in the database!\n\nExisting Item:\nMake: ${existingItem.make}\nModel: ${existingItem.model}\nSerial: ${existingItem.serialNumber}\nBarcode: ${existingItem.barcode || 'N/A'}\n\nClick OK to USE EXISTING ITEM DATA\nClick Cancel to CREATE NEW DUPLICATE`);
+        
+        if (choice) {
+            // User wants to use existing item - populate with existing data
+            document.getElementById('itemMake').value = existingItem.make;
+            document.getElementById('itemModel').value = existingItem.model;
+            document.getElementById('serialNumber').value = existingItem.serialNumber;
+            document.getElementById('barcode').value = existingItem.barcode || '';
+            alert('Form populated with existing item data. Please complete the remaining fields.');
             return;
         }
+        // If cancel, continue with creating duplicate
     }
     
     const newItem = {
@@ -957,6 +998,32 @@ function moveToOutbound(index) {
     }
 }
 
+function editInboundItem(index) {
+    const item = inboundItems[index];
+    if (!item) return;
+    
+    // Populate form with existing data
+    document.getElementById('companyName').value = item.companyName;
+    document.getElementById('woNumber').value = item.woNumber || '';
+    document.getElementById('itemMake').value = item.make;
+    document.getElementById('itemModel').value = item.model;
+    document.getElementById('serialNumber').value = item.serialNumber;
+    document.getElementById('barcode').value = item.barcode || '';
+    document.getElementById('contactPerson').value = item.contactPerson || '';
+    document.getElementById('phoneNumber').value = item.phoneNumber || '';
+    document.getElementById('email').value = item.email || '';
+    document.getElementById('poNumber').value = item.poNumber || '';
+    
+    // Store the index for updating
+    document.getElementById('inboundModal').setAttribute('data-editing-index', index);
+    
+    // Change modal title
+    document.querySelector('#inboundModal h2').textContent = 'Edit Inbound Item';
+    
+    // Show modal
+    showAddInboundModal();
+}
+
 function deleteInbound(index) {
     if (confirm('Are you sure you want to delete this inbound item?')) {
         inboundItems.splice(index, 1);
@@ -1039,15 +1106,42 @@ function searchByBarcode() {
     const foundItem = items.find(i => i.barcode === barcode);
     
     if (foundItem) {
-        // Auto-fill form with item data
-        document.getElementById('barcode').value = foundItem.barcode;
-        document.getElementById('itemMake').value = foundItem.make;
-        document.getElementById('itemModel').value = foundItem.model;
-        document.getElementById('serialNumber').value = foundItem.serialNumber;
+        const choice = confirm(`Item found in database!\n\nMake: ${foundItem.make}\nModel: ${foundItem.model}\nSerial: ${foundItem.serialNumber}\n\nClick OK to ADD TO INBOUND with this item data\nClick Cancel to OPEN FORM and add company details`);
         
-        closeScannerModal();
-        showAddInboundModal();
-        alert('Item found! Please complete the remaining fields.');
+        if (choice) {
+            // Add directly to inbound with item data only
+            const quickInboundItem = {
+                id: Date.now(),
+                companyName: 'To be assigned',
+                woNumber: '',
+                make: foundItem.make,
+                model: foundItem.model,
+                serialNumber: foundItem.serialNumber,
+                barcode: foundItem.barcode,
+                contactPerson: '',
+                phoneNumber: '',
+                email: '',
+                poNumber: '',
+                receivedDate: new Date().toISOString(),
+                status: 'inbound'
+            };
+            
+            inboundItems.push(quickInboundItem);
+            saveWarehouseData();
+            renderInboundList();
+            closeScannerModal();
+            alert('Item added to Inbound! You can edit it later to add company details.');
+        } else {
+            // Auto-fill form with item data
+            document.getElementById('barcode').value = foundItem.barcode;
+            document.getElementById('itemMake').value = foundItem.make;
+            document.getElementById('itemModel').value = foundItem.model;
+            document.getElementById('serialNumber').value = foundItem.serialNumber;
+            
+            closeScannerModal();
+            showAddInboundModal();
+            alert('Item found! Please complete the remaining fields.');
+        }
     } else {
         const addNew = confirm(`Barcode "${barcode}" not found in database. Would you like to add it as a new item?`);
         if (addNew) {
