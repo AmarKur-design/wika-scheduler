@@ -130,6 +130,14 @@
                 role: 'viewer',
                 name: 'View Only User',
                 technicianId: null // Viewer can see all but can't edit
+            },
+            {
+                id: 7,
+                username: 'warehouse',
+                password: 'warehouse123',
+                role: 'warehouse',
+                name: 'Warehouse User',
+                technicianId: null
             }
         ];
 
@@ -146,8 +154,12 @@
                 // Store user session
                 sessionStorage.setItem('currentUser', JSON.stringify(user));
                 
-                // Redirect to home
-                window.location.href = 'home.html';
+                // Redirect based on role
+                if (user.role === 'warehouse') {
+                    window.location.href = 'warehouse.html';
+                } else {
+                    window.location.href = 'home.html';
+                }
             } else {
                 // Show error
                 const errorDiv = document.getElementById('errorMessage');

@@ -30,7 +30,7 @@
                 <button onclick="showScannerModal()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
                     <i class="fas fa-qrcode mr-2"></i>Scan Barcode
                 </button>
-                <a href="home.html" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                <a href="home.html" id="homeBtn" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
                     <i class="fas fa-home mr-2"></i>Home
                 </a>
                 <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
@@ -47,12 +47,17 @@
                         <h2 class="text-xl font-semibold text-blue-900">Inbound</h2>
                         <p class="text-sm text-blue-700">Items received - route to Pending, Quotation, or Lab</p>
                     </div>
-                    <button onclick="showAddInboundModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-plus mr-2"></i>Add Item
-                    </button>
+                    <div class="flex space-x-2">
+                        <button onclick="expandInbound()" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded" title="Expand Full View">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button onclick="showAddInboundModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add Item
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div id="inboundList" class="p-4 space-y-3 max-h-[350px] overflow-y-auto">
+            <div id="inboundList" class="p-4 space-y-3" style="max-height: 200px; overflow-y: auto;">
                 <!-- Inbound items will be rendered here -->
             </div>
         </div>
@@ -65,9 +70,17 @@
                         <h2 class="text-xl font-semibold text-orange-900">Outbound</h2>
                         <p class="text-sm text-orange-700">Items ready for pickup</p>
                     </div>
+                    <div class="flex space-x-2">
+                        <button onclick="expandOutbound()" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded" title="Expand Full View">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button onclick="showAddOutboundModal()" class="bg-orange-500 hover:bg-orange-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add Item
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div id="outboundList" class="p-4 space-y-3 max-h-[350px] overflow-y-auto">
+            <div id="outboundList" class="p-4 space-y-3" style="max-height: 200px; overflow-y: auto;">
                 <!-- Outbound items will be rendered here -->
             </div>
         </div>
@@ -186,6 +199,65 @@
         </div>
     </div>
 
+    <!-- Add Outbound Item Modal -->
+    <div id="outboundModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Add Item to Outbound</h2>
+            <form id="outboundForm" onsubmit="saveOutboundItem(event)">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                        <input id="outboundCompanyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sales Order Number</label>
+                        <input id="outboundPoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Optional">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
+                        <input id="outboundItemMake" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Optional">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                        <input id="outboundItemModel" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Optional">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
+                        <input id="outboundSerialNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Optional">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                        <input id="outboundContactPerson" type="text" class="w-full border border-gray-300 rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input id="outboundPhoneNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input id="outboundEmail" type="email" class="w-full border border-gray-300 rounded px-3 py-2">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Connote Number</label>
+                    <input id="outboundConnoteNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="For courier tracking">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeOutboundModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-orange-500 hover:bg-orange-700 text-white px-4 py-2 rounded">
+                        Add to Outbound
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Barcode Scanner Modal -->
     <div id="scannerModal" class="modal">
         <div class="modal-content">
@@ -231,6 +303,36 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Expanded Inbound Modal -->
+    <div id="expandedInboundModal" class="modal">
+        <div class="modal-content" style="max-width: 95%; max-height: 95vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-blue-900">Inbound - Full View</h2>
+                <button onclick="closeExpandedInbound()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="expandedInboundContent" class="overflow-auto" style="max-height: 80vh;">
+                <!-- Full inbound list will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Expanded Outbound Modal -->
+    <div id="expandedOutboundModal" class="modal">
+        <div class="modal-content" style="max-width: 95%; max-height: 95vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-orange-900">Outbound - Full View</h2>
+                <button onclick="closeExpandedOutbound()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="expandedOutboundContent" class="overflow-auto" style="max-height: 80vh;">
+                <!-- Full outbound list will be rendered here -->
+            </div>
         </div>
     </div>
 
@@ -289,6 +391,14 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupUserInfo() {
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    
+    // Hide Home button for warehouse users
+    if (currentUser.role === 'warehouse') {
+        const homeBtn = document.getElementById('homeBtn');
+        if (homeBtn) {
+            homeBtn.style.display = 'none';
+        }
+    }
 }
 
 function logout() {
@@ -623,6 +733,7 @@ function renderOutboundList() {
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Connote #</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Signature</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Name</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date/Time</th>
@@ -642,6 +753,7 @@ function renderOutboundList() {
                         <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.connoteNumber || '-'}</td>
                         <td class="px-4 py-3">
                             ${item.signature ? `<div class="text-green-600"><i class="fas fa-check-circle"></i> Signed</div>` : 
                             `<button onclick="showSignatureModal(${index})" class="text-blue-500 hover:text-blue-700 text-sm"><i class="fas fa-signature"></i> Sign</button>`}
@@ -652,6 +764,9 @@ function renderOutboundList() {
                         </td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex justify-end space-x-2">
+                                <button onclick="editOutboundItem(${index})" title="Edit Item" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm">
+                                    <i class="fas fa-edit"></i>
+                                </button>
                                 <button onclick="markAsPickedUp(${index})" title="Mark as Picked Up" class="bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
                                     <i class="fas fa-check"></i>
                                 </button>
@@ -687,6 +802,96 @@ function showAddInboundModal() {
 function closeInboundModal() {
     document.getElementById('inboundModal').classList.remove('show');
     document.getElementById('inboundForm').reset();
+}
+
+function showAddOutboundModal() {
+    document.getElementById('outboundModal').classList.add('show');
+}
+
+function closeOutboundModal() {
+    document.getElementById('outboundModal').classList.remove('show');
+    document.getElementById('outboundForm').reset();
+}
+
+function saveOutboundItem(event) {
+    event.preventDefault();
+    
+    // Check if we're editing an existing item
+    const editingIndex = document.getElementById('outboundModal').getAttribute('data-editing-index');
+    
+    if (editingIndex !== null) {
+        // Update existing item
+        outboundItems[parseInt(editingIndex)] = {
+            ...outboundItems[parseInt(editingIndex)],
+            companyName: document.getElementById('outboundCompanyName').value,
+            make: document.getElementById('outboundItemMake').value,
+            model: document.getElementById('outboundItemModel').value,
+            serialNumber: document.getElementById('outboundSerialNumber').value,
+            poNumber: document.getElementById('outboundPoNumber').value,
+            contactPerson: document.getElementById('outboundContactPerson').value,
+            phoneNumber: document.getElementById('outboundPhoneNumber').value,
+            email: document.getElementById('outboundEmail').value,
+            connoteNumber: document.getElementById('outboundConnoteNumber').value
+        };
+        
+        saveWarehouseData();
+        renderOutboundList();
+        
+        // Reset modal
+        document.getElementById('outboundModal').removeAttribute('data-editing-index');
+        document.querySelector('#outboundModal h2').textContent = 'Add Item to Outbound';
+        closeOutboundModal();
+        alert('Item updated successfully!');
+        return;
+    }
+    
+    // Create new item
+    const outboundItem = {
+        id: Date.now(),
+        companyName: document.getElementById('outboundCompanyName').value,
+        make: document.getElementById('outboundItemMake').value,
+        model: document.getElementById('outboundItemModel').value,
+        serialNumber: document.getElementById('outboundSerialNumber').value,
+        poNumber: document.getElementById('outboundPoNumber').value,
+        contactPerson: document.getElementById('outboundContactPerson').value,
+        phoneNumber: document.getElementById('outboundPhoneNumber').value,
+        email: document.getElementById('outboundEmail').value,
+        connoteNumber: document.getElementById('outboundConnoteNumber').value,
+        outboundDate: new Date().toISOString(),
+        status: 'outbound',
+        addedManually: true // Flag to indicate this was added directly to outbound
+    };
+    
+    outboundItems.push(outboundItem);
+    saveWarehouseData();
+    renderOutboundList();
+    closeOutboundModal();
+    alert('Item added to Outbound section successfully!');
+}
+
+function editOutboundItem(index) {
+    const item = outboundItems[index];
+    if (!item) return;
+    
+    // Populate form with existing data
+    document.getElementById('outboundCompanyName').value = item.companyName;
+    document.getElementById('outboundPoNumber').value = item.poNumber || '';
+    document.getElementById('outboundItemMake').value = item.make || '';
+    document.getElementById('outboundItemModel').value = item.model || '';
+    document.getElementById('outboundSerialNumber').value = item.serialNumber || '';
+    document.getElementById('outboundContactPerson').value = item.contactPerson || '';
+    document.getElementById('outboundPhoneNumber').value = item.phoneNumber || '';
+    document.getElementById('outboundEmail').value = item.email || '';
+    document.getElementById('outboundConnoteNumber').value = item.connoteNumber || '';
+    
+    // Store the index for updating
+    document.getElementById('outboundModal').setAttribute('data-editing-index', index);
+    
+    // Change modal title
+    document.querySelector('#outboundModal h2').textContent = 'Edit Outbound Item';
+    
+    // Show modal
+    showAddOutboundModal();
 }
 
 function saveInboundItem(event) {
@@ -1446,6 +1651,7 @@ function renderCollectionHistory() {
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Connote #</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Collector</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Picked Up Date</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Picked Up By</th>
@@ -1465,6 +1671,7 @@ function renderCollectionHistory() {
                         <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.connoteNumber || '-'}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.collectorName || '-'}</td>
                         <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
                             ${new Date(item.pickedUpDate).toLocaleDateString()}<br>
@@ -1529,6 +1736,59 @@ function viewSignature(index) {
         </div>
     `;
     document.body.appendChild(modal);
+}
+
+// Expand View Functions
+function expandInbound() {
+    document.getElementById('expandedInboundModal').classList.add('show');
+    renderExpandedInbound();
+}
+
+function closeExpandedInbound() {
+    document.getElementById('expandedInboundModal').classList.remove('show');
+}
+
+function renderExpandedInbound() {
+    const container = document.getElementById('expandedInboundContent');
+    
+    if (inboundItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-12">
+                <i class="fas fa-inbox text-6xl mb-4"></i>
+                <p class="text-lg">No inbound items</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Reuse the same rendering logic
+    container.innerHTML = document.getElementById('inboundList').innerHTML;
+}
+
+function expandOutbound() {
+    document.getElementById('expandedOutboundModal').classList.add('show');
+    renderExpandedOutbound();
+}
+
+function closeExpandedOutbound() {
+    document.getElementById('expandedOutboundModal').classList.remove('show');
+}
+
+function renderExpandedOutbound() {
+    const container = document.getElementById('expandedOutboundContent');
+    
+    if (outboundItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-12">
+                <i class="fas fa-box-open text-6xl mb-4"></i>
+                <p class="text-lg">No outbound items</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Reuse the same rendering logic
+    container.innerHTML = document.getElementById('outboundList').innerHTML;
 }
 
 </script>
