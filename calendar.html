@@ -1079,26 +1079,27 @@ function createWorkOrder(event) {
             };
             saveData();
             
-            // Check if status changed to "completed" - move item from Lab to Inbound
+            // Check if status changed to "completed" - move item from Lab to Outbound
             if (oldStatus !== 'completed' && newStatus === 'completed') {
                 const labItems = JSON.parse(localStorage.getItem('labItems') || '[]');
                 const labItemIndex = labItems.findIndex(item => item.workOrderId == editingId);
                 
                 if (labItemIndex !== -1) {
                     const labItem = labItems[labItemIndex];
-                    const inboundItems = JSON.parse(localStorage.getItem('inboundItems') || '[]');
+                    const outboundItems = JSON.parse(localStorage.getItem('outboundItems') || '[]');
                     
-                    // Move to Inbound
-                    labItem.status = 'inbound';
+                    // Move to Outbound
+                    labItem.status = 'outbound';
                     labItem.completedDate = new Date().toISOString();
-                    inboundItems.push(labItem);
+                    labItem.outboundDate = new Date().toISOString();
+                    outboundItems.push(labItem);
                     
                     // Remove from Lab
                     labItems.splice(labItemIndex, 1);
                     
                     // Save updates
                     localStorage.setItem('labItems', JSON.stringify(labItems));
-                    localStorage.setItem('inboundItems', JSON.stringify(inboundItems));
+                    localStorage.setItem('outboundItems', JSON.stringify(outboundItems));
                 }
             }
             
@@ -1314,7 +1315,19 @@ function renderMonthlyCalendar(technician) {
         dayWorkOrders.forEach(workOrder => {
             const workOrderElement = document.createElement('div');
             workOrderElement.className = `work-order ${workOrder.location ? 'location-' + workOrder.location : ''}`;
-            workOrderElement.textContent = workOrder.customerName;
+            workOrderElement.style.position = 'relative';
+            workOrderElement.style.paddingRight = '16px';
+            
+            // Build the HTML content
+            const statusIconHTML = workOrder.status === 'completed' 
+                ? '<i class="fas fa-check-circle" style="color: white;"></i>'
+                : '<i class="far fa-circle" style="color: white;"></i>';
+            
+            workOrderElement.innerHTML = `
+                <span style="position: absolute; top: 2px; right: 2px; font-size: 0.7rem;">${statusIconHTML}</span>
+                <span>${workOrder.customerName}</span>
+            `;
+            
             workOrderElement.onclick = () => showWorkOrderDetails(workOrder);
             dayElement.appendChild(workOrderElement);
         });
@@ -1420,25 +1433,46 @@ function renderWeeklyCalendar(technician) {
                     workOrderElement.style.zIndex = '10';
                     workOrderElement.style.overflow = 'hidden';
                     
+                    // Add status indicator
+                    const statusIcon = document.createElement('span');
+                    statusIcon.style.position = 'absolute';
+                    statusIcon.style.top = '2px';
+                    statusIcon.style.right = '2px';
+                    statusIcon.style.fontSize = '0.6rem';
+                    
+                    if (workOrder.status === 'completed') {
+                        statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: white;"></i>';
+                    } else {
+                        statusIcon.innerHTML = '<i class="far fa-circle" style="color: white;"></i>';
+                    }
+                    
+                    workOrderElement.appendChild(statusIcon);
+                    
                     // Adjust display based on duration
                     if (workOrderDuration < 1) {
                         // Very short - show only work order number
-                        workOrderElement.innerHTML = `
+                        const content = document.createElement('div');
+                        content.innerHTML = `
                             <div class="font-semibold text-xs leading-tight truncate">${workOrder.workOrderNumber}</div>
                         `;
+                        workOrderElement.appendChild(content);
                     } else if (workOrderDuration < 1.5) {
                         // Short - show work order number and customer
-                        workOrderElement.innerHTML = `
+                        const content = document.createElement('div');
+                        content.innerHTML = `
                             <div class="font-semibold text-xs leading-tight truncate">${workOrder.workOrderNumber}</div>
                             <div class="text-xs opacity-90 leading-tight truncate">${workOrder.customerName}</div>
                         `;
+                        workOrderElement.appendChild(content);
                     } else {
                         // Normal - show all three lines
-                        workOrderElement.innerHTML = `
+                        const content = document.createElement('div');
+                        content.innerHTML = `
                             <div class="font-semibold text-xs leading-tight truncate">${workOrder.workOrderNumber}</div>
                             <div class="text-xs opacity-90 leading-tight truncate">${workOrder.customerName}</div>
                             <div class="text-xs opacity-75 leading-tight truncate">${workOrder.workType}</div>
                         `;
+                        workOrderElement.appendChild(content);
                     }
                     
                     workOrderElement.onclick = () => showWorkOrderDetails(workOrder);
