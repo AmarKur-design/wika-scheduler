@@ -373,9 +373,11 @@
                     <textarea id="workOrderNotes" rows="3" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Add notes about this work order..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Attachment Reference</label>
-                    <input id="workOrderAttachment" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g., File stored in shared drive: /Calibration/2024/WO-001.pdf">
-                    <p class="text-sm text-gray-500 mt-1">Enter file path or reference to attachment location</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Attachment</label>
+                    <input id="workOrderAttachment" type="file" class="w-full border border-gray-300 rounded px-3 py-2" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="handleFileAttachment(this)">
+                    <p class="text-sm text-gray-500 mt-1">PDF, Word docs, or image files (saved as base64)</p>
+                    <input type="hidden" id="attachmentData">
+                    <input type="hidden" id="attachmentName">
                 </div>
                 <div class="flex justify-end space-x-4">
                     <button type="button" onclick="closeModals()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
@@ -600,6 +602,25 @@ function updateSuggestedStartTime() {
     }
 }
 
+function handleFileAttachment(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File is too large! Maximum size is 5MB.');
+        input.value = '';
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('attachmentData').value = e.target.result;
+        document.getElementById('attachmentName').value = file.name;
+    };
+    reader.readAsDataURL(file);
+}
+
 function showWorkOrderDetails(workOrder) {
     // Check if user can edit this work order
     const canEdit = currentUser.role === 'admin' || 
@@ -630,7 +651,14 @@ function showWorkOrderDetails(workOrder) {
                 </div>
                 ` : ''}
                 <p class="mt-3"><strong>Notes:</strong> ${workOrder.notes || 'None'}</p>
-                ${workOrder.attachment ? `<p class="mt-2"><strong>Attachment:</strong> ${workOrder.attachment}</p>` : ''}
+                ${workOrder.attachmentName ? `
+                <p class="mt-2">
+                    <strong>Attachment:</strong> 
+                    <a href="${workOrder.attachmentData}" download="${workOrder.attachmentName}" class="text-blue-600 hover:text-blue-800 underline">
+                        <i class="fas fa-download mr-1"></i>${workOrder.attachmentName}
+                    </a>
+                </p>
+                ` : ''}
             </div>
             <div class="flex justify-end space-x-2">
                 ${canEdit ? `
@@ -677,6 +705,8 @@ function editWorkOrder(workOrderId) {
     document.getElementById('itemMake').value = workOrder.itemMake || '';
     document.getElementById('itemModel').value = workOrder.itemModel || '';
     document.getElementById('itemSerialNumber').value = workOrder.itemSerialNumber || '';
+    document.getElementById('attachmentData').value = workOrder.attachmentData || '';
+    document.getElementById('attachmentName').value = workOrder.attachmentName || '';
     
     // Store the work order ID for updating
     document.getElementById('createWorkOrderModal').setAttribute('data-editing-id', workOrderId);
@@ -1073,7 +1103,8 @@ function createWorkOrder(event) {
                 location: document.getElementById('workOrderLocation').value,
                 certificationType: document.getElementById('certificationType').value,
                 notes: document.getElementById('workOrderNotes').value,
-                attachment: document.getElementById('workOrderAttachment').value || '',
+                attachmentName: document.getElementById('attachmentName').value || '',
+                attachmentData: document.getElementById('attachmentData').value || '',
                 itemMake: document.getElementById('itemMake').value,
                 itemModel: document.getElementById('itemModel').value,
                 itemSerialNumber: document.getElementById('itemSerialNumber').value
@@ -1235,6 +1266,8 @@ function createWorkOrder(event) {
     document.getElementById('workOrderLocation').value = 'in-lab';
     document.getElementById('workOrderNotes').value = '';
     document.getElementById('workOrderAttachment').value = '';
+    document.getElementById('attachmentData').value = '';
+    document.getElementById('attachmentName').value = '';
     
     // Reset form title and button
     document.querySelector('#createWorkOrderModal h2').textContent = 'Create New Work Order';

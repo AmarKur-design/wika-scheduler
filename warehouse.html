@@ -732,18 +732,69 @@ function saveInboundItem(event) {
     const existingItem = items.find(item => item.serialNumber === serialNumber);
     
     if (existingItem) {
-        const choice = confirm(`Serial Number "${serialNumber}" already exists in the database!\n\nExisting Item:\nMake: ${existingItem.make}\nModel: ${existingItem.model}\nSerial: ${existingItem.serialNumber}\nBarcode: ${existingItem.barcode || 'N/A'}\n\nClick OK to USE EXISTING ITEM DATA\nClick Cancel to CREATE NEW DUPLICATE`);
+        // Create a custom modal for better UX
+        const modal = document.createElement('div');
+        modal.className = 'modal show';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3 class="text-lg font-bold mb-4 text-red-600">⚠️ Duplicate Serial Number Detected</h3>
+                <div class="mb-4 p-4 bg-gray-50 rounded">
+                    <p class="text-sm font-semibold mb-2">Existing Item in Database:</p>
+                    <p class="text-sm"><strong>Make:</strong> ${existingItem.make}</p>
+                    <p class="text-sm"><strong>Model:</strong> ${existingItem.model}</p>
+                    <p class="text-sm"><strong>Serial:</strong> ${existingItem.serialNumber}</p>
+                    <p class="text-sm"><strong>Barcode:</strong> ${existingItem.barcode || 'N/A'}</p>
+                </div>
+                <p class="text-sm mb-4">What would you like to do?</p>
+                <div class="flex flex-col space-y-2">
+                    <button onclick="useExistingItemData()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-database mr-2"></i>Bring Existing Item to Inbound
+                    </button>
+                    <button onclick="continueWithDuplicate()" class="bg-orange-500 hover:bg-orange-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-copy mr-2"></i>Create Duplicate Item Anyway
+                    </button>
+                    <button onclick="this.closest('.modal').remove()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
         
-        if (choice) {
-            // User wants to use existing item - populate with existing data
-            document.getElementById('itemMake').value = existingItem.make;
-            document.getElementById('itemModel').value = existingItem.model;
-            document.getElementById('serialNumber').value = existingItem.serialNumber;
-            document.getElementById('barcode').value = existingItem.barcode || '';
-            alert('Form populated with existing item data. Please complete the remaining fields.');
-            return;
-        }
-        // If cancel, continue with creating duplicate
+        // Add click handlers
+        window.useExistingItemData = function() {
+            // Add existing item to inbound with company details from form
+            const itemToAdd = {
+                id: Date.now(),
+                companyName: document.getElementById('companyName').value,
+                woNumber: document.getElementById('woNumber').value,
+                make: existingItem.make,
+                model: existingItem.model,
+                serialNumber: existingItem.serialNumber,
+                barcode: existingItem.barcode,
+                contactPerson: document.getElementById('contactPerson').value,
+                phoneNumber: document.getElementById('phoneNumber').value,
+                email: document.getElementById('email').value,
+                poNumber: document.getElementById('poNumber').value,
+                receivedDate: new Date().toISOString(),
+                status: 'inbound'
+            };
+            
+            inboundItems.push(itemToAdd);
+            saveWarehouseData();
+            renderInboundList();
+            modal.remove();
+            closeInboundModal();
+            alert('Existing item added to Inbound with your company details!');
+        };
+        
+        window.continueWithDuplicate = function() {
+            modal.remove();
+            // Continue with form submission - will create duplicate
+            event.target.dispatchEvent(new Event('submit', { cancelable: true }));
+        };
+        
+        return; // Stop the normal form submission
     }
     
     const newItem = {
