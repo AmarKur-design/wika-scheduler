@@ -377,7 +377,51 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSavedCalibrations();
     initializeReadingsTable();
     setDefaultDates();
+    
+    // Check if coming from work order and pre-fill
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('fromWorkOrder') === 'true') {
+        preFillFromWorkOrder(urlParams);
+    }
 });
+
+function preFillFromWorkOrder(urlParams) {
+    // Pre-fill all available fields
+    if (urlParams.get('woNumber')) {
+        document.getElementById('woNumber').value = urlParams.get('woNumber');
+    }
+    if (urlParams.get('soNumber')) {
+        document.getElementById('soNumber').value = urlParams.get('soNumber');
+    }
+    if (urlParams.get('customer')) {
+        document.getElementById('customer').value = urlParams.get('customer');
+    }
+    if (urlParams.get('make')) {
+        document.getElementById('make').value = urlParams.get('make');
+    }
+    if (urlParams.get('model')) {
+        document.getElementById('model').value = urlParams.get('model');
+    }
+    if (urlParams.get('serialNumber')) {
+        document.getElementById('serialNumber').value = urlParams.get('serialNumber');
+    }
+    
+    // Set default range based on part number
+    const partNumber = urlParams.get('partNumber');
+    if (partNumber === 'TRACE-83') {
+        // Torque Wrench up to 400NM
+        document.getElementById('rangeFrom').value = '0';
+        document.getElementById('rangeTo').value = '400';
+        document.getElementById('unit').value = 'N.m';
+    } else if (partNumber === 'TRACE-84') {
+        // Torque Wrench 400NM to 1500NM
+        document.getElementById('rangeFrom').value = '400';
+        document.getElementById('rangeTo').value = '1500';
+        document.getElementById('unit').value = 'N.m';
+    }
+    
+    recalculate();
+}
 
 function setDefaultDates() {
     const today = new Date();

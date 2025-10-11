@@ -142,6 +142,7 @@ let filteredParts = [];
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('userName').textContent = currentUser.name;
     loadParts();
+    autoLoadParts(); // Auto-load from JSON if empty
     renderPartsTable();
 });
 
@@ -279,20 +280,38 @@ function deletePart(index) {
 }
 
 function loadFromPriceBook() {
-    if (confirm('Load parts from price book? This will add to existing parts (duplicates may occur).')) {
+    if (confirm('Load parts from price book? This will replace existing parts with fresh data from the price book.')) {
         // Pre-loaded data from lab price book
         fetch('lab-parts-data.json')
             .then(response => response.json())
             .then(data => {
-                partsDatabase = [...partsDatabase, ...data];
+                partsDatabase = data; // Replace instead of merge
                 savePartsData();
                 loadParts();
                 renderPartsTable();
                 alert(`Loaded ${data.length} parts from price book!`);
             })
             .catch(error => {
-                // If file doesn't exist, use inline data
+                console.error('Error loading price book:', error);
                 alert('Price book file not found. Please add parts manually or contact admin.');
+            });
+    }
+}
+
+// Auto-load parts on first visit if database is empty
+function autoLoadParts() {
+    if (partsDatabase.length === 0) {
+        fetch('lab-parts-data.json')
+            .then(response => response.json())
+            .then(data => {
+                partsDatabase = data;
+                savePartsData();
+                filteredParts = partsDatabase;
+                renderPartsTable();
+                console.log(`Auto-loaded ${data.length} parts from price book`);
+            })
+            .catch(error => {
+                console.error('Could not auto-load parts:', error);
             });
     }
 }

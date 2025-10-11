@@ -741,6 +741,11 @@ function showWorkOrderDetails(workOrder) {
                 ` : ''}
             </div>
             <div class="flex justify-end space-x-2">
+                ${(workOrder.partNumber === 'TRACE-83' || workOrder.partNumber === 'TRACE-84') ? `
+                <button onclick="openTorqueCalibration(${workOrder.id})" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-vial mr-2"></i>Calibrate
+                </button>
+                ` : ''}
                 ${canEdit ? `
                 <button onclick="editWorkOrder(${workOrder.id})" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
                     Edit
@@ -762,6 +767,26 @@ function closeWorkOrderDetails() {
     }
 }
 
+function openTorqueCalibration(workOrderId) {
+    const workOrder = workOrders.find(wo => wo.id === workOrderId);
+    if (!workOrder) return;
+    
+    // Build URL with pre-filled parameters
+    const params = new URLSearchParams({
+        woNumber: workOrder.workOrderNumber,
+        soNumber: workOrder.salesOrderNumber || '',
+        customer: workOrder.customerName,
+        make: workOrder.itemMake || '',
+        model: workOrder.itemModel || '',
+        serialNumber: workOrder.itemSerialNumber || '',
+        partNumber: workOrder.partNumber || '',
+        fromWorkOrder: 'true'
+    });
+    
+    // Open torque calibration page with pre-filled data
+    window.location.href = `torque-trace.html?${params.toString()}`;
+}
+
 function editWorkOrder(workOrderId) {
     const workOrder = workOrders.find(wo => wo.id === workOrderId);
     if (!workOrder) return;
@@ -773,6 +798,7 @@ function editWorkOrder(workOrderId) {
     document.getElementById('workOrderNumber').value = workOrder.workOrderNumber;
     document.getElementById('salesOrderNumber').value = workOrder.salesOrderNumber || '';
     document.getElementById('technicianDropdown').value = workOrder.technicianId;
+    document.getElementById('partNumberSearch').value = workOrder.partNumber || '';
     document.getElementById('workType').value = workOrder.workType;
     document.getElementById('customerName').value = workOrder.customerName;
     document.getElementById('hoursRequired').value = workOrder.hoursRequired;
@@ -1184,6 +1210,7 @@ function createWorkOrder(event) {
                 workOrderNumber: document.getElementById('workOrderNumber').value,
                 salesOrderNumber: document.getElementById('salesOrderNumber').value,
                 technicianId: technicianId,
+                partNumber: document.getElementById('partNumberSearch').value || workOrders[workOrderIndex].partNumber || '',
                 workType: document.getElementById('workType').value,
                 customerName: document.getElementById('customerName').value,
                 hoursRequired: hoursRequired,
@@ -1277,6 +1304,7 @@ function createWorkOrder(event) {
             workOrderNumber: document.getElementById('workOrderNumber').value,
             salesOrderNumber: document.getElementById('salesOrderNumber').value,
             technicianId: technicianId,
+            partNumber: document.getElementById('partNumberSearch').value || '',
             workType: document.getElementById('workType').value,
             customerName: document.getElementById('customerName').value,
             hoursRequired: hoursRequired,
