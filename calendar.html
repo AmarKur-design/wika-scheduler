@@ -374,8 +374,24 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Attachment</label>
+                    <div id="currentAttachment" class="mb-2 hidden">
+                        <div class="p-2 bg-gray-50 rounded border border-gray-300 flex justify-between items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-file text-blue-500 mr-2"></i>
+                                <span id="currentAttachmentName" class="text-sm text-gray-700"></span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a id="downloadCurrentAttachment" href="#" download="" class="text-blue-600 hover:text-blue-800 text-sm">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                                <button type="button" onclick="removeCurrentAttachment()" class="text-red-600 hover:text-red-800 text-sm">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <input id="workOrderAttachment" type="file" class="w-full border border-gray-300 rounded px-3 py-2" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="handleFileAttachment(this)">
-                    <p class="text-sm text-gray-500 mt-1">PDF, Word docs, or image files (saved as base64)</p>
+                    <p class="text-sm text-gray-500 mt-1">PDF, Word docs, or image files (saved as base64, max 5MB)</p>
                     <input type="hidden" id="attachmentData">
                     <input type="hidden" id="attachmentName">
                 </div>
@@ -572,6 +588,9 @@ function showCreateWorkOrder() {
     document.getElementById('createWorkOrderModal').classList.add('show');
     updateTechnicianDropdown();
     
+    // Hide current attachment display for new work orders
+    document.getElementById('currentAttachment').classList.add('hidden');
+    
     // Set today's date without timezone issues
     const today = new Date();
     const year = today.getFullYear();
@@ -617,8 +636,24 @@ function handleFileAttachment(input) {
     reader.onload = function(e) {
         document.getElementById('attachmentData').value = e.target.result;
         document.getElementById('attachmentName').value = file.name;
+        
+        // Update current attachment display
+        document.getElementById('currentAttachment').classList.remove('hidden');
+        document.getElementById('currentAttachmentName').textContent = file.name;
+        document.getElementById('downloadCurrentAttachment').href = e.target.result;
+        document.getElementById('downloadCurrentAttachment').download = file.name;
     };
     reader.readAsDataURL(file);
+}
+
+function removeCurrentAttachment() {
+    if (confirm('Remove the current attachment?')) {
+        document.getElementById('attachmentData').value = '';
+        document.getElementById('attachmentName').value = '';
+        document.getElementById('workOrderAttachment').value = '';
+        document.getElementById('currentAttachment').classList.add('hidden');
+        alert('Attachment removed!');
+    }
 }
 
 function showWorkOrderDetails(workOrder) {
@@ -707,6 +742,16 @@ function editWorkOrder(workOrderId) {
     document.getElementById('itemSerialNumber').value = workOrder.itemSerialNumber || '';
     document.getElementById('attachmentData').value = workOrder.attachmentData || '';
     document.getElementById('attachmentName').value = workOrder.attachmentName || '';
+    
+    // Show current attachment if exists
+    if (workOrder.attachmentName && workOrder.attachmentData) {
+        document.getElementById('currentAttachment').classList.remove('hidden');
+        document.getElementById('currentAttachmentName').textContent = workOrder.attachmentName;
+        document.getElementById('downloadCurrentAttachment').href = workOrder.attachmentData;
+        document.getElementById('downloadCurrentAttachment').download = workOrder.attachmentName;
+    } else {
+        document.getElementById('currentAttachment').classList.add('hidden');
+    }
     
     // Store the work order ID for updating
     document.getElementById('createWorkOrderModal').setAttribute('data-editing-id', workOrderId);
