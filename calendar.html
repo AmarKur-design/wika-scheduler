@@ -333,6 +333,12 @@
                 </div>
                 <div class="mb-4">
                     <h3 class="text-md font-semibold text-gray-700 mb-2">Item Details</h3>
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Existing Item (Optional)</label>
+                        <select id="existingItemSelect" class="w-full border border-gray-300 rounded px-3 py-2" onchange="fillItemFromExisting()">
+                            <option value="">-- Create New Item or Select Existing --</option>
+                        </select>
+                    </div>
                     <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
@@ -476,6 +482,78 @@ function loadPartsDatabase() {
     populatePartNumbersList();
 }
 
+// Load and populate existing items dropdown
+function populateExistingItems() {
+    const select = document.getElementById('existingItemSelect');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- Create New Item or Select Existing --</option>';
+    
+    // Get items from Items database
+    const items = JSON.parse(localStorage.getItem('items') || '[]');
+    
+    // Get items from Inbound warehouse (not already assigned to a work order)
+    const inboundItems = JSON.parse(localStorage.getItem('inboundItems') || '[]');
+    const labItems = JSON.parse(localStorage.getItem('labItems') || '[]');
+    const labItemIds = labItems.map(item => item.id);
+    const availableInbound = inboundItems.filter(item => !labItemIds.includes(item.id));
+    
+    // Add optgroups for better organization
+    if (items.length > 0) {
+        const itemsGroup = document.createElement('optgroup');
+        itemsGroup.label = 'Items Database';
+        items.forEach((item, index) => {
+            const option = document.createElement('option');
+            option.value = JSON.stringify({ source: 'items', index: index, ...item });
+            option.textContent = `${item.make} ${item.model} - S/N: ${item.serialNumber}`;
+            itemsGroup.appendChild(option);
+        });
+        select.appendChild(itemsGroup);
+    }
+    
+    if (availableInbound.length > 0) {
+        const inboundGroup = document.createElement('optgroup');
+        inboundGroup.label = 'Warehouse Inbound (Available)';
+        availableInbound.forEach((item, index) => {
+            const option = document.createElement('option');
+            const actualIndex = inboundItems.indexOf(item);
+            option.value = JSON.stringify({ source: 'inbound', index: actualIndex, ...item });
+            option.textContent = `${item.make} ${item.model} - S/N: ${item.serialNumber} (${item.companyName || 'No company'})`;
+            inboundGroup.appendChild(option);
+        });
+        select.appendChild(inboundGroup);
+    }
+}
+
+function fillItemFromExisting() {
+    const select = document.getElementById('existingItemSelect');
+    const value = select.value;
+    
+    if (!value) {
+        // Clear fields if "Create New" is selected
+        document.getElementById('itemMake').value = '';
+        document.getElementById('itemModel').value = '';
+        document.getElementById('itemSerialNumber').value = '';
+        return;
+    }
+    
+    try {
+        const itemData = JSON.parse(value);
+        
+        // Fill the form fields
+        document.getElementById('itemMake').value = itemData.make || '';
+        document.getElementById('itemModel').value = itemData.model || '';
+        document.getElementById('itemSerialNumber').value = itemData.serialNumber || '';
+        
+        // Store the source and index for later use
+        sessionStorage.setItem('selectedItemSource', itemData.source);
+        sessionStorage.setItem('selectedItemIndex', itemData.index);
+        sessionStorage.setItem('selectedItemId', itemData.id || '');
+    } catch (e) {
+        console.error('Error parsing item data:', e);
+    }
+}
+
 function populatePartNumbersList() {
     const datalist = document.getElementById('partNumbersList');
     datalist.innerHTML = '';
@@ -511,6 +589,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupRoleBasedAccess();
     loadData();
     loadPartsDatabase();
+    populateExistingItems();
     assignStartTimesToExistingWorkOrders(); // Fix existing work orders without start times
     renderTechnicianSelector();
     updateTechnicianDropdown();
@@ -632,6 +711,7 @@ function showManageTechnicians() {
 function showCreateWorkOrder() {
     document.getElementById('createWorkOrderModal').classList.add('show');
     updateTechnicianDropdown();
+    populateExistingItems(); // Refresh items dropdown
     
     // Hide current attachment display for new work orders
     document.getElementById('currentAttachment').classList.add('hidden');
@@ -715,6 +795,7 @@ function showWorkOrderDetails(workOrder) {
             <div class="text-sm text-gray-600 mb-4">
                 <p><strong>Work Order:</strong> ${workOrder.workOrderNumber}</p>
                 <p><strong>Sales Order:</strong> ${workOrder.salesOrderNumber || 'N/A'}</p>
+                ${workOrder.partNumber ? `<p><strong>Part Number:</strong> ${workOrder.partNumber}</p>` : ''}
                 <p><strong>Customer:</strong> ${workOrder.customerName}</p>
                 <p><strong>Type:</strong> ${workOrder.workType}</p>
                 <p><strong>Location:</strong> ${workOrder.location || 'Not specified'}</p>
@@ -1322,6 +1403,80 @@ function createWorkOrder(event) {
         
         workOrders.push(workOrder);
         saveData();
+        
+        // Handle item - either from existing selection or create new
+        const selectedItemSource = sessionStorage.getItem('selectedItemSource');
+        const selectedItemIndex = sessionStorage.getItem('selectedItemIndex');
+        const selectedItemId = sessionStorage.getItem('selectedItemId');
+        
+        if (selectedItemSource || (workOrder.itemMake && workOrder.itemModel && workOrder.itemSerialNumber)) {
+            const labItems = JSON.parse(localStorage.getItem('labItems') || '[]');
+            
+            let itemToAdd;
+            
+            if (selectedItemSource === 'inbound') {
+                // Move from Inbound to Lab
+                const inboundItems = JSON.parse(localStorage.getItem('inboundItems') || '[]');
+                const inboundItem = inboundItems[parseInt(selectedItemIndex)];
+                
+                if (inboundItem) {
+                    itemToAdd = {
+                        ...inboundItem,
+                        status: 'lab',
+                        labDate: new Date().toISOString(),
+                        workOrderId: workOrder.id,
+                        workOrderNumber: workOrder.workOrderNumber
+                    };
+                    
+                    // Remove from inbound
+                    inboundItems.splice(parseInt(selectedItemIndex), 1);
+                    localStorage.setItem('inboundItems', JSON.stringify(inboundItems));
+                }
+            } else if (selectedItemSource === 'items') {
+                // Copy from items database to Lab
+                const items = JSON.parse(localStorage.getItem('items') || '[]');
+                const item = items[parseInt(selectedItemIndex)];
+                
+                if (item) {
+                    itemToAdd = {
+                        id: Date.now(),
+                        make: item.make,
+                        model: item.model,
+                        serialNumber: item.serialNumber,
+                        barcode: item.barcode || '',
+                        status: 'lab',
+                        labDate: new Date().toISOString(),
+                        workOrderId: workOrder.id,
+                        workOrderNumber: workOrder.workOrderNumber,
+                        companyName: workOrder.customerName
+                    };
+                }
+            } else {
+                // Create new item and add to Lab
+                itemToAdd = {
+                    id: Date.now(),
+                    make: workOrder.itemMake,
+                    model: workOrder.itemModel,
+                    serialNumber: workOrder.itemSerialNumber,
+                    status: 'lab',
+                    labDate: new Date().toISOString(),
+                    workOrderId: workOrder.id,
+                    workOrderNumber: workOrder.workOrderNumber,
+                    companyName: workOrder.customerName,
+                    woNumber: workOrder.workOrderNumber
+                };
+            }
+            
+            if (itemToAdd) {
+                labItems.push(itemToAdd);
+                localStorage.setItem('labItems', JSON.stringify(labItems));
+            }
+            
+            // Clear session storage
+            sessionStorage.removeItem('selectedItemSource');
+            sessionStorage.removeItem('selectedItemIndex');
+            sessionStorage.removeItem('selectedItemId');
+        }
         
         // Check if this work order was created from warehouse - move item to Lab
         const warehouseItem = sessionStorage.getItem('warehouseToLabItem');
