@@ -17,8 +17,9 @@
         .data-table th { background-color: #3b82f6; color: white; font-size: 0.7rem; font-weight: 600; }
         .data-table input, .data-table select { width: 100%; border: none; text-align: center; padding: 2px 4px; font-size: 0.75rem; }
         .data-table input:focus { outline: 1px solid #3b82f6; background-color: #eff6ff; }
-        .data-table select { padding: 2px; }
+        .data-table select { padding: 2px; min-width: 80px; }
         .readonly-cell { background-color: #f3f4f6; font-size: 0.75rem; }
+        .transmitter-col { min-width: 90px; }
         .compact-input { padding: 4px 8px !important; font-size: 0.875rem; }
         .compact-label { font-size: 0.8rem; font-weight: 500; margin-bottom: 2px; }
         .section-card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -425,7 +426,7 @@ function initializeReadingsTable() {
         row.id = `testRow${idx}`;
         row.innerHTML = `
             <td class="font-semibold">${point}</td>
-            <td>
+            <td class="transmitter-col">
                 <select id="transmitter${idx}" class="w-full border rounded px-2 py-1 text-sm" onchange="recalculate()">
                     <option value="214002">214002</option>
                     <option value="211766">211766</option>
@@ -1150,15 +1151,19 @@ function getLabelHTML(labelType) {
 function getCertificateHTML() {
     const unit = document.getElementById('unit').value;
     const conversionFactor = UNIT_CONVERSIONS[unit];
-    const conversionText = unit === 'N.m' ? '' : `${unit} = ${conversionFactor} N.m`;
+    const conversionText = unit === 'N.m' ? '#N/A' : `${unit} = ${conversionFactor} N.m`;
     
     // Determine if device was adjusted
     const hasAsLeft = document.getElementById('asLeftAvg0').textContent !== '-';
     const adjustmentText = hasAsLeft ? 'adjusted' : 'not adjusted';
     
-    // Get transmitter info for multiple transmitters if used
-    const tx1 = document.getElementById('transmitterSN').value;
-    const tx1Cert = document.getElementById('transmitterCert').value;
+    // Get transmitter selections from test points
+    const tx1 = document.getElementById('transmitter0').value;
+    const tx2 = document.getElementById('transmitter1').value;
+    const tx3 = document.getElementById('transmitter2').value;
+    
+    // Get unique transmitters
+    const transmitters = [...new Set([tx1, tx2, tx3])].filter(t => t);
     
     return `
         <!DOCTYPE html>
@@ -1167,151 +1172,168 @@ function getCertificateHTML() {
             <title>Certificate - ${document.getElementById('certificateNo').value}</title>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
             <style>
-                @page { size: A4; margin: 15mm; }
-                body { font-family: Arial, sans-serif; margin: 0; padding: 15px; font-size: 9pt; }
-                .letterhead { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-                .company-info { text-align: right; }
-                .company-name { font-size: 16pt; font-weight: bold; color: #c00; }
-                .company-details { font-size: 7pt; line-height: 1.3; color: #333; }
-                h2 { text-align: center; font-size: 12pt; margin: 10px 0; text-decoration: underline; }
-                table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-                .info-row td { padding: 3px 8px; vertical-align: top; font-size: 9pt; }
-                .label { font-weight: bold; width: 120px; }
-                .value { border-bottom: 1px solid #999; }
-                .data-table { margin: 12px 0; font-size: 8pt; }
-                .data-table th, .data-table td { border: 1px solid #000; padding: 4px; text-align: center; }
-                .data-table th { background-color: #e0e0e0; font-weight: bold; font-size: 8pt; }
-                .section-title { font-weight: bold; font-size: 9pt; margin: 12px 0 6px 0; text-decoration: underline; }
-                .conditions { margin-left: 15px; line-height: 1.4; font-size: 8pt; }
-                .conditions div { margin-bottom: 2px; }
-                .footer { margin-top: 20px; page-break-inside: avoid; font-size: 8pt; }
-                .signature-line { border-top: 1px solid #000; margin-top: 25px; padding-top: 3px; display: inline-block; width: 180px; }
-                .footer-text { text-align: right; font-size: 7pt; color: #666; margin-top: 15px; }
+                @page { size: A4; margin: 1cm 3.5cm 1.5cm 3.5cm; }
+                body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.4; }
+                .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                .header-left h2 { margin: 0; font-size: 18pt; font-weight: 900; }
+                .header-right { text-align: right; }
+                .logo-box { border: 2px solid #000; padding: 8px 15px; display: inline-block; }
+                .logo-text { font-size: 18pt; font-weight: 900; color: #000; letter-spacing: 2px; }
+                .tagline { font-size: 9pt; color: #0066cc; font-weight: bold; margin-top: 2px; }
+                .company-details { font-size: 7pt; line-height: 1.4; color: #333; margin-top: 5px; }
+                .info-section { margin-bottom: 8px; }
+                .info-line { display: flex; margin: 2px 0; font-size: 10pt; }
+                .info-label { font-weight: bold; min-width: 150px; }
+                .info-value { flex: 1; }
+                .two-col { display: flex; gap: 40px; margin: 2px 0; }
+                .two-col > div { flex: 1; }
+                .data-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10pt; }
+                .data-table th, .data-table td { border: 1px solid #000; padding: 6px; text-align: center; }
+                .data-table th { background-color: #e0e0e0; font-weight: bold; }
+                .section-title { font-weight: bold; font-size: 10pt; margin: 12px 0 4px 0; }
+                .conditions { margin-left: 0; line-height: 1.4; font-size: 8pt; }
+                .conditions div { margin-bottom: 3px; }
+                .signature-section { text-align: center; font-size: 10pt; margin-top: 60px; margin-bottom: 30px; }
+                .signature-line { display: inline-block; width: 250px; border-bottom: 1px solid #000; margin-left: 10px; }
+                .traceability { text-align: center; font-size: 8pt; margin: 40px 0 20px 0; line-height: 1.3; }
+                .footer-row { display: flex; justify-content: space-between; font-size: 7pt; color: #666; }
                 @media print { button { display: none !important; } }
             </style>
         </head>
         <body>
-            <!-- Letterhead -->
-            <div class="letterhead">
-                <div style="font-size: 7pt; color: #666;">
-                    SVP-001-101W Version 1
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left" style="flex: 1;">
+                    <h2>CALIBRATION REPORT</h2>
+                    <div class="info-line" style="margin-top: 10px;">
+                        <span class="info-label">Report on:</span>
+                        <span class="info-value">Hand Torque Tool</span>
+                    </div>
                 </div>
-                <div class="company-info">
-                    <div class="company-name">WIKA</div>
+                <div class="header-right">
+                    <img src="wika-logo.png" alt="WIKA Logo" style="max-width: 180px; height: auto;">
                     <div class="company-details">
-                        <strong>WIKA Australia Pty Ltd</strong><br>
+                        WIKA Australia Pty Ltd<br>
                         Unit 1, 6-8 Harvard Way<br>
                         Canning Vale WA 6155<br>
                         ABN: 80 152 894 652<br>
-                        Ph: (08) 9231 7900 | Fax: (08) 9231 7999<br>
-                        Email: info@wika.com.au | Web: www.wika.com.au
+                        Ph (08) 9452 3100<br>
+                        www.wika.com.au
                     </div>
                 </div>
             </div>
             
-            <h2>CALIBRATION CERTIFICATE</h2>
+            <div class="info-section">
+                <div class="info-line">
+                    <span class="info-label">Customer:</span>
+                    <span class="info-value">${document.getElementById('customer').value}</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label"></span>
+                    <span class="info-value">${document.getElementById('street').value}</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label"></span>
+                    <span class="info-value">${document.getElementById('address').value}</span>
+                </div>
+            </div>
             
-            <table class="info-row">
-                <tr>
-                    <td class="label">Report on:</td>
-                    <td class="value">Hand Torque Tool</td>
-                    <td style="width: 50px;"></td>
-                    <td class="label">Our Ref No:</td>
-                    <td class="value">${document.getElementById('soNumber').value}</td>
-                </tr>
-            </table>
-            
-            <table class="info-row">
-                <tr>
-                    <td class="label">Customer:</td>
-                    <td class="value" style="min-width: 300px;">${document.getElementById('customer').value}</td>
-                    <td style="width: 50px;"></td>
-                    <td class="label">Customer PO:</td>
-                    <td class="value">${document.getElementById('poNumber').value}</td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td class="value">${document.getElementById('street').value}</td>
-                    <td></td>
-                    <td class="label">Item/Cat No:</td>
-                    <td class="value">${document.getElementById('itemNo').value}</td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td class="value">${document.getElementById('address').value}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </table>
-            
-            <table class="info-row">
-                <tr>
-                    <td class="label">Certificate No:</td>
-                    <td class="value">${document.getElementById('certificateNo').value}</td>
-                    <td style="width: 50px;"></td>
-                    <td class="label">Make:</td>
-                    <td class="value">${document.getElementById('make').value}</td>
-                </tr>
-                <tr>
-                    <td class="label">Date Tested:</td>
-                    <td class="value">${document.getElementById('dateTested').value}</td>
-                    <td></td>
-                    <td class="label">Type/Model:</td>
-                    <td class="value">${document.getElementById('model').value}</td>
-                </tr>
-                <tr>
-                    <td class="label">Date Issued:</td>
-                    <td class="value">${document.getElementById('dateIssued').value}</td>
-                    <td></td>
-                    <td class="label">Direction:</td>
-                    <td class="value">${document.getElementById('direction').value}</td>
-                </tr>
-            </table>
+            <div class="info-section">
+                <div class="two-col">
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Certificate No:</span>
+                            <span class="info-value">${document.getElementById('certificateNo').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Date Tested:</span>
+                            <span class="info-value">${document.getElementById('dateTested').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Date Issued:</span>
+                            <span class="info-value">${document.getElementById('dateIssued').value}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Our Ref No:</span>
+                            <span class="info-value">${document.getElementById('soNumber').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Customer PO:</span>
+                            <span class="info-value">${document.getElementById('poNumber').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Item/Cat No:</span>
+                            <span class="info-value">${document.getElementById('itemNo').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Make:</span>
+                            <span class="info-value">${document.getElementById('make').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Type/Model:</span>
+                            <span class="info-value">${document.getElementById('model').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Direction:</span>
+                            <span class="info-value">${document.getElementById('direction').value}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <div class="section-title">Reference Equipment Used:</div>
-            <table class="info-row">
-                <tr>
-                    <td class="label">Display Serial No:</td>
-                    <td class="value">${document.getElementById('displaySN').value}</td>
-                    <td style="width: 50px;"></td>
-                    <td class="label">Measurement Range:</td>
-                    <td class="value">${document.getElementById('rangeFrom').value} to ${document.getElementById('rangeTo').value} ${unit}</td>
-                </tr>
-                <tr>
-                    <td class="label">Certificate No:</td>
-                    <td class="value">${document.getElementById('displayCert').value}</td>
-                    <td></td>
-                    <td class="label">ID No:</td>
-                    <td class="value">${document.getElementById('assetNo').value}</td>
-                </tr>
-                ${tx1 ? `
-                <tr>
-                    <td class="label">Tx Serial No:</td>
-                    <td class="value">${tx1}</td>
-                    <td></td>
-                    <td class="label">Serial No:</td>
-                    <td class="value">${document.getElementById('serialNumber').value}</td>
-                </tr>
-                <tr>
-                    <td class="label">Certificate No:</td>
-                    <td class="value">${tx1Cert}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                ` : ''}
-            </table>
+            <div class="info-section">
+                <div class="two-col">
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Display Serial No:</span>
+                            <span class="info-value">${document.getElementById('displaySN').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Certificate No:</span>
+                            <span class="info-value">${document.getElementById('displayCert').value}</span>
+                        </div>
+                        ${transmitters.map(txSN => {
+                            const txEquip = REFERENCE_EQUIPMENT[txSN];
+                            return `
+                            <div class="info-line">
+                                <span class="info-label">Tx Serial No:</span>
+                                <span class="info-value">${txSN}</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">Certificate No:</span>
+                                <span class="info-value">${txEquip ? txEquip.certificate : '#N/A'}</span>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Measurement Range:</span>
+                            <span class="info-value">${document.getElementById('rangeFrom').value} to ${document.getElementById('rangeTo').value} ${unit}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">ID No:</span>
+                            <span class="info-value">${document.getElementById('assetNo').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Serial No:</span>
+                            <span class="info-value">${document.getElementById('serialNumber').value}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            <div class="section-title">Device Under Test</div>
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th rowspan="2">Set Torque<br>${unit}</th>
-                        <th rowspan="2">As Found Average<br>${unit}</th>
-                        <th rowspan="2">As Left Average<br>${unit}</th>
-                        <th rowspan="2">Tolerance<br>${unit}</th>
-                        <th rowspan="2">Uncertainty<br>%</th>
+                        <th>Set Torque<br>${unit}</th>
+                        <th>As Found Average<br>${unit}</th>
+                        <th>As Left Average<br>${unit}</th>
+                        <th>Tolerance<br>${unit}</th>
+                        <th>Uncertainty<br>%</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1339,44 +1361,41 @@ function getCertificateHTML() {
                 </tbody>
             </table>
             
-            <div style="margin: 10px 0; font-size: 9pt;">
-                <strong>Accuracy (Tolerance):</strong> ±${(parseFloat(document.getElementById('tolerance').value) * 100).toFixed(1)}%
-                ${conversionText ? ' | <strong>Conversion Factor:</strong> ' + conversionText : ''}
+            <div style="margin: 10px 0; font-size: 10pt;">
+                <strong>Accuracy (Tolerance):</strong> ±${(parseFloat(document.getElementById('tolerance').value) * 100).toFixed(1)}%<br>
+                <strong>${conversionText}</strong>
             </div>
             
             <div class="section-title">Conditions of Test</div>
             <div class="conditions">
-                <div>1. Uncertainty of Measurement with a Confidence Level of 95%, k= 2</div>
-                <div>2. Tested in accordance with Work Instructions PWI-101 as well as ISO 6789-1:2017</div>
-                <div>3. Average Ambient Temperature at time of test was 20°C ± 2°C at a relative humidity not exceeding 90%</div>
-                <div>4. Results relate only to the item calibrated. The uncertainty stated is only for the nominated points unless otherwise stated.</div>
-                <div>5. Test averages are a true average taken from 5 readings</div>
-                <div>6. The observed values fall within the maximum permissible relative deviation at each target setting</div>
-                <div>7. The device under test was ${adjustmentText}</div>
+                <div>1.  Uncertainty of Measurement with a Confidence Level of 95%, k= 2</div>
+                <div>2.  Tested in accordance with Work Instructions PWI-101 as well as ISO 6789-1:2017</div>
+                <div>3.  Average Ambient Temperature at time of test was 20°C ± 2°C at a relative humidity not exceeding 90%</div>
+                <div>4.  Results relate only to the item calibrated. The uncertainty stated is only for the nominated points unless otherwise stated.</div>
+                <div>5.  Test averages are a true average taken from 5 readings</div>
+                <div>6.  The observed values fall within the maximum permissible relative deviation at each target setting</div>
+                <div>7.  The device under test was ${adjustmentText}</div>
             </div>
             
-            <div style="margin-top: 12px; font-size: 9pt;">
+            <div style="margin-top: 15px; font-size: 10pt;">
                 <strong>Comments:</strong> NIL
             </div>
             
-            <div class="footer">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <strong>Calibration performed at:</strong><br>
-                        Unit 1, 6-8 Harvard Way<br>
-                        Canning Vale WA 6155
-                    </div>
-                    <div style="text-align: right;">
-                        <strong>Approved Signatory:</strong>
-                        <div class="signature-line">
-                            ${document.getElementById('technician').value}
-                        </div>
-                    </div>
-                </div>
+            <div style="margin-top: 15px; font-size: 10pt;">
+                <strong>Calibration was performed at:</strong> Unit 1, 6-8 Harvard Way, Canning Vale WA 6155
             </div>
             
-            <div class="footer-text">
-                Page 1 of 1
+            <div class="signature-section">
+                Approved Signatory: <span class="signature-line"></span>
+            </div>
+            
+            <div class="traceability">
+                The results of the tests, calibrations and/or measurements included in this document are traceable to Australian/National Standards.
+            </div>
+            
+            <div class="footer-row">
+                <div>SVP-001-101W Version 1</div>
+                <div>Page 1 of 1</div>
             </div>
             
             <div style="text-align: center; margin-top: 40px;">

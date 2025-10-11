@@ -310,6 +310,13 @@
                         </select>
                     </div>
                 </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Part Number (Optional - Auto-fills work type & hours)</label>
+                    <input id="partNumberSearch" type="text" list="partNumbersList" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Start typing part number..." oninput="selectPartNumber()">
+                    <datalist id="partNumbersList">
+                        <!-- Part numbers will be populated here -->
+                    </datalist>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Work Type</label>
                     <input id="workType" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Calibration, Maintenance, Installation">
@@ -423,6 +430,7 @@ let workOrders = [];
 let currentDate = new Date();
 let currentWeekStart = null;
 let currentView = 'month';
+let partsDatabase = [];
 
 // Role-based access control functions
 function setupRoleBasedAccess() {
@@ -462,10 +470,47 @@ function logout() {
     window.location.href = 'index.html';
 }
 
+// Load parts database
+function loadPartsDatabase() {
+    partsDatabase = JSON.parse(localStorage.getItem('partsDatabase') || '[]');
+    populatePartNumbersList();
+}
+
+function populatePartNumbersList() {
+    const datalist = document.getElementById('partNumbersList');
+    datalist.innerHTML = '';
+    partsDatabase.forEach(part => {
+        const option = document.createElement('option');
+        option.value = part.partNumber;
+        option.textContent = `${part.partNumber} - ${part.workType} (${part.hours}hrs, ${part.certType})`;
+        datalist.appendChild(option);
+    });
+}
+
+function selectPartNumber() {
+    const input = document.getElementById('partNumberSearch').value;
+    const selectedPart = partsDatabase.find(part => part.partNumber === input);
+    
+    if (selectedPart) {
+        // Auto-fill work type
+        document.getElementById('workType').value = selectedPart.workType;
+        
+        // Auto-fill hours
+        document.getElementById('hoursRequired').value = selectedPart.hours;
+        
+        // Auto-fill certification type
+        document.getElementById('certificationType').value = selectedPart.certType;
+        
+        // Trigger start time update
+        updateSuggestedStartTime();
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     setupRoleBasedAccess();
     loadData();
+    loadPartsDatabase();
     assignStartTimesToExistingWorkOrders(); // Fix existing work orders without start times
     renderTechnicianSelector();
     updateTechnicianDropdown();

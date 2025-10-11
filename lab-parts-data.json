@@ -1,0 +1,392 @@
+[
+  {
+    "partNumber": "TRACE-02",
+    "workType": "Pressure Gauge, TEST (Minor Adjustments only)",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-01",
+    "workType": "Pressure Gauge, TEST (Minor Adjustments only)",
+    "hours": 2.07,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-04",
+    "workType": "Pressure Gauge Industrial",
+    "hours": 0.8,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-03",
+    "workType": "Pressure Gauge Industrial",
+    "hours": 0.93,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-07",
+    "workType": "Pressure Recorder (per pen) (Minor Adjustments only)",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-06",
+    "workType": "Pressure Recorder (per pen) (Minor Adjustments only)",
+    "hours": 2.07,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-13",
+    "workType": "Pressure Switch",
+    "hours": 0.93,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-12",
+    "workType": "Pressure Switch",
+    "hours": 1.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-30",
+    "workType": "Pressure Calibrator",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-29",
+    "workType": "Pressure Calibrator",
+    "hours": 2.07,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-55",
+    "workType": "Pressure Gauge Digital / Transmitter",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-54",
+    "workType": "Pressure Gauge Digital / Transmitter",
+    "hours": 2.07,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-16",
+    "workType": "Certify Bi-Metallic Thermometer/Dial/Gas Filled",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-15",
+    "workType": "Certify Bi-Metallic Thermometer/Dial/Gas Filled",
+    "hours": 2.07,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-18",
+    "workType": "Temperature Switch",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-17",
+    "workType": "Temperature Switch",
+    "hours": 2.07,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-20",
+    "workType": "Temperature Indicator (Electrical Simulation) 5 points",
+    "hours": 0.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-19",
+    "workType": "Temperature Indicator (Electrical Simulation) 5 points",
+    "hours": 0.75,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-22",
+    "workType": "Temperature Indicator & Probe 5 Points",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-21",
+    "workType": "Temperature Indicator & Probe 5 Points",
+    "hours": 2.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-22",
+    "workType": "Temperature Indicator & Probe single point",
+    "hours": 0.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-21",
+    "workType": "Temperature Indicator & Probe single point",
+    "hours": 1.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-22",
+    "workType": "Temperature Indicator & Probe (Type T Reference) single point",
+    "hours": 0.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-21",
+    "workType": "Temperature Indicator & Probe (Type T Reference) single point",
+    "hours": 1.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-26",
+    "workType": "Temperature Controller (Electrical Simulation) 5 points",
+    "hours": 0.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "TRACE-28",
+    "workType": "Temperature Transmitter",
+    "hours": 2.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-27",
+    "workType": "Temperature Transmitter",
+    "hours": 2.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-32",
+    "workType": "Block Calibrators",
+    "hours": 3.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-31",
+    "workType": "Block Calibrators",
+    "hours": 3.5,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-35",
+    "workType": "IR Thermometers (50 to 400 Deg C)",
+    "hours": 0.83,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-36",
+    "workType": "Temperature Recorder (Electrical Simulation)",
+    "hours": 0.75,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "NATA-38",
+    "workType": "Temperature Transmitter (Electrical Simulation)",
+    "hours": 0.75,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-40",
+    "workType": "Thermocouple",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-41",
+    "workType": "Thermometer Filled System",
+    "hours": 2.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-53",
+    "workType": "Certify Data Logger (5 Points Temp only)",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-52",
+    "workType": "Certify Data Logger (5 Points Temp only)",
+    "hours": 2.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-53",
+    "workType": "Certify Data Logger (3 Points Temp only)",
+    "hours": 1.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-52",
+    "workType": "Certify Data Logger (3 Points Temp only)",
+    "hours": 1.5,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-70",
+    "workType": "Certify Test Cap",
+    "hours": 0.25,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "TRACE-43",
+    "workType": "Temp/Humidity Meter (3 points Temp and 3 points Humidity)",
+    "hours": 2.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "TRACE-43 (A)",
+    "workType": "Humidity (3 points only)",
+    "hours": 1.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-33",
+    "workType": "Furnace/Ovens/Baths (plus labour)(1 point) \u2013 AS2853",
+    "hours": 4.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "NATA-121",
+    "workType": "Freezer/Chiller (plus labour) (1 point) \u2013 AS2853",
+    "hours": 4.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-149",
+    "workType": "Welding Ovens (1 Point + 1 Location)",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "TRACE-149",
+    "workType": "Welding Ovens (Onsite)",
+    "hours": 6.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "NATA-33",
+    "workType": "Spatial Variation (Special Pricing for SGS)",
+    "hours": 4.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "NATA-33",
+    "workType": "TGA Unit (Special Pricing for SGS)",
+    "hours": 2.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "NATA-33",
+    "workType": "Fusion Furnace (Special Pricing for SGS)",
+    "hours": 2.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "NATA-33",
+    "workType": "Digestion Block 6 Positions (Special Pricing for SGS)",
+    "hours": 2.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "NATA-33",
+    "workType": "Digestion Block 12 Positions (Special Pricing for SGS)",
+    "hours": 4.0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "TRACE-51",
+    "workType": "Sound Level Meter (94dBpoints & 114dB points)",
+    "hours": 0.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "TRACE-56",
+    "workType": "Tachometers",
+    "hours": 0.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "TRACE-146",
+    "workType": "pH Meter",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "TRACE-146",
+    "workType": "Conductivity Meters",
+    "hours": 1.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "CERT-DOCPROCAL",
+    "workType": "Documenting Process Calibrator",
+    "hours": 2.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "CERT-MFUNPCAL",
+    "workType": "Multifunction Process Calibrator",
+    "hours": 1.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "CERT-PROV",
+    "workType": "Proving Unit",
+    "hours": 0.25,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "CERT-SCOPE",
+    "workType": "Scope Meter",
+    "hours": 2.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "WA-Labour",
+    "workType": "Labour (Hourly Rate) In Lab",
+    "hours": 1.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "Insp",
+    "workType": "Inspection Fee",
+    "hours": 0.5,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "Urgency",
+    "workType": "Urgency Fee (2-4 days)",
+    "hours": 1.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "WA-Labour",
+    "workType": "Onsite Labour (More than one person)",
+    "hours": 1.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "PP",
+    "workType": "Onsite Labour (More than one person)",
+    "hours": 0,
+    "certType": "NATA"
+  },
+  {
+    "partNumber": "WA-Labour",
+    "workType": "Onsite Labour",
+    "hours": 1.0,
+    "certType": "TRACE"
+  },
+  {
+    "partNumber": "ONSITE-147",
+    "workType": "On Site Calibrations",
+    "hours": 0,
+    "certType": "TRACE"
+  }
+]
