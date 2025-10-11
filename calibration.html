@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibration - WIKA Calibration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Calibration Management</h1>
+                <p class="text-sm text-gray-600">Welcome, <span id="userName"></span> (<span id="userRole"></span>)</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="home.html" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Calibration Type Selection -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Select Calibration Type</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Pressure - TRACE and NATA -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="text-center mb-4">
+                        <div class="text-blue-600 text-5xl mb-2"><i class="fas fa-tachometer-alt"></i></div>
+                        <div class="text-lg font-semibold">Pressure</div>
+                    </div>
+                    <div class="space-y-2">
+                        <a href="pressure-trace.html" class="block bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded text-center">
+                            <i class="fas fa-certificate mr-2"></i>TRACE Calibration
+                        </a>
+                        <a href="pressure-nata.html" class="block bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded text-center">
+                            <i class="fas fa-award mr-2"></i>NATA Calibration
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Temperature - TRACE and NATA -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="text-center mb-4">
+                        <div class="text-red-600 text-5xl mb-2"><i class="fas fa-thermometer-half"></i></div>
+                        <div class="text-lg font-semibold">Temperature</div>
+                    </div>
+                    <div class="space-y-2">
+                        <a href="temperature-trace.html" class="block bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded text-center">
+                            <i class="fas fa-certificate mr-2"></i>TRACE Calibration
+                        </a>
+                        <a href="temperature-nata.html" class="block bg-red-600 hover:bg-red-800 text-white px-4 py-2 rounded text-center">
+                            <i class="fas fa-award mr-2"></i>NATA Calibration
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Electrical - TRACE only -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="text-center mb-4">
+                        <div class="text-yellow-600 text-5xl mb-2"><i class="fas fa-bolt"></i></div>
+                        <div class="text-lg font-semibold">Electrical</div>
+                    </div>
+                    <div class="space-y-2">
+                        <a href="electrical-trace.html" class="block bg-yellow-500 hover:bg-yellow-700 text-white px-4 py-2 rounded text-center">
+                            <i class="fas fa-certificate mr-2"></i>TRACE Calibration
+                        </a>
+                        <button disabled class="block w-full bg-gray-300 text-gray-500 px-4 py-2 rounded text-center cursor-not-allowed">
+                            <i class="fas fa-award mr-2"></i>NATA - Coming Soon
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Torque - TRACE only -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="text-center mb-4">
+                        <div class="text-purple-600 text-5xl mb-2"><i class="fas fa-wrench"></i></div>
+                        <div class="text-lg font-semibold">Torque</div>
+                    </div>
+                    <div class="space-y-2">
+                        <a href="torque-trace.html" class="block bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded text-center">
+                            <i class="fas fa-certificate mr-2"></i>TRACE Calibration
+                        </a>
+                        <button disabled class="block w-full bg-gray-300 text-gray-500 px-4 py-2 rounded text-center cursor-not-allowed">
+                            <i class="fas fa-award mr-2"></i>NATA - Coming Soon
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dimensional - TRACE only -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <div class="text-center mb-4">
+                        <div class="text-green-600 text-5xl mb-2"><i class="fas fa-ruler"></i></div>
+                        <div class="text-lg font-semibold">Dimensional</div>
+                    </div>
+                    <div class="space-y-2">
+                        <a href="dimensional-trace.html" class="block bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded text-center">
+                            <i class="fas fa-certificate mr-2"></i>TRACE Calibration
+                        </a>
+                        <button disabled class="block w-full bg-gray-300 text-gray-500 px-4 py-2 rounded text-center cursor-not-allowed">
+                            <i class="fas fa-award mr-2"></i>NATA - Coming Soon
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Coming Soon Types -->
+                <div class="bg-white rounded-xl shadow p-6 opacity-60">
+                    <div class="text-center mb-4">
+                        <div class="text-gray-400 text-5xl mb-2"><i class="fas fa-weight"></i></div>
+                        <div class="text-lg font-semibold text-gray-600">Weights & Scales</div>
+                    </div>
+                    <div class="text-center text-sm text-gray-500">Coming soon</div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow p-6 opacity-60">
+                    <div class="text-center mb-4">
+                        <div class="text-gray-400 text-5xl mb-2"><i class="fas fa-wind"></i></div>
+                        <div class="text-lg font-semibold text-gray-600">Flow</div>
+                    </div>
+                    <div class="text-center text-sm text-gray-500">Coming soon</div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow p-6 opacity-60">
+                    <div class="text-center mb-4">
+                        <div class="text-gray-400 text-5xl mb-2"><i class="fas fa-plug"></i></div>
+                        <div class="text-lg font-semibold text-gray-600">High Voltage</div>
+                    </div>
+                    <div class="text-center text-sm text-gray-500">Coming soon</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4">Quick Overview</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Pressure Stats -->
+                <div class="text-center p-4 bg-blue-50 rounded border border-blue-200">
+                    <div class="text-2xl font-bold text-blue-600" id="pressureTotalCount">0</div>
+                    <div class="text-sm font-semibold text-gray-700 mb-2">Pressure</div>
+                    <div class="text-xs text-gray-600">
+                        <div>TRACE: <span id="pressureTraceCount" class="font-semibold">0</span></div>
+                        <div>NATA: <span id="pressureNataCount" class="font-semibold">0</span></div>
+                    </div>
+                </div>
+
+                <!-- Temperature Stats -->
+                <div class="text-center p-4 bg-red-50 rounded border border-red-200">
+                    <div class="text-2xl font-bold text-red-600" id="temperatureTotalCount">0</div>
+                    <div class="text-sm font-semibold text-gray-700 mb-2">Temperature</div>
+                    <div class="text-xs text-gray-600">
+                        <div>TRACE: <span id="temperatureTraceCount" class="font-semibold">0</span></div>
+                        <div>NATA: <span id="temperatureNataCount" class="font-semibold">0</span></div>
+                    </div>
+                </div>
+
+                <!-- Electrical Stats -->
+                <div class="text-center p-4 bg-yellow-50 rounded border border-yellow-200">
+                    <div class="text-2xl font-bold text-yellow-600" id="electricalTotalCount">0</div>
+                    <div class="text-sm font-semibold text-gray-700 mb-2">Electrical</div>
+                    <div class="text-xs text-gray-600">
+                        <div>TRACE: <span id="electricalTraceCount" class="font-semibold">0</span></div>
+                        <div class="text-gray-400">NATA: Coming soon</div>
+                    </div>
+                </div>
+
+                <!-- Torque Stats -->
+                <div class="text-center p-4 bg-purple-50 rounded border border-purple-200">
+                    <div class="text-2xl font-bold text-purple-600" id="torqueTotalCount">0</div>
+                    <div class="text-sm font-semibold text-gray-700 mb-2">Torque</div>
+                    <div class="text-xs text-gray-600">
+                        <div>TRACE: <span id="torqueTraceCount" class="font-semibold">0</span></div>
+                        <div class="text-gray-400">NATA: Coming soon</div>
+                    </div>
+                </div>
+
+                <!-- Dimensional Stats -->
+                <div class="text-center p-4 bg-green-50 rounded border border-green-200">
+                    <div class="text-2xl font-bold text-green-600" id="dimensionalTotalCount">0</div>
+                    <div class="text-sm font-semibold text-gray-700 mb-2">Dimensional</div>
+                    <div class="text-xs text-gray-600">
+                        <div>TRACE: <span id="dimensionalTraceCount" class="font-semibold">0</span></div>
+                        <div class="text-gray-400">NATA: Coming soon</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+if (!currentUser) {
+    window.location.href = 'index.html';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupUserInfo();
+    loadStats();
+});
+
+function setupUserInfo() {
+    document.getElementById('userName').textContent = currentUser.name;
+    document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+}
+
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'index.html';
+}
+
+function loadStats() {
+    // Load calibration counts from localStorage
+    const pressureTrace = JSON.parse(localStorage.getItem('pressureTraceCalibrations') || '[]');
+    const pressureNata = JSON.parse(localStorage.getItem('pressureNataCalibrations') || '[]');
+    const temperatureTrace = JSON.parse(localStorage.getItem('temperatureTraceCalibrations') || '[]');
+    const temperatureNata = JSON.parse(localStorage.getItem('temperatureNataCalibrations') || '[]');
+    const electricalTrace = JSON.parse(localStorage.getItem('electricalTraceCalibrations') || '[]');
+    const torqueTrace = JSON.parse(localStorage.getItem('torqueTraceCalibrations') || '[]');
+    const dimensionalTrace = JSON.parse(localStorage.getItem('dimensionalTraceCalibrations') || '[]');
+    
+    // Pressure
+    document.getElementById('pressureTotalCount').textContent = pressureTrace.length + pressureNata.length;
+    document.getElementById('pressureTraceCount').textContent = pressureTrace.length;
+    document.getElementById('pressureNataCount').textContent = pressureNata.length;
+    
+    // Temperature
+    document.getElementById('temperatureTotalCount').textContent = temperatureTrace.length + temperatureNata.length;
+    document.getElementById('temperatureTraceCount').textContent = temperatureTrace.length;
+    document.getElementById('temperatureNataCount').textContent = temperatureNata.length;
+    
+    // Electrical
+    document.getElementById('electricalTotalCount').textContent = electricalTrace.length;
+    document.getElementById('electricalTraceCount').textContent = electricalTrace.length;
+    
+    // Torque
+    document.getElementById('torqueTotalCount').textContent = torqueTrace.length;
+    document.getElementById('torqueTraceCount').textContent = torqueTrace.length;
+    
+    // Dimensional
+    document.getElementById('dimensionalTotalCount').textContent = dimensionalTrace.length;
+    document.getElementById('dimensionalTraceCount').textContent = dimensionalTrace.length;
+}
+</script>
+</body>
+</html>
+
