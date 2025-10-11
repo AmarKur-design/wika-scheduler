@@ -12,12 +12,16 @@
         .modal-content { background: white; padding: 2rem; border-radius: 0.5rem; width: 95%; max-width: 1400px; max-height: 95vh; overflow-y: auto; }
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
         input[type="number"] { -moz-appearance: textfield; }
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th, .data-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        .data-table th { background-color: #3b82f6; color: white; font-size: 0.875rem; }
-        .data-table input { width: 100%; border: none; text-align: center; padding: 4px; }
-        .data-table input:focus { outline: 2px solid #3b82f6; background-color: #eff6ff; }
-        .readonly-cell { background-color: #f3f4f6; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
+        .data-table th { background-color: #3b82f6; color: white; font-size: 0.7rem; font-weight: 600; }
+        .data-table input, .data-table select { width: 100%; border: none; text-align: center; padding: 2px 4px; font-size: 0.75rem; }
+        .data-table input:focus { outline: 1px solid #3b82f6; background-color: #eff6ff; }
+        .data-table select { padding: 2px; }
+        .readonly-cell { background-color: #f3f4f6; font-size: 0.75rem; }
+        .compact-input { padding: 4px 8px !important; font-size: 0.875rem; }
+        .compact-label { font-size: 0.8rem; font-weight: 500; margin-bottom: 2px; }
+        .section-card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         @media print {
             .no-print { display: none; }
             body { margin: 0; }
@@ -49,174 +53,182 @@
         </div>
 
         <!-- Calibration Form -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold">Calibration Data Entry</h2>
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Calibration Data Entry</h2>
                 <div class="flex space-x-2">
-                    <button onclick="saveCalibration()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-save mr-2"></i>Save
+                    <button onclick="saveCalibration()" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm">
+                        <i class="fas fa-save mr-1"></i>Save
                     </button>
-                    <button onclick="generateCertificate()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-certificate mr-2"></i>Generate Certificate
+                    <button onclick="generateCertificate()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-sm">
+                        <i class="fas fa-certificate mr-1"></i>Generate Certificate
                     </button>
+                    <div class="relative inline-block">
+                        <button onclick="toggleLabelMenu()" class="bg-green-500 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm">
+                            <i class="fas fa-tag mr-1"></i>Print Label
+                        </button>
+                        <div id="labelMenu" class="hidden absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <button onclick="printLabel('TRACE18')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                TRACE 18 (Large)
+                            </button>
+                            <button onclick="printLabel('TRACE18S')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                TRACE 18S (Small)
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Customer & Instrument Information -->
-            <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-2 gap-4 mb-4">
                 <!-- Left Column -->
-                <div class="space-y-4">
-                    <h3 class="font-semibold text-lg border-b pb-2">Instrument Information</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                <div class="section-card space-y-2">
+                    <h3 class="font-semibold text-sm border-b pb-1 mb-2">Instrument Information</h3>
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-sm font-medium mb-1">Certificate No:</label>
-                            <input id="certificateNo" type="text" class="w-full border rounded px-3 py-2">
+                            <label class="compact-label">Certificate No:</label>
+                            <input id="certificateNo" type="text" class="w-full border rounded compact-input">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1">S/N:</label>
-                            <input id="serialNumber" type="text" class="w-full border rounded px-3 py-2">
+                            <label class="compact-label">S/N:</label>
+                            <input id="serialNumber" type="text" class="w-full border rounded compact-input">
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">ID/Asset No:</label>
-                        <input id="assetNo" type="text" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-2">
                         <div>
-                            <label class="block text-sm font-medium mb-1">Make:</label>
-                            <input id="make" type="text" class="w-full border rounded px-3 py-2">
+                            <label class="compact-label">ID/Asset No:</label>
+                            <input id="assetNo" type="text" class="w-full border rounded compact-input">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1">Model:</label>
-                            <input id="model" type="text" class="w-full border rounded px-3 py-2">
+                            <label class="compact-label">Make:</label>
+                            <input id="make" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Model:</label>
+                            <input id="model" type="text" class="w-full border rounded compact-input">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Item No:</label>
-                        <input id="itemNo" type="text" class="w-full border rounded px-3 py-2">
+                        <label class="compact-label">Item No:</label>
+                        <input id="itemNo" type="text" class="w-full border rounded compact-input">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Customer:</label>
-                        <input id="customer" type="text" class="w-full border rounded px-3 py-2">
+                        <label class="compact-label">Customer:</label>
+                        <input id="customer" type="text" class="w-full border rounded compact-input">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Street:</label>
-                        <input id="street" type="text" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Suburb, State, Post Code:</label>
-                        <input id="address" type="text" class="w-full border rounded px-3 py-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="compact-label">Street:</label>
+                            <input id="street" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Suburb, State, Post Code:</label>
+                            <input id="address" type="text" class="w-full border rounded compact-input">
+                        </div>
                     </div>
                 </div>
 
                 <!-- Right Column -->
-                <div class="space-y-4">
-                    <h3 class="font-semibold text-lg border-b pb-2">Test Information</h3>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Standard:</label>
-                        <input id="standard" type="text" value="ISO 6789" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Accuracy (Tolerance):</label>
-                        <input id="tolerance" type="number" step="0.01" value="0.04" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Direction:</label>
-                        <select id="direction" class="w-full border rounded px-3 py-2">
-                            <option value="CW">Clockwise (CW)</option>
-                            <option value="CCW">Counter-Clockwise (CCW)</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4">
+                <div class="section-card space-y-2">
+                    <h3 class="font-semibold text-sm border-b pb-1 mb-2">Test Information</h3>
+                    <div class="grid grid-cols-3 gap-2">
                         <div>
-                            <label class="block text-sm font-medium mb-1">Range From:</label>
-                            <input id="rangeFrom" type="number" step="0.01" class="w-full border rounded px-3 py-2">
+                            <label class="compact-label">Standard:</label>
+                            <input id="standard" type="text" value="ISO 6789" class="w-full border rounded compact-input">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1">Range To:</label>
-                            <input id="rangeTo" type="number" step="0.01" class="w-full border rounded px-3 py-2">
+                            <label class="compact-label">Tolerance:</label>
+                            <input id="tolerance" type="number" step="0.01" value="0.04" class="w-full border rounded compact-input">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1">Unit:</label>
-                            <select id="unit" class="w-full border rounded px-3 py-2" onchange="recalculate()">
+                            <label class="compact-label">Direction:</label>
+                            <select id="direction" class="w-full border rounded compact-input">
+                                <option value="CW">CW</option>
+                                <option value="CCW">CCW</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div>
+                            <label class="compact-label">Range From:</label>
+                            <input id="rangeFrom" type="number" step="0.01" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Range To:</label>
+                            <input id="rangeTo" type="number" step="0.01" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Unit:</label>
+                            <select id="unit" class="w-full border rounded compact-input" onchange="recalculate()">
                                 <option value="N.m">N.m</option>
                                 <option value="kgf.m">kgf.m</option>
                                 <option value="lbf.ft">lbf.ft</option>
                                 <option value="lbf.in">lbf.in</option>
                             </select>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">S/O No:</label>
-                        <input id="soNumber" type="text" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">W/O No:</label>
-                        <input id="woNumber" type="text" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">PO Number:</label>
-                        <input id="poNumber" type="text" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium mb-1">Date Tested:</label>
-                            <input id="dateTested" type="date" class="w-full border rounded px-3 py-2">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1">Date Issued:</label>
-                            <input id="dateIssued" type="date" class="w-full border rounded px-3 py-2">
+                            <label class="compact-label">Technician:</label>
+                            <input id="technician" type="text" class="w-full border rounded compact-input">
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Technician:</label>
-                        <input id="technician" type="text" class="w-full border rounded px-3 py-2">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="compact-label">S/O No:</label>
+                            <input id="soNumber" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">W/O No:</label>
+                            <input id="woNumber" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">PO Number:</label>
+                            <input id="poNumber" type="text" class="w-full border rounded compact-input">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="compact-label">Date Tested:</label>
+                            <input id="dateTested" type="date" class="w-full border rounded compact-input" onchange="calculateDueDate()">
+                        </div>
+                        <div>
+                            <label class="compact-label">Date Issued:</label>
+                            <input id="dateIssued" type="date" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Due Date:</label>
+                            <input id="dueDate" type="date" class="w-full border rounded compact-input" title="Auto-calculated 12 months from test date (editable)">
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Reference Equipment -->
-            <div class="mb-6">
-                <h3 class="font-semibold text-lg border-b pb-2 mb-4">Reference Equipment</h3>
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Transmitter S/N:</label>
-                        <select id="transmitterSN" class="w-full border rounded px-3 py-2" onchange="updateReferenceEquipment()">
-                            <option value="">Select...</option>
-                            <option value="214002">214002 (25 N.m)</option>
-                            <option value="211766">211766 (400 N.m)</option>
-                            <option value="214144">214144 (1500 N.m)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Display S/N:</label>
-                        <input id="displaySN" type="text" value="212045" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Display Certificate:</label>
-                        <input id="displayCert" type="text" value="33665A" class="w-full border rounded px-3 py-2">
-                    </div>
+            <!-- Test Standard -->
+            <div class="section-card mb-4">
+                <div class="flex items-center space-x-2">
+                    <label class="compact-label whitespace-nowrap">Test Standard:</label>
+                    <input id="testStandard" type="text" value="PWI-101" readonly class="border rounded compact-input bg-gray-100 w-32">
+                    <a href="PWI-101-TRACE-Calibration-Procedures.pdf" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1" title="View Standard">
+                        <i class="fas fa-file-pdf text-lg"></i>
+                        <span class="text-sm">View Standard</span>
+                    </a>
                 </div>
-                <div class="grid grid-cols-2 gap-4 mt-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Transmitter Certificate:</label>
-                        <input id="transmitterCert" type="text" readonly class="w-full border rounded px-3 py-2 bg-gray-100">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Transmitter Range:</label>
-                        <input id="transmitterRange" type="text" readonly class="w-full border rounded px-3 py-2 bg-gray-100">
-                    </div>
-                </div>
+                <!-- Hidden reference equipment fields for certificate generation -->
+                <input id="displaySN" type="hidden" value="212045">
+                <input id="displayCert" type="hidden" value="33665A">
+                <input id="transmitterSN" type="hidden" value="">
+                <input id="transmitterCert" type="hidden" value="">
+                <input id="transmitterRange" type="hidden" value="">
             </div>
 
             <!-- Test Readings Table -->
-            <div class="mb-6">
-                <h3 class="font-semibold text-lg border-b pb-2 mb-4">Test Readings</h3>
+            <div class="section-card mb-3">
+                <h3 class="font-semibold text-sm border-b pb-1 mb-2">Test Readings</h3>
                 <div class="overflow-x-auto">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th rowspan="2">Test Point</th>
+                                <th rowspan="2">Transmitter<br>S/N</th>
                                 <th rowspan="2">Nominal<br>Torque</th>
                                 <th rowspan="2">Converted<br>to N.m</th>
                                 <th colspan="6">AS FOUND READINGS</th>
@@ -248,20 +260,20 @@
             </div>
 
             <!-- Results Summary -->
-            <div class="grid grid-cols-3 gap-4 mb-6">
-                <div class="bg-blue-50 border border-blue-200 rounded p-4">
-                    <div class="text-sm font-semibold text-gray-700">20% Test Point</div>
-                    <div class="text-2xl font-bold text-blue-600" id="result20">PASS</div>
+            <div class="grid grid-cols-3 gap-3 mb-3">
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">20% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result20">PASS</div>
                     <div class="text-xs text-gray-600">Error: <span id="error20">0.00%</span></div>
                 </div>
-                <div class="bg-blue-50 border border-blue-200 rounded p-4">
-                    <div class="text-sm font-semibold text-gray-700">60% Test Point</div>
-                    <div class="text-2xl font-bold text-blue-600" id="result60">PASS</div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">60% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result60">PASS</div>
                     <div class="text-xs text-gray-600">Error: <span id="error60">0.00%</span></div>
                 </div>
-                <div class="bg-blue-50 border border-blue-200 rounded p-4">
-                    <div class="text-sm font-semibold text-gray-700">100% Test Point</div>
-                    <div class="text-2xl font-bold text-blue-600" id="result100">PASS</div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">100% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result100">PASS</div>
                     <div class="text-xs text-gray-600">Error: <span id="error100">0.00%</span></div>
                 </div>
             </div>
@@ -310,6 +322,52 @@ const REFERENCE_EQUIPMENT = {
     '214144': { range: '1500 N.m', certificate: '33668A' }
 };
 
+// Transmitter uncertainty lookup tables (from Excel D25:I33)
+const TRANSMITTER_UNCERTAINTY_TABLES = {
+    '214002': [ // 25 N.m range (Table D25:E32)
+        { point: 1.25, unc: 0.33 },
+        { point: 2.5, unc: 0.27 },
+        { point: 5, unc: 0.26 },
+        { point: 10, unc: 0.25 },
+        { point: 15, unc: 0.25 },
+        { point: 20, unc: 0.25 },
+        { point: 25, unc: 0.25 }
+    ],
+    '211766': [ // 400 N.m range (Table F25:G32)
+        { point: 20, unc: 0.44 },
+        { point: 40, unc: 0.27 },
+        { point: 80, unc: 0.19 },
+        { point: 160, unc: 0.16 },
+        { point: 240, unc: 0.16 },
+        { point: 320, unc: 0.15 },
+        { point: 400, unc: 0.15 }
+    ],
+    '214144': [ // 1500 N.m range (Table H25:I33)
+        { point: 30, unc: 0.47 },
+        { point: 75, unc: 0.24 },
+        { point: 150, unc: 0.17 },
+        { point: 300, unc: 0.14 },
+        { point: 600, unc: 0.14 },
+        { point: 900, unc: 0.14 },
+        { point: 1200, unc: 0.14 },
+        { point: 1500, unc: 0.14 }
+    ]
+};
+
+// Function to get transmitter uncertainty for a given point (VLOOKUP approximation)
+function getTransmitterUncertainty(transmitterSN, convertedNm) {
+    const table = TRANSMITTER_UNCERTAINTY_TABLES[transmitterSN];
+    if (!table) return 0.15; // Default
+    
+    // VLOOKUP with TRUE (range lookup) - find largest value <= convertedNm
+    for (let i = table.length - 1; i >= 0; i--) {
+        if (convertedNm >= table[i].point) {
+            return table[i].unc;
+        }
+    }
+    return table[0].unc; // If smaller than first entry, use first
+}
+
 let currentCalibration = null;
 let savedCalibrations = [];
 
@@ -329,6 +387,26 @@ function setDefaultDates() {
     
     document.getElementById('dateTested').value = dateStr;
     document.getElementById('dateIssued').value = dateStr;
+    calculateDueDate(); // Calculate due date for today
+}
+
+function calculateDueDate() {
+    const dateTestedInput = document.getElementById('dateTested');
+    const dueDateInput = document.getElementById('dueDate');
+    
+    if (dateTestedInput.value) {
+        const dateTested = new Date(dateTestedInput.value);
+        // Add 12 months to the date tested
+        const dueDate = new Date(dateTested);
+        dueDate.setMonth(dueDate.getMonth() + 12);
+        
+        // Format as YYYY-MM-DD
+        const yyyy = dueDate.getFullYear();
+        const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(dueDate.getDate()).padStart(2, '0');
+        
+        dueDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
 }
 
 function logout() {
@@ -339,6 +417,7 @@ function logout() {
 function initializeReadingsTable() {
     const tbody = document.getElementById('readingsTableBody');
     const testPoints = ['20%', '60%', '100%'];
+    const defaultTransmitters = ['214002', '211766', '214144']; // Default for each test point
     
     tbody.innerHTML = '';
     testPoints.forEach((point, idx) => {
@@ -346,6 +425,13 @@ function initializeReadingsTable() {
         row.id = `testRow${idx}`;
         row.innerHTML = `
             <td class="font-semibold">${point}</td>
+            <td>
+                <select id="transmitter${idx}" class="w-full border rounded px-2 py-1 text-sm" onchange="recalculate()">
+                    <option value="214002">214002</option>
+                    <option value="211766">211766</option>
+                    <option value="214144">214144</option>
+                </select>
+            </td>
             <td class="readonly-cell"><span id="nominal${idx}">0</span></td>
             <td class="readonly-cell"><span id="converted${idx}">0.00</span></td>
             <td><input type="number" step="0.01" id="asFound${idx}_1" oninput="calculateAverages(${idx}, 'asFound')"></td>
@@ -364,6 +450,9 @@ function initializeReadingsTable() {
             <td class="readonly-cell"><span id="errorPct${idx}">-</span></td>
         `;
         tbody.appendChild(row);
+        
+        // Set default transmitter for this test point
+        document.getElementById(`transmitter${idx}`).value = defaultTransmitters[idx];
     });
     
     recalculate();
@@ -377,7 +466,8 @@ function recalculate() {
     
     // Calculate nominal values for each test point (matches Excel formulas)
     // Test Point 1 (20%): =ROUND(IF(M5>(O5*20%),M5,O5*20%),2)
-    // This means: if rangeFrom > (rangeTo * 20%), use rangeFrom, else use rangeTo * 20%
+    // Test Point 2 (60%): =O5*60%
+    // Test Point 3 (100%): =O5*100%
     const testPoints = [
         { percentage: 0.20, idx: 0 },
         { percentage: 0.60, idx: 1 },
@@ -394,6 +484,10 @@ function recalculate() {
         }
         
         nominal = Math.round(nominal * 100) / 100;
+        
+        // Converted to N.m: =ROUND(VLOOKUP(M6,U3:V15,2,FALSE)*C17,2)
+        // The conversion is simply nominal * conversionFactor
+        // NOTE: The transmitter selection (B17, B18, B19) is used for UNCERTAINTY, not conversion
         const converted = Math.round(nominal * conversionFactor * 100) / 100;
         
         document.getElementById(`nominal${idx}`).textContent = nominal.toFixed(2);
@@ -485,30 +579,16 @@ function calculateUncertainty(rowIdx, nominalValue) {
         return 0;
     }
     
-    // Get transmitter uncertainty based on range
-    const transmitterSN = document.getElementById('transmitterSN').value;
-    let transmitterUncertainty = 0;
+    // Get the selected transmitter for THIS test point (from dropdown)
+    const transmitterSN = document.getElementById(`transmitter${rowIdx}`).value;
     
-    // Transmitter uncertainty lookup table (from Excel K21:N24)
-    const transmitterTable = {
-        '214002': { // 25 N.m range
-            '20': 0.0048,
-            '60': 0.0048,
-            '100': 0.0048
-        },
-        '214003': { // Another transmitter
-            '20': 0.0048,
-            '60': 0.0048,
-            '100': 0.0048
-        }
-    };
+    // Get converted N.m value for uncertainty lookup
+    const convertedNm = parseFloat(document.getElementById(`converted${rowIdx}`).textContent);
     
-    const testPoint = ['20', '60', '100'][rowIdx];
-    if (transmitterTable[transmitterSN]) {
-        transmitterUncertainty = transmitterTable[transmitterSN][testPoint] || 0.0048;
-    } else {
-        transmitterUncertainty = 0.0048; // Default value
-    }
+    // Get transmitter uncertainty using VLOOKUP-style lookup
+    // Excel: =VLOOKUP(Worksheet!B17,Worksheet!K21:N24,2,FALSE)
+    // which becomes =VLOOKUP(D17, transmitter_table, 2, TRUE)
+    const transmitterUncertainty = getTransmitterUncertainty(transmitterSN, convertedNm);
     
     // Uncertainty components (from Excel Uncertainty sheets)
     const components = [];
@@ -521,7 +601,7 @@ function calculateUncertainty(rowIdx, nominalValue) {
     const driftDisplay = ucDisplay / 2;
     components.push(driftDisplay);
     
-    // 3. Uc of Transmitter
+    // 3. Uc of Transmitter (from lookup table)
     components.push(transmitterUncertainty);
     
     // 4. Drift of Transmitter (half of Uc Transmitter)
@@ -578,10 +658,8 @@ function calculateUncertainty(rowIdx, nominalValue) {
     // Convert to percentage
     const uncertaintyPercent = (expandedUncertainty / 100) * 100;
     
-    // Return uncertainty percentage (typical values from Excel: 0.16%, 0.097%, 0.085%)
-    // Simplified for display - use fixed values matching Excel output
-    const uncertaintyValues = [0.16, 0.097, 0.085];
-    return uncertaintyValues[rowIdx] || uncertaintyPercent;
+    // Return the calculated uncertainty percentage
+    return uncertaintyPercent;
 }
 
 function updateReferenceEquipment() {
@@ -628,6 +706,7 @@ function saveCalibration() {
         poNumber: document.getElementById('poNumber').value,
         dateTested: document.getElementById('dateTested').value,
         dateIssued: document.getElementById('dateIssued').value,
+        dueDate: document.getElementById('dueDate').value,
         technician: document.getElementById('technician').value,
         // Reference equipment
         transmitterSN: document.getElementById('transmitterSN').value,
@@ -759,6 +838,7 @@ function loadCalibration(index) {
     document.getElementById('poNumber').value = cal.poNumber || '';
     document.getElementById('dateTested').value = cal.dateTested || '';
     document.getElementById('dateIssued').value = cal.dateIssued || '';
+    document.getElementById('dueDate').value = cal.dueDate || '';
     document.getElementById('technician').value = cal.technician || '';
     document.getElementById('transmitterSN').value = cal.transmitterSN || '';
     document.getElementById('displaySN').value = cal.displaySN || '';
@@ -806,6 +886,265 @@ function generateCertificate() {
     const certWindow = window.open('', '_blank', 'width=900,height=1200');
     certWindow.document.write(getCertificateHTML());
     certWindow.document.close();
+}
+
+function toggleLabelMenu() {
+    const menu = document.getElementById('labelMenu');
+    menu.classList.toggle('hidden');
+}
+
+// Close label menu when clicking outside
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('labelMenu');
+    const button = event.target.closest('button');
+    if (menu && !menu.contains(event.target) && (!button || button.textContent.indexOf('Print Label') === -1)) {
+        menu.classList.add('hidden');
+    }
+});
+
+function printLabel(labelType) {
+    document.getElementById('labelMenu').classList.add('hidden');
+    
+    const labelWindow = window.open('', '_blank', 'width=800,height=600');
+    labelWindow.document.write(getLabelHTML(labelType));
+    labelWindow.document.close();
+}
+
+function getLabelHTML(labelType) {
+    const certificateNo = document.getElementById('certificateNo').value || 'N/A';
+    const serialNumber = document.getElementById('serialNumber').value || 'N/A';
+    const dateTested = document.getElementById('dateTested').value || '';
+    const dueDate = document.getElementById('dueDate').value || '';
+    
+    // Format dates as DD/MM/YYYY
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+    
+    if (labelType === 'TRACE18') {
+        // Large label format (18mm height)
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>TRACE 18 Label - ${certificateNo}</title>
+                <style>
+                    @page { size: 102mm 18mm; margin: 0; }
+                    body { 
+                        margin: 0; 
+                        padding: 0;
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 18mm;
+                        width: 102mm;
+                    }
+                    .label {
+                        width: 100mm;
+                        height: 16mm;
+                        border: 2px solid black;
+                        display: grid;
+                        grid-template-columns: 25mm 1fr;
+                        box-sizing: border-box;
+                    }
+                    .logo-section {
+                        border-right: 2px solid black;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 1mm;
+                    }
+                    .logo {
+                        border: 3px solid black;
+                        padding: 1mm 2mm;
+                        font-weight: 900;
+                        font-size: 14pt;
+                        letter-spacing: 1px;
+                    }
+                    .info-section {
+                        display: grid;
+                        grid-template-rows: auto 1fr 1fr;
+                        padding: 0.5mm 2mm;
+                    }
+                    .phone {
+                        font-size: 10pt;
+                        font-weight: bold;
+                        text-align: right;
+                        padding-right: 1mm;
+                    }
+                    .info-row {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        align-items: center;
+                        border-top: 1px solid black;
+                    }
+                    .info-row:first-child {
+                        border-top: none;
+                    }
+                    .info-cell {
+                        padding: 0.5mm 1mm;
+                        font-size: 9pt;
+                    }
+                    .info-cell:first-child {
+                        border-right: 1px solid black;
+                    }
+                    .label-text {
+                        font-weight: bold;
+                    }
+                    .value-text {
+                        font-weight: bold;
+                        font-size: 10pt;
+                    }
+                    @media print {
+                        button { display: none !important; }
+                        body { height: 18mm; width: 102mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="label">
+                    <div class="logo-section">
+                        <div class="logo">WIKA</div>
+                    </div>
+                    <div class="info-section">
+                        <div class="phone">PH.0894552298</div>
+                        <div class="info-row">
+                            <div class="info-cell">
+                                <span class="label-text">Report:</span> <span class="value-text">${certificateNo}</span>
+                            </div>
+                            <div class="info-cell">
+                                <span class="label-text">Date:</span> <span class="value-text">${formatDate(dateTested)}</span>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-cell">
+                                <span class="label-text">SN:</span> <span class="value-text">${serialNumber}</span>
+                            </div>
+                            <div class="info-cell">
+                                <span class="label-text">Due:</span> <span class="value-text">${formatDate(dueDate)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.print()" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                        Print Label
+                    </button>
+                    <button onclick="window.close()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            </body>
+            </html>
+        `;
+    } else {
+        // Small label format (18mm height)
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>TRACE 18S Label - ${certificateNo}</title>
+                <style>
+                    @page { size: 62mm 18mm; margin: 0; }
+                    body { 
+                        margin: 0; 
+                        padding: 0;
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 18mm;
+                        width: 62mm;
+                    }
+                    .label {
+                        width: 60mm;
+                        height: 16mm;
+                        border: 2px solid black;
+                        display: grid;
+                        grid-template-columns: 12mm 1fr;
+                        box-sizing: border-box;
+                    }
+                    .logo-section {
+                        border-right: 2px solid black;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        writing-mode: vertical-rl;
+                        text-orientation: mixed;
+                        padding: 1mm;
+                    }
+                    .logo {
+                        border: 2px solid black;
+                        padding: 1mm;
+                        font-weight: 900;
+                        font-size: 10pt;
+                        letter-spacing: 0px;
+                        transform: rotate(180deg);
+                    }
+                    .info-section {
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        padding: 1mm 2mm;
+                    }
+                    .info-row {
+                        display: flex;
+                        align-items: center;
+                        padding: 0.5mm 0;
+                        font-size: 8pt;
+                    }
+                    .label-text {
+                        font-weight: bold;
+                        margin-right: 2mm;
+                    }
+                    .value-text {
+                        font-weight: bold;
+                        font-size: 9pt;
+                    }
+                    @media print {
+                        button { display: none !important; }
+                        body { height: 18mm; width: 62mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="label">
+                    <div class="logo-section">
+                        <div class="logo">WIKA</div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-row">
+                            <span class="label-text">Report:</span> <span class="value-text">${certificateNo}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label-text">Date:</span> <span class="value-text">${formatDate(dateTested)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label-text">Due:</span> <span class="value-text">${formatDate(dueDate)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label-text">SN:</span> <span class="value-text">${serialNumber}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.print()" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                        Print Label
+                    </button>
+                    <button onclick="window.close()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            </body>
+            </html>
+        `;
+    }
 }
 
 function getCertificateHTML() {
