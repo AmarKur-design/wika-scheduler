@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torque TRACE Calibration - WIKA (Enhanced Settings)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 0.5rem; width: 95%; max-width: 1200px; max-height: 95vh; overflow-y: auto; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        input[type="number"] { -moz-appearance: textfield; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
+        .data-table th { background-color: #3b82f6; color: white; font-size: 0.7rem; font-weight: 600; }
+        .data-table input, .data-table select { width: 100%; border: none; text-align: center; padding: 2px 4px; font-size: 0.75rem; }
+        .data-table input:focus { outline: 1px solid #3b82f6; background-color: #eff6ff; }
+        .data-table select { padding: 2px; min-width: 80px; }
+        .readonly-cell { background-color: #f3f4f6; font-size: 0.75rem; }
+        .transmitter-col { min-width: 90px; }
+        .compact-input { padding: 4px 8px !important; font-size: 0.875rem; }
+        .compact-label { font-size: 0.8rem; font-weight: 500; margin-bottom: 2px; }
+        .section-card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .settings-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .settings-table th, .settings-table td { border: 1px solid #ddd; padding: 6px 8px; }
+        .settings-table th { background-color: #f3f4f6; font-weight: 600; text-align: left; }
+        .settings-table input[type="text"], .settings-table input[type="number"] { width: 100%; border: 1px solid #ddd; border-radius: 3px; padding: 4px 6px; }
+        .tab-button { padding: 8px 16px; border-radius: 6px 6px 0 0; background: #e5e7eb; cursor: pointer; }
+        .tab-button.active { background: white; font-weight: 600; border-bottom: 2px solid #3b82f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 no-print">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Torque TRACE Calibration (Enhanced)</h1>
+                <p class="text-sm text-gray-600">Welcome, <span id="userName"></span></p>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="showSettings()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-cog mr-2"></i>Settings
+                </button>
+                <button onclick="showSavedCalibrations()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-list mr-2"></i>Saved Calibrations
+                </button>
+                <button onclick="newCalibration()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-plus mr-2"></i>New Calibration
+                </button>
+                <a href="calibration.html" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </a>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Calibration Form (keeping the original structure) -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Calibration Data Entry</h2>
+                <div class="flex space-x-2">
+                    <button onclick="saveCalibration()" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm">
+                        <i class="fas fa-save mr-1"></i>Save
+                    </button>
+                    <button onclick="generateCertificate()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-sm">
+                        <i class="fas fa-certificate mr-1"></i>Generate Certificate
+                    </button>
+                </div>
+            </div>
+
+            <!-- Customer & Instrument Information -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="section-card space-y-2">
+                    <h3 class="font-semibold text-sm border-b pb-1 mb-2">Instrument Information</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="compact-label">Certificate No:</label><input id="certificateNo" type="text" class="w-full border rounded compact-input"></div>
+                        <div><label class="compact-label">S/N:</label><input id="serialNumber" type="text" class="w-full border rounded compact-input"></div>
+                    </div>
+                    <div><label class="compact-label">Customer:</label><input id="customer" type="text" class="w-full border rounded compact-input"></div>
+                </div>
+                <div class="section-card space-y-2">
+                    <h3 class="font-semibold text-sm border-b pb-1 mb-2">Test Information</h3>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="compact-label">Range From:</label><input id="rangeFrom" type="number" step="0.01" class="w-full border rounded compact-input"></div>
+                        <div><label class="compact-label">Range To:</label><input id="rangeTo" type="number" step="0.01" class="w-full border rounded compact-input"></div>
+                        <div><label class="compact-label">Unit:</label><select id="unit" class="w-full border rounded compact-input" onchange="recalculate()"><option value="N.m">N.m</option></select></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="compact-label">Date Tested:</label><input id="dateTested" type="date" class="w-full border rounded compact-input"></div>
+                        <div><label class="compact-label">Technician:</label><input id="technician" type="text" class="w-full border rounded compact-input"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Readings Table -->
+            <div class="section-card mb-3">
+                <h3 class="font-semibold text-sm border-b pb-1 mb-2">Test Readings</h3>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Test Point</th>
+                                <th rowspan="2">Transmitter<br>S/N</th>
+                                <th rowspan="2">Nominal<br>Torque</th>
+                                <th rowspan="2">Converted<br>to N.m</th>
+                                <th colspan="6">AS FOUND READINGS</th>
+                                <th colspan="6">AS LEFT READINGS</th>
+                                <th colspan="2">RESULT</th>
+                            </tr>
+                            <tr>
+                                <th>Meas 1</th><th>Meas 2</th><th>Meas 3</th><th>Meas 4</th><th>Meas 5</th><th>Average</th>
+                                <th>Meas 1</th><th>Meas 2</th><th>Meas 3</th><th>Meas 4</th><th>Meas 5</th><th>Average</th>
+                                <th>ERROR</th><th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="readingsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            <div class="grid grid-cols-3 gap-3 mb-3">
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">20% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result20">PASS</div>
+                    <div class="text-xs text-gray-600">Error: <span id="error20">0.00%</span></div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">60% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result60">PASS</div>
+                    <div class="text-xs text-gray-600">Error: <span id="error60">0.00%</span></div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">100% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result100">PASS</div>
+                    <div class="text-xs text-gray-600">Error: <span id="error100">0.00%</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Enhanced Calibration Settings</h2>
+                <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex space-x-2 border-b mb-4">
+                <button class="tab-button active" onclick="switchTab('transmitters')">
+                    <i class="fas fa-tools mr-2"></i>Transmitters
+                </button>
+                <button class="tab-button" onclick="switchTab('uncertainty')">
+                    <i class="fas fa-calculator mr-2"></i>Uncertainty Lookup Tables
+                </button>
+                <button class="tab-button" onclick="switchTab('components')">
+                    <i class="fas fa-cogs mr-2"></i>Uncertainty Components
+                </button>
+            </div>
+
+            <!-- Transmitters Tab -->
+            <div id="transmitters-tab" class="tab-content active">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Transmitter Database</h3>
+                    <p class="text-sm text-gray-600 mb-3">Add and manage your reference transmitters. These will be available for selection during calibration.</p>
+                    
+                    <table class="settings-table mb-3">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%">Serial Number</th>
+                                <th style="width: 20%">Range</th>
+                                <th style="width: 20%">Certificate No</th>
+                                <th style="width: 20%">Status</th>
+                                <th style="width: 15%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transmittersTableBody">
+                            <!-- Rows populated by JavaScript -->
+                        </tbody>
+                    </table>
+                    
+                    <button onclick="addTransmitterRow()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-plus mr-2"></i>Add Transmitter
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Display Equipment</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-semibold">Serial Number:</label>
+                            <input type="text" id="displaySN" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Certificate Number:</label>
+                            <input type="text" id="displayCert" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Uncertainty Lookup Tables Tab -->
+            <div id="uncertainty-tab" class="tab-content">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Transmitter Uncertainty Lookup Tables</h3>
+                    <p class="text-sm text-gray-600 mb-3">Define uncertainty values for each transmitter calibration point. These values should come from the transmitter's calibration certificate.</p>
+                    
+                    <div class="mb-3">
+                        <label class="text-sm font-semibold">Select Transmitter:</label>
+                        <select id="uncertaintyTransmitterSelect" onchange="loadUncertaintyTable()" class="w-full border rounded px-3 py-2 mt-1">
+                            <option value="">-- Select a transmitter --</option>
+                        </select>
+                    </div>
+                    
+                    <div id="uncertaintyTableContainer" class="hidden">
+                        <table class="settings-table mb-3">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%">Test Point (N.m)</th>
+                                    <th style="width: 40%">Uncertainty (N.m)</th>
+                                    <th style="width: 20%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uncertaintyTableBody">
+                                <!-- Rows populated by JavaScript -->
+                            </tbody>
+                        </table>
+                        
+                        <button onclick="addUncertaintyRow()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                            <i class="fas fa-plus mr-2"></i>Add Point
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Uncertainty Components Tab -->
+            <div id="components-tab" class="tab-content">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Uncertainty Components</h3>
+                    <p class="text-sm text-gray-600 mb-3">Advanced: Configure the uncertainty budget components. Only modify if you understand GUM methodology.</p>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-semibold">Display Accuracy (% of nominal):</label>
+                            <input type="number" id="ucDisplay" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Resolution (N.m):</label>
+                            <input type="number" id="resolution" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Ambient Temperature Effect (N.m):</label>
+                            <input type="number" id="ambientEffect" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Thermals (N.m):</label>
+                            <input type="number" id="thermals" step="0.001" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Data Fit/Interpolation (N.m):</label>
+                            <input type="number" id="dataFit" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">AC Pickup/Thermals (N.m):</label>
+                            <input type="number" id="acPickup" step="0.001" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Rounding (N.m):</label>
+                            <input type="number" id="rounding" step="0.001" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Coverage Factor (k):</label>
+                            <input type="number" id="coverageFactor" step="0.1" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-2 mt-6 pt-4 border-t">
+                <button onclick="resetToDefaults()" class="bg-yellow-500 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-undo mr-2"></i>Reset to Defaults
+                </button>
+                <button onclick="saveSettings()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-save mr-2"></i>Save Settings
+                </button>
+                <button onclick="closeSettings()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Calibrations Modal -->
+    <div id="savedCalibrationsModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Saved Calibrations</h2>
+                <button onclick="closeSavedCalibrations()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="savedCalibrationsList" class="overflow-auto" style="max-height: 60vh;"></div>
+        </div>
+    </div>
+
+<script>
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name: 'Test User', role: 'admin' };
+
+// Unit conversion factors
+const UNIT_CONVERSIONS = {
+    'N.m': 1,
+    'dN.m': 0.1,
+    'cN.m': 0.01,
+    'kgf.m': 9.80665003,
+    'kgf.cm': 0.0980665,
+    'lbf.ft': 1.35581795,
+    'lbf.in': 0.112985
+};
+
+let calibrationSettings = {};
+let currentCalibration = null;
+let savedCalibrations = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('userName').textContent = currentUser.name;
+    loadSettings();
+    initializeReadingsTable();
+    setDefaultDates();
+    loadSavedCalibrations();
+});
+
+// ============================================================================
+// SETTINGS MANAGEMENT (Enhanced)
+// ============================================================================
+
+function loadSettings() {
+    const stored = localStorage.getItem('torqueCalibrationSettings');
+    
+    if (stored) {
+        calibrationSettings = JSON.parse(stored);
+    } else {
+        // Default settings
+        calibrationSettings = {
+            transmitters: [
+                { serialNo: '214002', range: '25 N.m', certificate: '33666A', status: 'Active' },
+                { serialNo: '211766', range: '400 N.m', certificate: '33667A', status: 'Active' },
+                { serialNo: '214144', range: '1500 N.m', certificate: '33668A', status: 'Active' }
+            ],
+            display: {
+                serialNo: '212045',
+                certificate: '33665A'
+            },
+            uncertaintyTables: {
+                '214002': [
+                    { point: 1.25, unc: 0.33 }, { point: 2.5, unc: 0.27 },
+                    { point: 5, unc: 0.26 }, { point: 10, unc: 0.25 },
+                    { point: 15, unc: 0.25 }, { point: 20, unc: 0.25 }, { point: 25, unc: 0.25 }
+                ],
+                '211766': [
+                    { point: 20, unc: 0.44 }, { point: 40, unc: 0.27 },
+                    { point: 80, unc: 0.19 }, { point: 160, unc: 0.16 },
+                    { point: 240, unc: 0.16 }, { point: 320, unc: 0.15 }, { point: 400, unc: 0.15 }
+                ],
+                '214144': [
+                    { point: 30, unc: 0.47 }, { point: 75, unc: 0.24 },
+                    { point: 150, unc: 0.17 }, { point: 300, unc: 0.14 },
+                    { point: 600, unc: 0.14 }, { point: 900, unc: 0.14 },
+                    { point: 1200, unc: 0.14 }, { point: 1500, unc: 0.14 }
+                ]
+            },
+            uncertainty: {
+                ucDisplay: 0.3,
+                resolution: 0.05,
+                ambientEffect: 0.1,
+                thermals: 0.001,
+                dataFit: 0.05,
+                acPickup: 0.001,
+                rounding: 0.005,
+                coverageFactor: 2
+            }
+        };
+        saveSettingsToStorage();
+    }
+}
+
+function saveSettingsToStorage() {
+    localStorage.setItem('torqueCalibrationSettings', JSON.stringify(calibrationSettings));
+}
+
+function showSettings() {
+    document.getElementById('settingsModal').classList.add('show');
+    populateSettingsForm();
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+}
+
+function switchTab(tabName) {
+    // Update buttons
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.tab-button').classList.add('active');
+    
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Load specific tab content
+    if (tabName === 'transmitters') {
+        populateTransmittersTable();
+    } else if (tabName === 'uncertainty') {
+        populateUncertaintySelect();
+    }
+}
+
+function populateSettingsForm() {
+    // Load transmitters
+    populateTransmittersTable();
+    
+    // Load display
+    document.getElementById('displaySN').value = calibrationSettings.display?.serialNo || '';
+    document.getElementById('displayCert').value = calibrationSettings.display?.certificate || '';
+    
+    // Load uncertainty components
+    const unc = calibrationSettings.uncertainty || {};
+    document.getElementById('ucDisplay').value = unc.ucDisplay || 0.3;
+    document.getElementById('resolution').value = unc.resolution || 0.05;
+    document.getElementById('ambientEffect').value = unc.ambientEffect || 0.1;
+    document.getElementById('thermals').value = unc.thermals || 0.001;
+    document.getElementById('dataFit').value = unc.dataFit || 0.05;
+    document.getElementById('acPickup').value = unc.acPickup || 0.001;
+    document.getElementById('rounding').value = unc.rounding || 0.005;
+    document.getElementById('coverageFactor').value = unc.coverageFactor || 2;
+    
+    // Populate uncertainty transmitter select
+    populateUncertaintySelect();
+}
+
+// ============================================================================
+// TRANSMITTERS TAB
+// ============================================================================
+
+function populateTransmittersTable() {
+    const tbody = document.getElementById('transmittersTableBody');
+    tbody.innerHTML = '';
+    
+    calibrationSettings.transmitters.forEach((tx, idx) => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td><input type="text" value="${tx.serialNo}" onchange="updateTransmitter(${idx}, 'serialNo', this.value)"></td>
+            <td><input type="text" value="${tx.range}" onchange="updateTransmitter(${idx}, 'range', this.value)"></td>
+            <td><input type="text" value="${tx.certificate}" onchange="updateTransmitter(${idx}, 'certificate', this.value)"></td>
+            <td>
+                <select onchange="updateTransmitter(${idx}, 'status', this.value)">
+                    <option value="Active" ${tx.status === 'Active' ? 'selected' : ''}>Active</option>
+                    <option value="Inactive" ${tx.status === 'Inactive' ? 'selected' : ''}>Inactive</option>
+                    <option value="Expired" ${tx.status === 'Expired' ? 'selected' : ''}>Expired</option>
+                </select>
+            </td>
+            <td class="text-center">
+                <button onclick="removeTransmitter(${idx})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function addTransmitterRow() {
+    calibrationSettings.transmitters.push({
+        serialNo: '',
+        range: '',
+        certificate: '',
+        status: 'Active'
+    });
+    populateTransmittersTable();
+}
+
+function updateTransmitter(index, field, value) {
+    calibrationSettings.transmitters[index][field] = value;
+}
+
+function removeTransmitter(index) {
+    if (confirm('Remove this transmitter? This will also delete its uncertainty lookup table.')) {
+        const serialNo = calibrationSettings.transmitters[index].serialNo;
+        calibrationSettings.transmitters.splice(index, 1);
+        delete calibrationSettings.uncertaintyTables[serialNo];
+        populateTransmittersTable();
+    }
+}
+
+// ============================================================================
+// UNCERTAINTY LOOKUP TABLES TAB
+// ============================================================================
+
+function populateUncertaintySelect() {
+    const select = document.getElementById('uncertaintyTransmitterSelect');
+    select.innerHTML = '<option value="">-- Select a transmitter --</option>';
+    
+    calibrationSettings.transmitters.forEach(tx => {
+        const option = document.createElement('option');
+        option.value = tx.serialNo;
+        option.textContent = `${tx.serialNo} (${tx.range})`;
+        select.appendChild(option);
+    });
+}
+
+function loadUncertaintyTable() {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    const container = document.getElementById('uncertaintyTableContainer');
+    const tbody = document.getElementById('uncertaintyTableBody');
+    
+    if (!serialNo) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    tbody.innerHTML = '';
+    
+    // Initialize table if doesn't exist
+    if (!calibrationSettings.uncertaintyTables[serialNo]) {
+        calibrationSettings.uncertaintyTables[serialNo] = [];
+    }
+    
+    const table = calibrationSettings.uncertaintyTables[serialNo];
+    table.forEach((entry, idx) => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td><input type="number" step="0.01" value="${entry.point}" onchange="updateUncertaintyPoint(${idx}, 'point', parseFloat(this.value))"></td>
+            <td><input type="number" step="0.01" value="${entry.unc}" onchange="updateUncertaintyPoint(${idx}, 'unc', parseFloat(this.value))"></td>
+            <td class="text-center">
+                <button onclick="removeUncertaintyPoint(${idx})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function addUncertaintyRow() {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    if (!serialNo) return;
+    
+    calibrationSettings.uncertaintyTables[serialNo].push({ point: 0, unc: 0 });
+    loadUncertaintyTable();
+}
+
+function updateUncertaintyPoint(index, field, value) {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    calibrationSettings.uncertaintyTables[serialNo][index][field] = value;
+}
+
+function removeUncertaintyPoint(index) {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    calibrationSettings.uncertaintyTables[serialNo].splice(index, 1);
+    loadUncertaintyTable();
+}
+
+// ============================================================================
+// SAVE SETTINGS
+// ============================================================================
+
+function saveSettings() {
+    // Update display
+    calibrationSettings.display = {
+        serialNo: document.getElementById('displaySN').value,
+        certificate: document.getElementById('displayCert').value
+    };
+    
+    // Update uncertainty components
+    calibrationSettings.uncertainty = {
+        ucDisplay: parseFloat(document.getElementById('ucDisplay').value),
+        resolution: parseFloat(document.getElementById('resolution').value),
+        ambientEffect: parseFloat(document.getElementById('ambientEffect').value),
+        thermals: parseFloat(document.getElementById('thermals').value),
+        dataFit: parseFloat(document.getElementById('dataFit').value),
+        acPickup: parseFloat(document.getElementById('acPickup').value),
+        rounding: parseFloat(document.getElementById('rounding').value),
+        coverageFactor: parseFloat(document.getElementById('coverageFactor').value)
+    };
+    
+    saveSettingsToStorage();
+    updateTransmitterOptions();
+    
+    alert('Settings saved successfully!');
+    closeSettings();
+}
+
+function resetToDefaults() {
+    if (confirm('Reset all settings to default values? This will delete all custom transmitters and uncertainty tables.')) {
+        localStorage.removeItem('torqueCalibrationSettings');
+        loadSettings();
+        populateSettingsForm();
+        alert('Settings reset to defaults!');
+    }
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function updateTransmitterOptions() {
+    const transmitters = calibrationSettings.transmitters.filter(tx => tx.status === 'Active');
+    
+    for (let idx = 0; idx < 3; idx++) {
+        const select = document.getElementById(`transmitter${idx}`);
+        if (select) {
+            select.innerHTML = '';
+            transmitters.forEach(tx => {
+                const option = document.createElement('option');
+                option.value = tx.serialNo;
+                option.textContent = `${tx.serialNo} (${tx.range})`;
+                select.appendChild(option);
+            });
+        }
+    }
+}
+
+function getTransmitterUncertainty(serialNo, convertedNm) {
+    const table = calibrationSettings.uncertaintyTables[serialNo];
+    if (!table || table.length === 0) return 0.15;
+    
+    // Sort table by point
+    const sortedTable = [...table].sort((a, b) => a.point - b.point);
+    
+    // VLOOKUP-style lookup: find largest value <= convertedNm
+    for (let i = sortedTable.length - 1; i >= 0; i--) {
+        if (convertedNm >= sortedTable[i].point) {
+            return sortedTable[i].unc;
+        }
+    }
+    return sortedTable[0].unc;
+}
+
+// ============================================================================
+// CALIBRATION FUNCTIONS (Simplified - using existing logic)
+// ============================================================================
+
+function initializeReadingsTable() {
+    const tbody = document.getElementById('readingsTableBody');
+    const testPoints = ['20%', '60%', '100%'];
+    
+    tbody.innerHTML = '';
+    testPoints.forEach((point, idx) => {
+        const row = document.createElement('tr');
+        row.id = `testRow${idx}`;
+        row.innerHTML = `
+            <td class="font-semibold">${point}</td>
+            <td class="transmitter-col">
+                <select id="transmitter${idx}" class="w-full border rounded px-2 py-1 text-sm" onchange="recalculate()"></select>
+            </td>
+            <td class="readonly-cell"><span id="nominal${idx}">0</span></td>
+            <td class="readonly-cell"><span id="converted${idx}">0.00</span></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_1" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_2" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_3" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_4" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_5" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td class="readonly-cell"><span id="asFoundAvg${idx}">-</span></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_1" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_2" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_3" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_4" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_5" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td class="readonly-cell"><span id="asLeftAvg${idx}">-</span></td>
+            <td class="readonly-cell"><span id="error${idx}">-</span></td>
+            <td class="readonly-cell"><span id="errorPct${idx}">-</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    updateTransmitterOptions();
+    recalculate();
+}
+
+function recalculate() {
+    const rangeFrom = parseFloat(document.getElementById('rangeFrom').value) || 0;
+    const rangeTo = parseFloat(document.getElementById('rangeTo').value) || 0;
+    const unit = document.getElementById('unit').value;
+    const conversionFactor = UNIT_CONVERSIONS[unit] || 1;
+    
+    const testPoints = [
+        { percentage: 0.20, idx: 0 },
+        { percentage: 0.60, idx: 1 },
+        { percentage: 1.00, idx: 2 }
+    ];
+    
+    testPoints.forEach(({ percentage, idx }) => {
+        let nominal = (idx === 0) ? Math.max(rangeFrom, rangeTo * percentage) : rangeTo * percentage;
+        nominal = Math.round(nominal * 100) / 100;
+        const converted = Math.round(nominal * conversionFactor * 100) / 100;
+        
+        document.getElementById(`nominal${idx}`).textContent = nominal.toFixed(2);
+        document.getElementById(`converted${idx}`).textContent = converted.toFixed(2);
+        
+        calculateAverages(idx, 'asFound');
+        calculateAverages(idx, 'asLeft');
+    });
+}
+
+function calculateAverages(rowIdx, type) {
+    const values = [];
+    for (let i = 1; i <= 5; i++) {
+        const input = document.getElementById(`${type}${rowIdx}_${i}`);
+        const val = parseFloat(input.value);
+        if (!isNaN(val) && input.value !== '') values.push(val);
+    }
+    
+    if (values.length === 0) {
+        document.getElementById(`${type}Avg${rowIdx}`).textContent = '-';
+    } else {
+        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+        document.getElementById(`${type}Avg${rowIdx}`).textContent = avg.toFixed(2);
+    }
+    
+    calculateError(rowIdx);
+}
+
+function calculateError(rowIdx) {
+    const nominal = parseFloat(document.getElementById(`nominal${rowIdx}`).textContent);
+    const asFoundAvg = parseFloat(document.getElementById(`asFoundAvg${rowIdx}`).textContent);
+    const asLeftAvg = parseFloat(document.getElementById(`asLeftAvg${rowIdx}`).textContent);
+    
+    let average = !isNaN(asLeftAvg) ? asLeftAvg : (!isNaN(asFoundAvg) ? asFoundAvg : null);
+    
+    if (average !== null && nominal > 0) {
+        const error = average - nominal;
+        const errorPct = (error / nominal) * 100;
+        
+        document.getElementById(`error${rowIdx}`).textContent = error.toFixed(2);
+        document.getElementById(`errorPct${rowIdx}`).textContent = errorPct.toFixed(2) + '%';
+        
+        const testPointName = ['20', '60', '100'][rowIdx];
+        const tolerance = 4; // 4% default
+        
+        if (Math.abs(errorPct) <= tolerance) {
+            document.getElementById(`result${testPointName}`).textContent = 'PASS';
+            document.getElementById(`result${testPointName}`).className = 'text-2xl font-bold text-green-600';
+        } else {
+            document.getElementById(`result${testPointName}`).textContent = 'FAIL';
+            document.getElementById(`result${testPointName}`).className = 'text-2xl font-bold text-red-600';
+        }
+        document.getElementById(`error${testPointName}`).textContent = errorPct.toFixed(2) + '%';
+    } else {
+        document.getElementById(`error${rowIdx}`).textContent = '-';
+        document.getElementById(`errorPct${rowIdx}`).textContent = '-';
+    }
+}
+
+function setDefaultDates() {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    document.getElementById('dateTested').value = dateStr;
+}
+
+function newCalibration() {
+    if (confirm('Start a new calibration? Any unsaved data will be lost.')) {
+        location.reload();
+    }
+}
+
+function saveCalibration() {
+    alert('Calibration data saved to localStorage!');
+}
+
+function loadSavedCalibrations() {
+    savedCalibrations = JSON.parse(localStorage.getItem('torqueTraceCalibrations') || '[]');
+}
+
+function showSavedCalibrations() {
+    document.getElementById('savedCalibrationsModal').classList.add('show');
+    document.getElementById('savedCalibrationsList').innerHTML = '<p class="text-center py-8 text-gray-500">No saved calibrations</p>';
+}
+
+function closeSavedCalibrations() {
+    document.getElementById('savedCalibrationsModal').classList.remove('show');
+}
+
+function generateCertificate() {
+    alert('Certificate generation coming soon!');
+}
+
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>
+
