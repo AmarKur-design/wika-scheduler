@@ -38,6 +38,9 @@
                 <p class="text-sm text-gray-600">Welcome, <span id="userName"></span></p>
             </div>
             <div class="flex space-x-4">
+                <button onclick="showSettings()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-cog mr-2"></i>Settings
+                </button>
                 <button onclick="showSavedCalibrations()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
                     <i class="fas fa-list mr-2"></i>Saved Calibrations
                 </button>
@@ -296,6 +299,122 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Torque Calibration Settings</h2>
+                <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <!-- Reference Equipment Management -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3 border-b pb-2">Reference Equipment</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold text-sm mb-2">Transmitters</h4>
+                        <table class="w-full text-sm border">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="border px-2 py-1">Serial No</th>
+                                    <th class="border px-2 py-1">Range</th>
+                                    <th class="border px-2 py-1">Certificate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-2 py-1"><input type="text" id="tx1SN" value="214002" class="w-full border-0 px-1"></td>
+                                    <td class="border px-2 py-1"><input type="text" id="tx1Range" value="25 N.m" class="w-full border-0 px-1"></td>
+                                    <td class="border px-2 py-1"><input type="text" id="tx1Cert" value="33666A" class="w-full border-0 px-1"></td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-2 py-1"><input type="text" id="tx2SN" value="211766" class="w-full border-0 px-1"></td>
+                                    <td class="border px-2 py-1"><input type="text" id="tx2Range" value="400 N.m" class="w-full border-0 px-1"></td>
+                                    <td class="border px-2 py-1"><input type="text" id="tx2Cert" value="33667A" class="w-full border-0 px-1"></td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-2 py-1"><input type="text" id="tx3SN" value="214144" class="w-full border-0 px-1"></td>
+                                    <td class="border px-2 py-1"><input type="text" id="tx3Range" value="1500 N.m" class="w-full border-0 px-1"></td>
+                                    <td class="border px-2 py-1"><input type="text" id="tx3Cert" value="33668A" class="w-full border-0 px-1"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-sm mb-2">Display</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs">Serial No:</label>
+                                <input type="text" id="displaySNSetting" value="212045" class="w-full border rounded px-2 py-1 text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs">Certificate:</label>
+                                <input type="text" id="displayCertSetting" value="33665A" class="w-full border rounded px-2 py-1 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Uncertainty Components -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3 border-b pb-2">Uncertainty Components (Advanced)</h3>
+                <div class="text-xs text-gray-600 mb-3">
+                    Modify these values only if you need to adjust the uncertainty calculation methodology.
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <label class="font-semibold">Uc of Display (% of nominal):</label>
+                        <input type="number" id="ucDisplay" value="0.3" step="0.01" class="w-full border rounded px-2 py-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold">Resolution:</label>
+                        <input type="number" id="resolution" value="0.05" step="0.01" class="w-full border rounded px-2 py-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold">Ambient Temp Effect:</label>
+                        <input type="number" id="ambientEffect" value="0.1" step="0.01" class="w-full border rounded px-2 py-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold">Thermals:</label>
+                        <input type="number" id="thermals" value="0.001" step="0.001" class="w-full border rounded px-2 py-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold">Data Fit/Interpolation:</label>
+                        <input type="number" id="dataFit" value="0.05" step="0.01" class="w-full border rounded px-2 py-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold">AC Pickup/Thermals:</label>
+                        <input type="number" id="acPickup" value="0.001" step="0.001" class="w-full border rounded px-2 py-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold">Rounding:</label>
+                        <input type="number" id="rounding" value="0.005" step="0.001" class="w-full border rounded px-2 py-1">
+                    </div>
+                    <div>
+                        <label class="font-semibold">Coverage Factor (k):</label>
+                        <input type="number" id="coverageFactor" value="2" step="0.1" class="w-full border rounded px-2 py-1">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-2">
+                <button onclick="resetToDefaults()" class="bg-yellow-500 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-undo mr-2"></i>Reset to Defaults
+                </button>
+                <button onclick="saveSettings()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-save mr-2"></i>Save Settings
+                </button>
+                <button onclick="closeSettings()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
 <script>
 const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name: 'Test User', role: 'admin' };
 
@@ -371,10 +490,12 @@ function getTransmitterUncertainty(transmitterSN, convertedNm) {
 
 let currentCalibration = null;
 let savedCalibrations = [];
+let calibrationSettings = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('userName').textContent = currentUser.name;
     loadSavedCalibrations();
+    loadSettings();
     initializeReadingsTable();
     setDefaultDates();
     
@@ -384,6 +505,148 @@ document.addEventListener('DOMContentLoaded', function() {
         preFillFromWorkOrder(urlParams);
     }
 });
+
+// Settings management
+function loadSettings() {
+    calibrationSettings = JSON.parse(localStorage.getItem('torqueCalibrationSettings') || '{}');
+    
+    // Set defaults if not exists
+    if (!calibrationSettings.uncertainty) {
+        calibrationSettings = {
+            transmitters: {
+                '214002': { range: '25 N.m', certificate: '33666A' },
+                '211766': { range: '400 N.m', certificate: '33667A' },
+                '214144': { range: '1500 N.m', certificate: '33668A' }
+            },
+            display: {
+                serialNo: '212045',
+                certificate: '33665A'
+            },
+            uncertainty: {
+                ucDisplay: 0.3,
+                resolution: 0.05,
+                ambientEffect: 0.1,
+                thermals: 0.001,
+                dataFit: 0.05,
+                acPickup: 0.001,
+                rounding: 0.005,
+                coverageFactor: 2
+            }
+        };
+        localStorage.setItem('torqueCalibrationSettings', JSON.stringify(calibrationSettings));
+    }
+}
+
+function showSettings() {
+    document.getElementById('settingsModal').classList.add('show');
+    
+    // Load current settings into form
+    const settings = calibrationSettings;
+    
+    // Transmitters
+    document.getElementById('tx1SN').value = Object.keys(settings.transmitters || {})[0] || '214002';
+    document.getElementById('tx1Range').value = settings.transmitters?.['214002']?.range || '25 N.m';
+    document.getElementById('tx1Cert').value = settings.transmitters?.['214002']?.certificate || '33666A';
+    
+    document.getElementById('tx2SN').value = Object.keys(settings.transmitters || {})[1] || '211766';
+    document.getElementById('tx2Range').value = settings.transmitters?.['211766']?.range || '400 N.m';
+    document.getElementById('tx2Cert').value = settings.transmitters?.['211766']?.certificate || '33667A';
+    
+    document.getElementById('tx3SN').value = Object.keys(settings.transmitters || {})[2] || '214144';
+    document.getElementById('tx3Range').value = settings.transmitters?.['214144']?.range || '1500 N.m';
+    document.getElementById('tx3Cert').value = settings.transmitters?.['214144']?.certificate || '33668A';
+    
+    // Display
+    document.getElementById('displaySNSetting').value = settings.display?.serialNo || '212045';
+    document.getElementById('displayCertSetting').value = settings.display?.certificate || '33665A';
+    
+    // Uncertainty
+    document.getElementById('ucDisplay').value = settings.uncertainty?.ucDisplay || 0.3;
+    document.getElementById('resolution').value = settings.uncertainty?.resolution || 0.05;
+    document.getElementById('ambientEffect').value = settings.uncertainty?.ambientEffect || 0.1;
+    document.getElementById('thermals').value = settings.uncertainty?.thermals || 0.001;
+    document.getElementById('dataFit').value = settings.uncertainty?.dataFit || 0.05;
+    document.getElementById('acPickup').value = settings.uncertainty?.acPickup || 0.001;
+    document.getElementById('rounding').value = settings.uncertainty?.rounding || 0.005;
+    document.getElementById('coverageFactor').value = settings.uncertainty?.coverageFactor || 2;
+}
+
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+}
+
+function saveSettings() {
+    calibrationSettings = {
+        transmitters: {
+            [document.getElementById('tx1SN').value]: {
+                range: document.getElementById('tx1Range').value,
+                certificate: document.getElementById('tx1Cert').value
+            },
+            [document.getElementById('tx2SN').value]: {
+                range: document.getElementById('tx2Range').value,
+                certificate: document.getElementById('tx2Cert').value
+            },
+            [document.getElementById('tx3SN').value]: {
+                range: document.getElementById('tx3Range').value,
+                certificate: document.getElementById('tx3Cert').value
+            }
+        },
+        display: {
+            serialNo: document.getElementById('displaySNSetting').value,
+            certificate: document.getElementById('displayCertSetting').value
+        },
+        uncertainty: {
+            ucDisplay: parseFloat(document.getElementById('ucDisplay').value),
+            resolution: parseFloat(document.getElementById('resolution').value),
+            ambientEffect: parseFloat(document.getElementById('ambientEffect').value),
+            thermals: parseFloat(document.getElementById('thermals').value),
+            dataFit: parseFloat(document.getElementById('dataFit').value),
+            acPickup: parseFloat(document.getElementById('acPickup').value),
+            rounding: parseFloat(document.getElementById('rounding').value),
+            coverageFactor: parseFloat(document.getElementById('coverageFactor').value)
+        }
+    };
+    
+    localStorage.setItem('torqueCalibrationSettings', JSON.stringify(calibrationSettings));
+    
+    // Update hidden fields
+    document.getElementById('displaySN').value = calibrationSettings.display.serialNo;
+    document.getElementById('displayCert').value = calibrationSettings.display.certificate;
+    
+    // Refresh transmitter dropdowns
+    updateTransmitterOptions();
+    
+    alert('Settings saved successfully!');
+    closeSettings();
+}
+
+function resetToDefaults() {
+    if (confirm('Reset all settings to default values?')) {
+        localStorage.removeItem('torqueCalibrationSettings');
+        loadSettings();
+        showSettings();
+        alert('Settings reset to defaults!');
+    }
+}
+
+function updateTransmitterOptions() {
+    // Update the transmitter dropdowns in the test readings table
+    const settings = calibrationSettings.transmitters || {};
+    const transmitterSNs = Object.keys(settings);
+    
+    for (let idx = 0; idx < 3; idx++) {
+        const select = document.getElementById(`transmitter${idx}`);
+        if (select) {
+            select.innerHTML = '';
+            transmitterSNs.forEach(sn => {
+                const option = document.createElement('option');
+                option.value = sn;
+                option.textContent = sn;
+                select.appendChild(option);
+            });
+        }
+    }
+}
 
 function preFillFromWorkOrder(urlParams) {
     // Pre-fill all available fields
@@ -635,11 +898,23 @@ function calculateUncertainty(rowIdx, nominalValue) {
     // which becomes =VLOOKUP(D17, transmitter_table, 2, TRUE)
     const transmitterUncertainty = getTransmitterUncertainty(transmitterSN, convertedNm);
     
-    // Uncertainty components (from Excel Uncertainty sheets)
+    // Get uncertainty settings (use defaults if not set)
+    const uncSettings = calibrationSettings.uncertainty || {
+        ucDisplay: 0.3,
+        resolution: 0.05,
+        ambientEffect: 0.1,
+        thermals: 0.001,
+        dataFit: 0.05,
+        acPickup: 0.001,
+        rounding: 0.005,
+        coverageFactor: 2
+    };
+    
+    // Uncertainty components (from settings)
     const components = [];
     
-    // 1. Uc of Display (0.3% of nominal)
-    const ucDisplay = (0.3 / 100) * nominalValue;
+    // 1. Uc of Display (% of nominal from settings)
+    const ucDisplay = (uncSettings.ucDisplay / 100) * nominalValue;
     components.push(ucDisplay);
     
     // 2. Drift of Display (half of Uc Display)
@@ -652,11 +927,11 @@ function calculateUncertainty(rowIdx, nominalValue) {
     // 4. Drift of Transmitter (half of Uc Transmitter)
     components.push(transmitterUncertainty / 2);
     
-    // 5. Resolution (half least count)
-    components.push(0.05);
+    // 5. Resolution (from settings)
+    components.push(uncSettings.resolution);
     
-    // 6. Effect of +/- 2 Deg C in ambient
-    components.push(0.1);
+    // 6. Effect of +/- 2 Deg C in ambient (from settings)
+    components.push(uncSettings.ambientEffect);
     
     // 7. Mean reading type A (range of readings converted to N.m)
     const unit = document.getElementById('unit').value;
@@ -665,17 +940,17 @@ function calculateUncertainty(rowIdx, nominalValue) {
     const meanReadingTypeA = range * conversionFactor;
     components.push(meanReadingTypeA);
     
-    // 8. Thermals
-    components.push(0.001);
+    // 8. Thermals (from settings)
+    components.push(uncSettings.thermals);
     
-    // 9. Data fit and interpolation
-    components.push(0.05);
+    // 9. Data fit and interpolation (from settings)
+    components.push(uncSettings.dataFit);
     
-    // 10. AC pickup & thermals
-    components.push(0.001);
+    // 10. AC pickup & thermals (from settings)
+    components.push(uncSettings.acPickup);
     
-    // 11. Rounding of final result
-    components.push(0.005);
+    // 11. Rounding of final result (from settings)
+    components.push(uncSettings.rounding);
     
     // Calculate combined uncertainty (RSS - Root Sum of Squares)
     const squaresSum = components.reduce((sum, component) => sum + (component * component), 0);
@@ -686,8 +961,8 @@ function calculateUncertainty(rowIdx, nominalValue) {
     const vi = components.map(c => Math.pow(c, 4));
     const veff = uc4 / vi.reduce((sum, v) => sum + v, 0);
     
-    // Coverage factor k using t-distribution (approximation for k=2 at 95% confidence)
-    let k = 2;
+    // Coverage factor k (from settings)
+    let k = uncSettings.coverageFactor;
     if (veff < 10) {
         // For small degrees of freedom, k is slightly higher
         const tValues = {
