@@ -55,8 +55,11 @@
                 <button onclick="newCalibration()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
                     <i class="fas fa-plus mr-2"></i>New Calibration
                 </button>
+                <a href="work-orders.html" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-calendar-alt mr-2"></i>Back to Scheduler
+                </a>
                 <a href="calibration.html" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
-                    <i class="fas fa-arrow-left mr-2"></i>Back
+                    <i class="fas fa-arrow-left mr-2"></i>Calibration Menu
                 </a>
                 <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
                     <i class="fas fa-sign-out-alt mr-2"></i>Logout
@@ -1375,18 +1378,110 @@ function deleteCalibration(index) {
 }
 
 function generateCertificate() {
-    if (!currentCalibration && !document.getElementById('certificateNo').value) {
-        alert('Please save the calibration first before generating a certificate.');
+    // Check for signature first
+    const userSig = localStorage.getItem(`signature_${currentUser.id || currentUser.name}`);
+    if (!userSig) {
+        alert('Please upload your signature first!\n\nGo to Calibration Menu → Manage User Signatures');
         return;
     }
     
-    // Save before generating
+    if (!document.getElementById('certificateNo').value) {
+        alert('Please enter a Certificate Number first.');
+        return;
+    }
+    
+    // Save calibration data
     saveCalibration();
     
-    // Open certificate in new window
+    // Create certificate data with item linking
+    const certData = {
+        id: Date.now().toString(),
+        certificateNo: document.getElementById('certificateNo').value,
+        serialNumber: document.getElementById('serialNumber').value,
+        assetNo: document.getElementById('assetNo').value,
+        customer: document.getElementById('customer').value,
+        make: document.getElementById('make').value,
+        model: document.getElementById('model').value,
+        itemNo: document.getElementById('itemNo').value,
+        street: document.getElementById('street').value,
+        address: document.getElementById('address').value,
+        standard: document.getElementById('standard').value,
+        tolerance: document.getElementById('tolerance').value,
+        direction: document.getElementById('direction').value,
+        rangeFrom: document.getElementById('rangeFrom').value,
+        rangeTo: document.getElementById('rangeTo').value,
+        unit: document.getElementById('unit').value,
+        soNumber: document.getElementById('soNumber').value,
+        woNumber: document.getElementById('woNumber').value,
+        poNumber: document.getElementById('poNumber').value,
+        dateTested: document.getElementById('dateTested').value,
+        dateIssued: document.getElementById('dateIssued').value,
+        dueDate: document.getElementById('dueDate').value,
+        technician: document.getElementById('technician').value || currentUser.name,
+        signature: userSig,
+        generatedDate: new Date().toISOString(),
+        generatedBy: currentUser.name,
+        // Test results
+        testResults: gatherTestResults(),
+        // Item linking
+        itemIdentifier: `${document.getElementById('make').value}_${document.getElementById('model').value}_${document.getElementById('serialNumber').value}`
+    };
+    
+    // Save to certificates database
+    let certs = JSON.parse(localStorage.getItem('torqueCertificates') || '[]');
+    certs.unshift(certData);
+    localStorage.setItem('torqueCertificates', JSON.stringify(certs));
+    
+    // Update item in database with latest cert ID
+    updateItemWithCertificate(certData);
+    
+    // Mark current calibration as having certificate
+    currentCalibration = currentCalibration || {};
+    currentCalibration.certificateId = certData.id;
+    currentCalibration.hasCertificate = true;
+    
+    // Open certificate in formatted print view
     const certWindow = window.open('', '_blank', 'width=900,height=1200');
-    certWindow.document.write(getCertificateHTML());
+    certWindow.document.write(getCertificateHTML(certData));
     certWindow.document.close();
+    
+    alert('Certificate generated and saved!');
+}
+
+function gatherTestResults() {
+    const results = [];
+    for (let idx = 0; idx < 3; idx++) {
+        results.push({
+            testPoint: ['20%', '60%', '100%'][idx],
+            transmitter: document.getElementById(`transmitter${idx}`).value,
+            nominal: document.getElementById(`nominal${idx}`).textContent,
+            converted: document.getElementById(`converted${idx}`).textContent,
+            asFoundReadings: [1,2,3,4,5].map(i => document.getElementById(`asFound${idx}_${i}`).value),
+            asFoundAvg: document.getElementById(`asFoundAvg${idx}`).textContent,
+            asLeftReadings: [1,2,3,4,5].map(i => document.getElementById(`asLeft${idx}_${i}`).value),
+            asLeftAvg: document.getElementById(`asLeftAvg${idx}`).textContent,
+            error: document.getElementById(`error${idx}`).textContent,
+            errorPct: document.getElementById(`errorPct${idx}`).textContent
+        });
+    }
+    return results;
+}
+
+function updateItemWithCertificate(certData) {
+    // Update items database with latest certificate
+    let items = JSON.parse(localStorage.getItem('items') || '[]');
+    
+    const itemIndex = items.findIndex(item => 
+        item.serialNumber === certData.serialNumber ||
+        (item.make === certData.make && item.model === certData.model && item.serialNumber === certData.serialNumber)
+    );
+    
+    if (itemIndex >= 0) {
+        items[itemIndex].latestCertificateId = certData.id;
+        items[itemIndex].lastCalibrationDate = certData.dateTested;
+        items[itemIndex].calibrationDueDate = certData.dueDate;
+        localStorage.setItem('items', JSON.stringify(items));
+    }
 }
 
 function toggleLabelMenu() {
@@ -1664,32 +1759,48 @@ function getLabelHTML(labelType) {
     }
 }
 
-function getCertificateHTML() {
-    const unit = document.getElementById('unit').value;
-    const conversionFactor = UNIT_CONVERSIONS[unit];
-    const conversionText = unit === 'N.m' ? '#N/A' : `${unit} = ${conversionFactor} N.m`;
+function getCertificateHTML(certData) {
+    const conversionFactor = UNIT_CONVERSIONS[certData.unit];
+    const conversionText = certData.unit === 'N.m' ? '#N/A' : `${certData.unit} = ${conversionFactor} N.m`;
     
     // Determine if device was adjusted
-    const hasAsLeft = document.getElementById('asLeftAvg0').textContent !== '-';
+    const hasAsLeft = certData.testResults && certData.testResults[0].asLeftAvg !== '-';
     const adjustmentText = hasAsLeft ? 'adjusted' : 'not adjusted';
     
-    // Get transmitter selections from test points
-    const tx1 = document.getElementById('transmitter0').value;
-    const tx2 = document.getElementById('transmitter1').value;
-    const tx3 = document.getElementById('transmitter2').value;
-    
     // Get unique transmitters
-    const transmitters = [...new Set([tx1, tx2, tx3])].filter(t => t);
+    const transmitters = certData.testResults ? 
+        [...new Set(certData.testResults.map(r => r.transmitter))].filter(t => t) : [];
     
     return `
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Certificate - ${document.getElementById('certificateNo').value}</title>
+            <title>Certificate - ${certData.certificateNo}</title>
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
             <style>
                 @page { size: A4; margin: 1cm 3.5cm 1.5cm 3.5cm; }
-                body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.4; }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 0; 
+                    padding: 20px;
+                    background: #f5f5f5;
+                    display: flex;
+                    justify-content: center;
+                    align-items: flex-start;
+                    min-height: 100vh;
+                }
+                .certificate-page {
+                    max-width: 210mm;
+                    width: 100%;
+                    background: white;
+                    padding: 20mm;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    margin: 20px auto;
+                }
+                @media print {
+                    body { background: white; padding: 0; }
+                    .certificate-page { box-shadow: none; padding: 0; margin: 0; max-width: 100%; }
+                }
                 .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
                 .header-left h2 { margin: 0; font-size: 18pt; font-weight: 900; }
                 .header-right { text-align: right; }
@@ -1717,6 +1828,7 @@ function getCertificateHTML() {
             </style>
         </head>
         <body>
+            <div class="certificate-page">
             <!-- Header -->
             <div class="header">
                 <div class="header-left" style="flex: 1;">
@@ -1727,7 +1839,9 @@ function getCertificateHTML() {
                     </div>
                 </div>
                 <div class="header-right">
-                    <img src="wika-logo.png" alt="WIKA Logo" style="max-width: 180px; height: auto;">
+                    <div class="logo-box">
+                        <div class="logo-text">WIKA</div>
+                    </div>
                     <div class="company-details">
                         WIKA Australia Pty Ltd<br>
                         Unit 1, 6-8 Harvard Way<br>
@@ -1742,15 +1856,15 @@ function getCertificateHTML() {
             <div class="info-section">
                 <div class="info-line">
                     <span class="info-label">Customer:</span>
-                    <span class="info-value">${document.getElementById('customer').value}</span>
+                    <span class="info-value">${certData.customer}</span>
                 </div>
                 <div class="info-line">
                     <span class="info-label"></span>
-                    <span class="info-value">${document.getElementById('street').value}</span>
+                    <span class="info-value">${certData.street}</span>
                 </div>
                 <div class="info-line">
                     <span class="info-label"></span>
-                    <span class="info-value">${document.getElementById('address').value}</span>
+                    <span class="info-value">${certData.address}</span>
                 </div>
             </div>
             
@@ -1759,11 +1873,11 @@ function getCertificateHTML() {
                     <div>
                         <div class="info-line">
                             <span class="info-label">Certificate No:</span>
-                            <span class="info-value">${document.getElementById('certificateNo').value}</span>
+                            <span class="info-value">${certData.certificateNo}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Date Tested:</span>
-                            <span class="info-value">${document.getElementById('dateTested').value}</span>
+                            <span class="info-value">${certData.dateTested}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Date Issued:</span>
@@ -1902,7 +2016,12 @@ function getCertificateHTML() {
             </div>
             
             <div class="signature-section">
-                Approved Signatory: <span class="signature-line"></span>
+                Approved Signatory: 
+                ${certData.signature ? 
+                    `<img src="${certData.signature}" alt="Signature" style="max-width: 200px; max-height: 60px; display: inline-block; margin-left: 10px;">` :
+                    '<span class="signature-line"></span>'
+                }
+                <div style="margin-top: 10px; font-weight: bold;">${certData.technician}</div>
             </div>
             
             <div class="traceability">
@@ -1910,9 +2029,11 @@ function getCertificateHTML() {
             </div>
             
             <div class="footer-row">
-                <div>SVP-001-101W Version 1</div>
+                <div>SVP-001-101W Version 2 (Enhanced)</div>
                 <div>Page 1 of 1</div>
             </div>
+            
+            </div> <!-- end certificate-page -->
             
             <div style="text-align: center; margin-top: 40px;">
                 <button onclick="window.print()" style="background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">

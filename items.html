@@ -65,6 +65,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Make</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest Certificate</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -141,6 +142,32 @@ function logout() {
     window.location.href = 'index.html';
 }
 
+function viewLatestCertificate(certId) {
+    // Try to find certificate in torque certificates first
+    let cert = null;
+    const torqueCerts = JSON.parse(localStorage.getItem('torqueCertificates') || '[]');
+    cert = torqueCerts.find(c => c.id === certId);
+    
+    if (!cert) {
+        // Try other certificate types
+        const electricalCerts = JSON.parse(localStorage.getItem('electricalCertificates') || '[]');
+        cert = electricalCerts.find(c => c.id === certId);
+    }
+    
+    if (!cert) {
+        const dimensionalCerts = JSON.parse(localStorage.getItem('dimensionalCertificates') || '[]');
+        cert = dimensionalCerts.find(c => c.id === certId);
+    }
+    
+    if (!cert) {
+        alert('Certificate not found');
+        return;
+    }
+    
+    // Open certificate (simple view for now)
+    alert(`Certificate: ${cert.certificateNo}\\nCustomer: ${cert.customer}\\nDate: ${cert.dateTested}\\n\\nFull certificate viewer coming soon!`);
+}
+
 function loadItems() {
     const stored = localStorage.getItem('items');
     if (stored) {
@@ -203,7 +230,7 @@ function renderItemsTable() {
     if (filteredItems.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
                     <i class="fas fa-inbox text-4xl mb-2"></i>
                     <p>No items found</p>
                 </td>
@@ -215,6 +242,15 @@ function renderItemsTable() {
     filteredItems.forEach(item => {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50';
+        
+        // Check for latest certificate
+        const certInfo = item.latestCertificateId ? 
+            `<button onclick="viewLatestCertificate('${item.latestCertificateId}')" class="text-blue-600 hover:text-blue-800 text-xs">
+                <i class="fas fa-certificate mr-1"></i>View
+            </button>
+            <div class="text-xs text-gray-500 mt-1">${item.lastCalibrationDate || ''}</div>` :
+            '<span class="text-xs text-gray-400">No certificate</span>';
+        
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 <div class="flex items-center">
@@ -230,6 +266,9 @@ function renderItemsTable() {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${item.serialNumber}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${certInfo}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <button onclick="printBarcode('${item.barcode}')" class="text-purple-600 hover:text-purple-900 mr-2" title="Print Barcode">
