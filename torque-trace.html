@@ -3,253 +3,1930 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torque Calibration Complete</title>
+    <title>Torque TRACE Calibration - WIKA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 0.5rem; width: 95%; max-width: 1400px; max-height: 95vh; overflow-y: auto; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        input[type="number"] { -moz-appearance: textfield; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
+        .data-table th { background-color: #3b82f6; color: white; font-size: 0.7rem; font-weight: 600; }
+        .data-table input, .data-table select { width: 100%; border: none; text-align: center; padding: 2px 4px; font-size: 0.75rem; }
+        .data-table input:focus { outline: 1px solid #3b82f6; background-color: #eff6ff; }
+        .data-table select { padding: 2px; min-width: 80px; }
+        .readonly-cell { background-color: #f3f4f6; font-size: 0.75rem; }
+        .transmitter-col { min-width: 90px; }
+        .compact-input { padding: 4px 8px !important; font-size: 0.875rem; }
+        .compact-label { font-size: 0.8rem; font-weight: 500; margin-bottom: 2px; }
+        .section-card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .settings-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .settings-table th, .settings-table td { border: 1px solid #ddd; padding: 6px 8px; }
+        .settings-table th { background-color: #f3f4f6; font-weight: 600; text-align: left; }
+        .settings-table input[type="text"], .settings-table input[type="number"] { width: 100%; border: 1px solid #ddd; border-radius: 3px; padding: 4px 6px; }
+        .tab-button { padding: 8px 16px; border-radius: 6px 6px 0 0; background: #e5e7eb; cursor: pointer; border: none; }
+        .tab-button.active { background: white; font-weight: 600; border-bottom: 2px solid #3b82f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-6xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6">Torque TRACE Calibration System</h1>
-        
-        <!-- Top Buttons -->
-        <div class="flex space-x-4 mb-6">
-            <button onclick="showSignatureModal()" class="bg-purple-500 text-white px-4 py-2 rounded">
-                <i class="fas fa-signature"></i> Manage Signature
-            </button>
-            <button onclick="showCertificatesModal()" class="bg-blue-500 text-white px-4 py-2 rounded">
-                <i class="fas fa-certificate"></i> View Certificates
-            </button>
-            <button onclick="newCalibration()" class="bg-green-500 text-white px-4 py-2 rounded">
-                <i class="fas fa-plus"></i> New Calibration
-            </button>
-        </div>
-
-        <!-- Main Form -->
-        <div class="bg-white p-6 rounded shadow mb-6">
-            <h2 class="text-xl font-bold mb-4">Calibration Data</h2>
-            
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label class="block font-semibold mb-1">Certificate No:</label>
-                    <input id="certNo" type="text" class="w-full border rounded px-3 py-2">
-                </div>
-                <div>
-                    <label class="block font-semibold mb-1">Serial Number:</label>
-                    <input id="serialNo" type="text" class="w-full border rounded px-3 py-2">
-                </div>
-                <div>
-                    <label class="block font-semibold mb-1">Customer:</label>
-                    <input id="customer" type="text" class="w-full border rounded px-3 py-2">
-                </div>
-                <div>
-                    <label class="block font-semibold mb-1">Date Tested:</label>
-                    <input id="dateTested" type="date" class="w-full border rounded px-3 py-2">
-                </div>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 no-print">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Torque TRACE Calibration</h1>
+                <p class="text-sm text-gray-600">Welcome, <span id="userName"></span></p>
             </div>
-
             <div class="flex space-x-4">
-                <button onclick="generateCertificate()" class="bg-indigo-500 text-white px-6 py-2 rounded">
-                    Generate Certificate
+                <button onclick="showSettings()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-cog mr-2"></i>Settings
                 </button>
-                <button id="printLabelBtn" onclick="printLabel()" disabled class="bg-green-500 text-white px-6 py-2 rounded opacity-50">
-                    Print Label (After Certificate)
+                <button onclick="showSavedCalibrations()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-list mr-2"></i>Saved Calibrations
                 </button>
+                <button onclick="newCalibration()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-plus mr-2"></i>New Calibration
+                </button>
+                <a href="calibration.html" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </a>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Calibration Form -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Calibration Data Entry</h2>
+                <div class="flex space-x-2">
+                    <button onclick="saveCalibration()" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm">
+                        <i class="fas fa-save mr-1"></i>Save
+                    </button>
+                    <button onclick="generateCertificate()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-sm">
+                        <i class="fas fa-certificate mr-1"></i>Generate Certificate
+                    </button>
+                    <div class="relative inline-block">
+                        <button onclick="toggleLabelMenu()" class="bg-green-500 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm">
+                            <i class="fas fa-tag mr-1"></i>Print Label
+                        </button>
+                        <div id="labelMenu" class="hidden absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <button onclick="printLabel('TRACE18')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                TRACE 18 (Large)
+                            </button>
+                            <button onclick="printLabel('TRACE18S')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                TRACE 18S (Small)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer & Instrument Information -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <!-- Left Column -->
+                <div class="section-card space-y-2">
+                    <h3 class="font-semibold text-sm border-b pb-1 mb-2">Instrument Information</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="compact-label">Certificate No:</label>
+                            <input id="certificateNo" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">S/N:</label>
+                            <input id="serialNumber" type="text" class="w-full border rounded compact-input">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="compact-label">ID/Asset No:</label>
+                            <input id="assetNo" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Make:</label>
+                            <input id="make" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Model:</label>
+                            <input id="model" type="text" class="w-full border rounded compact-input">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="compact-label">Item No:</label>
+                        <input id="itemNo" type="text" class="w-full border rounded compact-input">
+                    </div>
+                    <div>
+                        <label class="compact-label">Customer:</label>
+                        <input id="customer" type="text" class="w-full border rounded compact-input">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="compact-label">Street:</label>
+                            <input id="street" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Suburb, State, Post Code:</label>
+                            <input id="address" type="text" class="w-full border rounded compact-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="section-card space-y-2">
+                    <h3 class="font-semibold text-sm border-b pb-1 mb-2">Test Information</h3>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="compact-label">Standard:</label>
+                            <input id="standard" type="text" value="ISO 6789" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Tolerance:</label>
+                            <input id="tolerance" type="number" step="0.01" value="0.04" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Direction:</label>
+                            <select id="direction" class="w-full border rounded compact-input">
+                                <option value="CW">CW</option>
+                                <option value="CCW">CCW</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div>
+                            <label class="compact-label">Range From:</label>
+                            <input id="rangeFrom" type="number" step="0.01" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Range To:</label>
+                            <input id="rangeTo" type="number" step="0.01" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Unit:</label>
+                            <select id="unit" class="w-full border rounded compact-input" onchange="recalculate()">
+                                <option value="N.m">N.m</option>
+                                <option value="kgf.m">kgf.m</option>
+                                <option value="lbf.ft">lbf.ft</option>
+                                <option value="lbf.in">lbf.in</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="compact-label">Technician:</label>
+                            <input id="technician" type="text" class="w-full border rounded compact-input">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="compact-label">S/O No:</label>
+                            <input id="soNumber" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">W/O No:</label>
+                            <input id="woNumber" type="text" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">PO Number:</label>
+                            <input id="poNumber" type="text" class="w-full border rounded compact-input">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="compact-label">Date Tested:</label>
+                            <input id="dateTested" type="date" class="w-full border rounded compact-input" onchange="calculateDueDate()">
+                        </div>
+                        <div>
+                            <label class="compact-label">Date Issued:</label>
+                            <input id="dateIssued" type="date" class="w-full border rounded compact-input">
+                        </div>
+                        <div>
+                            <label class="compact-label">Due Date:</label>
+                            <input id="dueDate" type="date" class="w-full border rounded compact-input" title="Auto-calculated 12 months from test date (editable)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Standard -->
+            <div class="section-card mb-4">
+                <div class="flex items-center space-x-2">
+                    <label class="compact-label whitespace-nowrap">Test Standard:</label>
+                    <input id="testStandard" type="text" value="PWI-101" readonly class="border rounded compact-input bg-gray-100 w-32">
+                    <a href="PWI-101-TRACE-Calibration-Procedures.pdf" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1" title="View Standard">
+                        <i class="fas fa-file-pdf text-lg"></i>
+                        <span class="text-sm">View Standard</span>
+                    </a>
+                </div>
+                <!-- Hidden reference equipment fields for certificate generation -->
+                <input id="displaySN" type="hidden" value="212045">
+                <input id="displayCert" type="hidden" value="33665A">
+                <input id="transmitterSN" type="hidden" value="">
+                <input id="transmitterCert" type="hidden" value="">
+                <input id="transmitterRange" type="hidden" value="">
+            </div>
+
+            <!-- Test Readings Table -->
+            <div class="section-card mb-3">
+                <h3 class="font-semibold text-sm border-b pb-1 mb-2">Test Readings</h3>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Test Point</th>
+                                <th rowspan="2">Transmitter<br>S/N</th>
+                                <th rowspan="2">Nominal<br>Torque</th>
+                                <th rowspan="2">Converted<br>to N.m</th>
+                                <th colspan="6">AS FOUND READINGS</th>
+                                <th colspan="6">AS LEFT READINGS</th>
+                                <th colspan="2">RESULT</th>
+                            </tr>
+                            <tr>
+                                <th>Meas 1</th>
+                                <th>Meas 2</th>
+                                <th>Meas 3</th>
+                                <th>Meas 4</th>
+                                <th>Meas 5</th>
+                                <th>Average</th>
+                                <th>Meas 1</th>
+                                <th>Meas 2</th>
+                                <th>Meas 3</th>
+                                <th>Meas 4</th>
+                                <th>Meas 5</th>
+                                <th>Average</th>
+                                <th>ERROR</th>
+                                <th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="readingsTableBody">
+                            <!-- Rows will be generated for 20%, 60%, 100% test points -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            <div class="grid grid-cols-3 gap-3 mb-3">
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">20% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result20">PASS</div>
+                    <div class="text-xs text-gray-600">Error: <span id="error20">0.00%</span></div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">60% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result60">PASS</div>
+                    <div class="text-xs text-gray-600">Error: <span id="error60">0.00%</span></div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                    <div class="text-xs font-semibold text-gray-700">100% Test Point</div>
+                    <div class="text-xl font-bold text-blue-600" id="result100">PASS</div>
+                    <div class="text-xs text-gray-600">Error: <span id="error100">0.00%</span></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Signature Modal -->
-    <div id="signatureModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded shadow-lg max-w-md w-full">
-            <h3 class="text-xl font-bold mb-4">Manage Your Signature</h3>
-            <input type="file" id="signatureFile" accept="image/*" class="mb-4" onchange="uploadSignature()">
-            <div id="signaturePreview" class="mb-4 hidden">
-                <img id="sigImg" class="max-w-full h-24 border" alt="Signature">
+    <!-- Saved Calibrations Modal -->
+    <div id="savedCalibrationsModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Saved Calibrations</h2>
+                <button onclick="closeSavedCalibrations()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
             </div>
-            <button onclick="closeSignatureModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Close</button>
+            <div id="savedCalibrationsList" class="overflow-auto" style="max-height: 60vh;">
+                <!-- List will be rendered here -->
+            </div>
         </div>
     </div>
 
-    <!-- Certificates Modal -->
-    <div id="certificatesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded shadow-lg max-w-4xl w-full max-h-screen overflow-y-auto">
-            <h3 class="text-xl font-bold mb-4">Saved Certificates</h3>
-            <div id="certList"></div>
-            <button onclick="closeCertificatesModal()" class="bg-gray-500 text-white px-4 py-2 rounded mt-4">Close</button>
+    <!-- Enhanced Settings Modal with Tabs -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Enhanced Calibration Settings</h2>
+                <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="flex space-x-2 border-b mb-4">
+                <button class="tab-button active" onclick="switchTab('transmitters')">
+                    <i class="fas fa-tools mr-2"></i>Transmitters
+                </button>
+                <button class="tab-button" onclick="switchTab('uncertainty')">
+                    <i class="fas fa-calculator mr-2"></i>Uncertainty Tables
+                </button>
+                <button class="tab-button" onclick="switchTab('components')">
+                    <i class="fas fa-cogs mr-2"></i>Components
+                </button>
+            </div>
+
+            <!-- Transmitters Tab -->
+            <div id="transmitters-tab" class="tab-content active">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Transmitter Database</h3>
+                    <p class="text-sm text-gray-600 mb-3">Add and manage your reference transmitters.</p>
+                    
+                    <table class="settings-table mb-3">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%">Serial Number</th>
+                                <th style="width: 20%">Range</th>
+                                <th style="width: 20%">Certificate No</th>
+                                <th style="width: 20%">Status</th>
+                                <th style="width: 15%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transmittersTableBody"></tbody>
+                    </table>
+                    
+                    <button onclick="addTransmitterRow()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-plus mr-2"></i>Add Transmitter
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Display Equipment</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-semibold">Serial Number:</label>
+                            <input type="text" id="displaySNSetting" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Certificate Number:</label>
+                            <input type="text" id="displayCertSetting" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Uncertainty Lookup Tables Tab -->
+            <div id="uncertainty-tab" class="tab-content">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Transmitter Uncertainty Lookup Tables</h3>
+                    <p class="text-sm text-gray-600 mb-3">Define uncertainty values for each transmitter. Values from calibration certificates.</p>
+                    
+                    <div class="mb-3">
+                        <label class="text-sm font-semibold">Select Transmitter:</label>
+                        <select id="uncertaintyTransmitterSelect" onchange="loadUncertaintyTable()" class="w-full border rounded px-3 py-2 mt-1">
+                            <option value="">-- Select a transmitter --</option>
+                        </select>
+                    </div>
+                    
+                    <div id="uncertaintyTableContainer" class="hidden">
+                        <table class="settings-table mb-3">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%">Test Point (N.m)</th>
+                                    <th style="width: 40%">Uncertainty (N.m)</th>
+                                    <th style="width: 20%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uncertaintyTableBody"></tbody>
+                        </table>
+                        
+                        <button onclick="addUncertaintyRow()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
+                            <i class="fas fa-plus mr-2"></i>Add Point
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Uncertainty Components Tab -->
+            <div id="components-tab" class="tab-content">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-3">Uncertainty Components</h3>
+                    <p class="text-sm text-gray-600 mb-3">Advanced: Configure the uncertainty budget components.</p>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm font-semibold">Display Accuracy (% of nominal):</label>
+                            <input type="number" id="ucDisplay" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Resolution (N.m):</label>
+                            <input type="number" id="resolution" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Ambient Temperature Effect (N.m):</label>
+                            <input type="number" id="ambientEffect" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Thermals (N.m):</label>
+                            <input type="number" id="thermals" step="0.001" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Data Fit/Interpolation (N.m):</label>
+                            <input type="number" id="dataFit" step="0.01" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">AC Pickup/Thermals (N.m):</label>
+                            <input type="number" id="acPickup" step="0.001" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Rounding (N.m):</label>
+                            <input type="number" id="rounding" step="0.001" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold">Coverage Factor (k):</label>
+                            <input type="number" id="coverageFactor" step="0.1" class="w-full border rounded px-3 py-2 mt-1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-2 mt-6 pt-4 border-t">
+                <button onclick="resetToDefaults()" class="bg-yellow-500 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-undo mr-2"></i>Reset to Defaults
+                </button>
+                <button onclick="saveSettings()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-save mr-2"></i>Save Settings
+                </button>
+                <button onclick="closeSettings()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 
 <script>
-let certificates = JSON.parse(localStorage.getItem('certificates') || '[]');
-let userSignature = localStorage.getItem('userSignature');
-let currentCertId = null;
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name: 'Test User', role: 'admin' };
 
-// Set today's date
-document.getElementById('dateTested').valueAsDate = new Date();
+// Unit conversion factors to N.m
+const UNIT_CONVERSIONS = {
+    'N.m': 1,
+    'dN.m': 0.1,
+    'cN.m': 0.01,
+    'kgf.m': 9.80665003,
+    'kgf.cm': 0.0980665,
+    'gf.m': 0.00980665,
+    'gf.cm': 0.00009807,
+    'lbf.ft': 1.35581795,
+    'ft.lb': 1.3558179483,
+    'lbf.in': 0.112985,
+    'in.lb': 0.11298482933333,
+    'ozf.in': 0.00706155,
+    'in.oz': 0.0070615518
+};
 
-// Signature Management
-function showSignatureModal() {
-    document.getElementById('signatureModal').classList.remove('hidden');
-    if (userSignature) {
-        document.getElementById('sigImg').src = userSignature;
-        document.getElementById('signaturePreview').classList.remove('hidden');
+// Reference equipment data
+const REFERENCE_EQUIPMENT = {
+    '214002': { range: '25 N.m', certificate: '33666A' },
+    '211766': { range: '400 N.m', certificate: '33667A' },
+    '214144': { range: '1500 N.m', certificate: '33668A' }
+};
+
+// Transmitter uncertainty lookup tables (from Excel D25:I33)
+const TRANSMITTER_UNCERTAINTY_TABLES = {
+    '214002': [ // 25 N.m range (Table D25:E32)
+        { point: 1.25, unc: 0.33 },
+        { point: 2.5, unc: 0.27 },
+        { point: 5, unc: 0.26 },
+        { point: 10, unc: 0.25 },
+        { point: 15, unc: 0.25 },
+        { point: 20, unc: 0.25 },
+        { point: 25, unc: 0.25 }
+    ],
+    '211766': [ // 400 N.m range (Table F25:G32)
+        { point: 20, unc: 0.44 },
+        { point: 40, unc: 0.27 },
+        { point: 80, unc: 0.19 },
+        { point: 160, unc: 0.16 },
+        { point: 240, unc: 0.16 },
+        { point: 320, unc: 0.15 },
+        { point: 400, unc: 0.15 }
+    ],
+    '214144': [ // 1500 N.m range (Table H25:I33)
+        { point: 30, unc: 0.47 },
+        { point: 75, unc: 0.24 },
+        { point: 150, unc: 0.17 },
+        { point: 300, unc: 0.14 },
+        { point: 600, unc: 0.14 },
+        { point: 900, unc: 0.14 },
+        { point: 1200, unc: 0.14 },
+        { point: 1500, unc: 0.14 }
+    ]
+};
+
+// Function to get transmitter uncertainty for a given point (VLOOKUP approximation)
+function getTransmitterUncertainty(transmitterSN, convertedNm) {
+    const table = calibrationSettings.uncertaintyTables?.[transmitterSN];
+    if (!table || table.length === 0) return 0.15; // Default
+    
+    // Sort by point (in case not sorted)
+    const sortedTable = [...table].sort((a, b) => a.point - b.point);
+    
+    // VLOOKUP with TRUE (range lookup) - find largest value <= convertedNm
+    for (let i = sortedTable.length - 1; i >= 0; i--) {
+        if (convertedNm >= sortedTable[i].point) {
+            return sortedTable[i].unc;
+        }
+    }
+    return sortedTable[0].unc; // If smaller than first entry, use first
+}
+
+let currentCalibration = null;
+let savedCalibrations = [];
+let calibrationSettings = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('userName').textContent = currentUser.name;
+    loadSavedCalibrations();
+    loadSettings();
+    initializeReadingsTable();
+    setDefaultDates();
+    
+    // Check if coming from work order and pre-fill
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('fromWorkOrder') === 'true') {
+        preFillFromWorkOrder(urlParams);
+    }
+});
+
+// Settings management
+function loadSettings() {
+    const stored = localStorage.getItem('torqueCalibrationSettings');
+    
+    if (stored) {
+        calibrationSettings = JSON.parse(stored);
+    } else {
+        // Default settings with array-based transmitters
+        calibrationSettings = {
+            transmitters: [
+                { serialNo: '214002', range: '25 N.m', certificate: '33666A', status: 'Active' },
+                { serialNo: '211766', range: '400 N.m', certificate: '33667A', status: 'Active' },
+                { serialNo: '214144', range: '1500 N.m', certificate: '33668A', status: 'Active' }
+            ],
+            display: {
+                serialNo: '212045',
+                certificate: '33665A'
+            },
+            uncertaintyTables: {
+                '214002': [
+                    { point: 1.25, unc: 0.33 }, { point: 2.5, unc: 0.27 },
+                    { point: 5, unc: 0.26 }, { point: 10, unc: 0.25 },
+                    { point: 15, unc: 0.25 }, { point: 20, unc: 0.25 }, { point: 25, unc: 0.25 }
+                ],
+                '211766': [
+                    { point: 20, unc: 0.44 }, { point: 40, unc: 0.27 },
+                    { point: 80, unc: 0.19 }, { point: 160, unc: 0.16 },
+                    { point: 240, unc: 0.16 }, { point: 320, unc: 0.15 }, { point: 400, unc: 0.15 }
+                ],
+                '214144': [
+                    { point: 30, unc: 0.47 }, { point: 75, unc: 0.24 },
+                    { point: 150, unc: 0.17 }, { point: 300, unc: 0.14 },
+                    { point: 600, unc: 0.14 }, { point: 900, unc: 0.14 },
+                    { point: 1200, unc: 0.14 }, { point: 1500, unc: 0.14 }
+                ]
+            },
+            uncertainty: {
+                ucDisplay: 0.3,
+                resolution: 0.05,
+                ambientEffect: 0.1,
+                thermals: 0.001,
+                dataFit: 0.05,
+                acPickup: 0.001,
+                rounding: 0.005,
+                coverageFactor: 2
+            }
+        };
+        localStorage.setItem('torqueCalibrationSettings', JSON.stringify(calibrationSettings));
     }
 }
 
-function closeSignatureModal() {
-    document.getElementById('signatureModal').classList.add('hidden');
+// ============================================================================
+// ENHANCED SETTINGS MANAGEMENT
+// ============================================================================
+
+function showSettings() {
+    document.getElementById('settingsModal').classList.add('show');
+    populateSettingsForm();
 }
 
-function uploadSignature() {
-    const file = document.getElementById('signatureFile').files[0];
-    if (!file) return;
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+}
+
+function switchTab(tabName) {
+    // Update buttons
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.tab-button').classList.add('active');
     
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        userSignature = e.target.result;
-        localStorage.setItem('userSignature', userSignature);
-        document.getElementById('sigImg').src = userSignature;
-        document.getElementById('signaturePreview').classList.remove('hidden');
-        alert('Signature uploaded!');
+    // Update content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Load specific tab content
+    if (tabName === 'transmitters') {
+        populateTransmittersTable();
+    } else if (tabName === 'uncertainty') {
+        populateUncertaintySelect();
+    }
+}
+
+function populateSettingsForm() {
+    populateTransmittersTable();
+    
+    // Display
+    document.getElementById('displaySNSetting').value = calibrationSettings.display?.serialNo || '212045';
+    document.getElementById('displayCertSetting').value = calibrationSettings.display?.certificate || '33665A';
+    
+    // Uncertainty
+    const unc = calibrationSettings.uncertainty || {};
+    document.getElementById('ucDisplay').value = unc.ucDisplay || 0.3;
+    document.getElementById('resolution').value = unc.resolution || 0.05;
+    document.getElementById('ambientEffect').value = unc.ambientEffect || 0.1;
+    document.getElementById('thermals').value = unc.thermals || 0.001;
+    document.getElementById('dataFit').value = unc.dataFit || 0.05;
+    document.getElementById('acPickup').value = unc.acPickup || 0.001;
+    document.getElementById('rounding').value = unc.rounding || 0.005;
+    document.getElementById('coverageFactor').value = unc.coverageFactor || 2;
+    
+    populateUncertaintySelect();
+}
+
+// Transmitters Tab Functions
+function populateTransmittersTable() {
+    const tbody = document.getElementById('transmittersTableBody');
+    tbody.innerHTML = '';
+    
+    calibrationSettings.transmitters.forEach((tx, idx) => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td><input type="text" value="${tx.serialNo}" onchange="updateTransmitter(${idx}, 'serialNo', this.value)"></td>
+            <td><input type="text" value="${tx.range}" onchange="updateTransmitter(${idx}, 'range', this.value)"></td>
+            <td><input type="text" value="${tx.certificate}" onchange="updateTransmitter(${idx}, 'certificate', this.value)"></td>
+            <td>
+                <select onchange="updateTransmitter(${idx}, 'status', this.value)">
+                    <option value="Active" ${tx.status === 'Active' ? 'selected' : ''}>Active</option>
+                    <option value="Inactive" ${tx.status === 'Inactive' ? 'selected' : ''}>Inactive</option>
+                    <option value="Expired" ${tx.status === 'Expired' ? 'selected' : ''}>Expired</option>
+                </select>
+            </td>
+            <td class="text-center">
+                <button onclick="removeTransmitter(${idx})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function addTransmitterRow() {
+    calibrationSettings.transmitters.push({
+        serialNo: '',
+        range: '',
+        certificate: '',
+        status: 'Active'
+    });
+    populateTransmittersTable();
+}
+
+function updateTransmitter(index, field, value) {
+    calibrationSettings.transmitters[index][field] = value;
+}
+
+function removeTransmitter(index) {
+    if (confirm('Remove this transmitter? This will also delete its uncertainty lookup table.')) {
+        const serialNo = calibrationSettings.transmitters[index].serialNo;
+        calibrationSettings.transmitters.splice(index, 1);
+        delete calibrationSettings.uncertaintyTables[serialNo];
+        populateTransmittersTable();
+    }
+}
+
+// Uncertainty Tables Tab Functions
+function populateUncertaintySelect() {
+    const select = document.getElementById('uncertaintyTransmitterSelect');
+    select.innerHTML = '<option value="">-- Select a transmitter --</option>';
+    
+    calibrationSettings.transmitters.forEach(tx => {
+        const option = document.createElement('option');
+        option.value = tx.serialNo;
+        option.textContent = `${tx.serialNo} (${tx.range})`;
+        select.appendChild(option);
+    });
+}
+
+function loadUncertaintyTable() {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    const container = document.getElementById('uncertaintyTableContainer');
+    const tbody = document.getElementById('uncertaintyTableBody');
+    
+    if (!serialNo) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    tbody.innerHTML = '';
+    
+    // Initialize table if doesn't exist
+    if (!calibrationSettings.uncertaintyTables[serialNo]) {
+        calibrationSettings.uncertaintyTables[serialNo] = [];
+    }
+    
+    const table = calibrationSettings.uncertaintyTables[serialNo];
+    table.forEach((entry, idx) => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td><input type="number" step="0.01" value="${entry.point}" onchange="updateUncertaintyPoint(${idx}, 'point', parseFloat(this.value))"></td>
+            <td><input type="number" step="0.01" value="${entry.unc}" onchange="updateUncertaintyPoint(${idx}, 'unc', parseFloat(this.value))"></td>
+            <td class="text-center">
+                <button onclick="removeUncertaintyPoint(${idx})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+}
+
+function addUncertaintyRow() {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    if (!serialNo) return;
+    
+    calibrationSettings.uncertaintyTables[serialNo].push({ point: 0, unc: 0 });
+    loadUncertaintyTable();
+}
+
+function updateUncertaintyPoint(index, field, value) {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    calibrationSettings.uncertaintyTables[serialNo][index][field] = value;
+}
+
+function removeUncertaintyPoint(index) {
+    const serialNo = document.getElementById('uncertaintyTransmitterSelect').value;
+    calibrationSettings.uncertaintyTables[serialNo].splice(index, 1);
+    loadUncertaintyTable();
+}
+
+// Save Settings Function
+function saveSettings() {
+    // Update display
+    calibrationSettings.display = {
+        serialNo: document.getElementById('displaySNSetting').value,
+        certificate: document.getElementById('displayCertSetting').value
     };
-    reader.readAsDataURL(file);
-}
-
-// Certificate Generation
-function generateCertificate() {
-    const certData = {
-        id: Date.now().toString(),
-        certNo: document.getElementById('certNo').value,
-        serialNo: document.getElementById('serialNo').value,
-        customer: document.getElementById('customer').value,
-        dateTested: document.getElementById('dateTested').value,
-        signature: userSignature,
-        timestamp: new Date().toISOString()
+    
+    // Update uncertainty components
+    calibrationSettings.uncertainty = {
+        ucDisplay: parseFloat(document.getElementById('ucDisplay').value),
+        resolution: parseFloat(document.getElementById('resolution').value),
+        ambientEffect: parseFloat(document.getElementById('ambientEffect').value),
+        thermals: parseFloat(document.getElementById('thermals').value),
+        dataFit: parseFloat(document.getElementById('dataFit').value),
+        acPickup: parseFloat(document.getElementById('acPickup').value),
+        rounding: parseFloat(document.getElementById('rounding').value),
+        coverageFactor: parseFloat(document.getElementById('coverageFactor').value)
     };
     
-    if (!certData.certNo || !certData.serialNo) {
-        alert('Please fill in Certificate No and Serial Number');
-        return;
+    localStorage.setItem('torqueCalibrationSettings', JSON.stringify(calibrationSettings));
+    
+    // Update hidden fields
+    document.getElementById('displaySN').value = calibrationSettings.display.serialNo;
+    document.getElementById('displayCert').value = calibrationSettings.display.certificate;
+    
+    // Refresh transmitter dropdowns
+    updateTransmitterOptions();
+    
+    alert('Settings saved successfully!');
+    closeSettings();
+}
+
+function resetToDefaults() {
+    if (confirm('Reset all settings to default values? This will delete all custom transmitters and uncertainty tables.')) {
+        localStorage.removeItem('torqueCalibrationSettings');
+        loadSettings();
+        populateSettingsForm();
+        alert('Settings reset to defaults!');
+    }
+}
+
+function updateTransmitterOptions() {
+    const transmitters = calibrationSettings.transmitters.filter(tx => tx.status === 'Active');
+    
+    for (let idx = 0; idx < 3; idx++) {
+        const select = document.getElementById(`transmitter${idx}`);
+        if (select) {
+            select.innerHTML = '';
+            transmitters.forEach(tx => {
+                const option = document.createElement('option');
+                option.value = tx.serialNo;
+                option.textContent = `${tx.serialNo} (${tx.range})`;
+                select.appendChild(option);
+            });
+        }
+    }
+}
+
+function preFillFromWorkOrder(urlParams) {
+    // Pre-fill all available fields
+    if (urlParams.get('woNumber')) {
+        document.getElementById('woNumber').value = urlParams.get('woNumber');
+    }
+    if (urlParams.get('soNumber')) {
+        document.getElementById('soNumber').value = urlParams.get('soNumber');
+    }
+    if (urlParams.get('customer')) {
+        document.getElementById('customer').value = urlParams.get('customer');
+    }
+    if (urlParams.get('make')) {
+        document.getElementById('make').value = urlParams.get('make');
+    }
+    if (urlParams.get('model')) {
+        document.getElementById('model').value = urlParams.get('model');
+    }
+    if (urlParams.get('serialNumber')) {
+        document.getElementById('serialNumber').value = urlParams.get('serialNumber');
     }
     
-    certificates.unshift(certData);
-    localStorage.setItem('certificates', JSON.stringify(certificates));
-    currentCertId = certData.id;
-    
-    // Enable label button
-    document.getElementById('printLabelBtn').disabled = false;
-    document.getElementById('printLabelBtn').classList.remove('opacity-50');
-    
-    // Open certificate
-    openCertificate(certData);
-    alert('Certificate saved!');
-}
-
-function openCertificate(cert) {
-    const win = window.open('', '_blank', 'width=900,height=1200');
-    const sigHtml = cert.signature ? 
-        '<img src="' + cert.signature + '" style="max-width:200px;max-height:60px">' :
-        '<div style="border-bottom:2px solid black;width:200px;height:60px"></div>';
-    
-    win.document.write('<html><head><title>Certificate ' + cert.certNo + '</title></head><body style="font-family:Arial;padding:40px">');
-    win.document.write('<h1 style="text-align:center">CALIBRATION CERTIFICATE</h1>');
-    win.document.write('<p><strong>Certificate No:</strong> ' + cert.certNo + '</p>');
-    win.document.write('<p><strong>Serial Number:</strong> ' + cert.serialNo + '</p>');
-    win.document.write('<p><strong>Customer:</strong> ' + cert.customer + '</p>');
-    win.document.write('<p><strong>Date:</strong> ' + cert.dateTested + '</p>');
-    win.document.write('<div style="margin-top:60px;text-align:center">');
-    win.document.write('<p>Approved Signatory:</p>');
-    win.document.write(sigHtml);
-    win.document.write('</div>');
-    win.document.write('<div style="text-align:center;margin-top:40px">');
-    win.document.write('<button onclick="window.print()" style="background:#3b82f6;color:white;padding:12px 24px;border:none;border-radius:5px;cursor:pointer">Print</button>');
-    win.document.write('</div>');
-    win.document.write('</body></html>');
-    win.document.close();
-}
-
-// Label Printing with QR
-function printLabel() {
-    const cert = certificates.find(c => c.id === currentCertId);
-    if (!cert) {
-        alert('Generate certificate first!');
-        return;
+    // Set default range based on part number
+    const partNumber = urlParams.get('partNumber');
+    if (partNumber === 'TRACE-83') {
+        // Torque Wrench up to 400NM
+        document.getElementById('rangeFrom').value = '0';
+        document.getElementById('rangeTo').value = '400';
+        document.getElementById('unit').value = 'N.m';
+    } else if (partNumber === 'TRACE-84') {
+        // Torque Wrench 400NM to 1500NM
+        document.getElementById('rangeFrom').value = '400';
+        document.getElementById('rangeTo').value = '1500';
+        document.getElementById('unit').value = 'N.m';
     }
     
-    const qrData = 'CERT:' + cert.certNo + '|SN:' + cert.serialNo + '|DATE:' + cert.dateTested;
+    recalculate();
+}
+
+function setDefaultDates() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
     
-    const win = window.open('', '_blank', 'width=800,height=600');
-    win.document.write('<html><head><title>Label</title>');
-    win.document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></scr' + 'ipt>');
-    win.document.write('<style>body{font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh}');
-    win.document.write('.label{border:2px solid black;width:100mm;height:16mm;display:flex}');
-    win.document.write('.logo{width:25mm;border-right:2px solid black;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16pt}');
-    win.document.write('.info{flex:1;padding:2mm;display:flex;flex-direction:column;justify-content:space-around;font-size:10pt}');
-    win.document.write('.qr{width:18mm;border-left:2px solid black;display:flex;align-items:center;justify-content:center}');
-    win.document.write('#qrcode canvas{max-width:16mm;max-height:12mm}</style></head><body>');
-    win.document.write('<div class="label">');
-    win.document.write('<div class="logo">WIKA</div>');
-    win.document.write('<div class="info">');
-    win.document.write('<div><strong>Report:</strong> ' + cert.certNo + '</div>');
-    win.document.write('<div><strong>Date:</strong> ' + cert.dateTested + '</div>');
-    win.document.write('<div><strong>SN:</strong> ' + cert.serialNo + '</div>');
-    win.document.write('</div>');
-    win.document.write('<div class="qr" id="qrcode"></div>');
-    win.document.write('</div>');
-    win.document.write('<div style="text-align:center;margin-top:20px">');
-    win.document.write('<button onclick="window.print()" style="background:#3b82f6;color:white;padding:10px 20px;border:none;border-radius:5px;cursor:pointer">Print</button>');
-    win.document.write('</div>');
-    win.document.write('<scr' + 'ipt>new QRCode(document.getElementById("qrcode"),{text:"' + qrData + '",width:64,height:64});</scr' + 'ipt>');
-    win.document.write('</body></html>');
-    win.document.close();
+    document.getElementById('dateTested').value = dateStr;
+    document.getElementById('dateIssued').value = dateStr;
+    calculateDueDate(); // Calculate due date for today
 }
 
-// Certificates List
-function showCertificatesModal() {
-    document.getElementById('certificatesModal').classList.remove('hidden');
-    renderCertificates();
+function calculateDueDate() {
+    const dateTestedInput = document.getElementById('dateTested');
+    const dueDateInput = document.getElementById('dueDate');
+    
+    if (dateTestedInput.value) {
+        const dateTested = new Date(dateTestedInput.value);
+        // Add 12 months to the date tested
+        const dueDate = new Date(dateTested);
+        dueDate.setMonth(dueDate.getMonth() + 12);
+        
+        // Format as YYYY-MM-DD
+        const yyyy = dueDate.getFullYear();
+        const mm = String(dueDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(dueDate.getDate()).padStart(2, '0');
+        
+        dueDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
 }
 
-function closeCertificatesModal() {
-    document.getElementById('certificatesModal').classList.add('hidden');
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'index.html';
 }
 
-function renderCertificates() {
-    const list = document.getElementById('certList');
-    if (certificates.length === 0) {
-        list.innerHTML = '<p class="text-gray-500">No certificates yet</p>';
-        return;
+function initializeReadingsTable() {
+    const tbody = document.getElementById('readingsTableBody');
+    const testPoints = ['20%', '60%', '100%'];
+    const defaultTransmitters = ['214002', '211766', '214144']; // Default for each test point
+    
+    tbody.innerHTML = '';
+    testPoints.forEach((point, idx) => {
+        const row = document.createElement('tr');
+        row.id = `testRow${idx}`;
+        row.innerHTML = `
+            <td class="font-semibold">${point}</td>
+            <td class="transmitter-col">
+                <select id="transmitter${idx}" class="w-full border rounded px-2 py-1 text-sm" onchange="recalculate()">
+                    <option value="214002">214002</option>
+                    <option value="211766">211766</option>
+                    <option value="214144">214144</option>
+                </select>
+            </td>
+            <td class="readonly-cell"><span id="nominal${idx}">0</span></td>
+            <td class="readonly-cell"><span id="converted${idx}">0.00</span></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_1" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_2" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_3" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_4" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td><input type="number" step="0.01" id="asFound${idx}_5" oninput="calculateAverages(${idx}, 'asFound')"></td>
+            <td class="readonly-cell"><span id="asFoundAvg${idx}">-</span></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_1" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_2" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_3" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_4" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td><input type="number" step="0.01" id="asLeft${idx}_5" oninput="calculateAverages(${idx}, 'asLeft')"></td>
+            <td class="readonly-cell"><span id="asLeftAvg${idx}">-</span></td>
+            <td class="readonly-cell"><span id="error${idx}">-</span></td>
+            <td class="readonly-cell"><span id="errorPct${idx}">-</span></td>
+        `;
+        tbody.appendChild(row);
+        
+        // Set default transmitter for this test point
+        document.getElementById(`transmitter${idx}`).value = defaultTransmitters[idx];
+    });
+    
+    recalculate();
+}
+
+function recalculate() {
+    const rangeFrom = parseFloat(document.getElementById('rangeFrom').value) || 0;
+    const rangeTo = parseFloat(document.getElementById('rangeTo').value) || 0;
+    const unit = document.getElementById('unit').value;
+    const conversionFactor = UNIT_CONVERSIONS[unit] || 1;
+    
+    // Calculate nominal values for each test point (matches Excel formulas)
+    // Test Point 1 (20%): =ROUND(IF(M5>(O5*20%),M5,O5*20%),2)
+    // Test Point 2 (60%): =O5*60%
+    // Test Point 3 (100%): =O5*100%
+    const testPoints = [
+        { percentage: 0.20, idx: 0 },
+        { percentage: 0.60, idx: 1 },
+        { percentage: 1.00, idx: 2 }
+    ];
+    
+    testPoints.forEach(({ percentage, idx }) => {
+        let nominal;
+        if (idx === 0) {
+            // Special case for 20% point - use rangeFrom if it's larger
+            nominal = rangeFrom > (rangeTo * percentage) ? rangeFrom : rangeTo * percentage;
+        } else {
+            nominal = rangeTo * percentage;
+        }
+        
+        nominal = Math.round(nominal * 100) / 100;
+        
+        // Converted to N.m: =ROUND(VLOOKUP(M6,U3:V15,2,FALSE)*C17,2)
+        // The conversion is simply nominal * conversionFactor
+        // NOTE: The transmitter selection (B17, B18, B19) is used for UNCERTAINTY, not conversion
+        const converted = Math.round(nominal * conversionFactor * 100) / 100;
+        
+        document.getElementById(`nominal${idx}`).textContent = nominal.toFixed(2);
+        document.getElementById(`converted${idx}`).textContent = converted.toFixed(2);
+        
+        // Recalculate averages and errors if data exists
+        calculateAverages(idx, 'asFound');
+        calculateAverages(idx, 'asLeft');
+    });
+}
+
+function calculateAverages(rowIdx, type) {
+    const values = [];
+    for (let i = 1; i <= 5; i++) {
+        const input = document.getElementById(`${type}${rowIdx}_${i}`);
+        const val = parseFloat(input.value);
+        if (!isNaN(val) && input.value !== '') {
+            values.push(val);
+        }
     }
     
-    list.innerHTML = certificates.map(cert => 
-        '<div class="border p-4 mb-2 rounded">' +
-        '<div class="font-bold">' + cert.certNo + '</div>' +
-        '<div class="text-sm text-gray-600">Customer: ' + cert.customer + ' | SN: ' + cert.serialNo + '</div>' +
-        '<button onclick="openCertificate(' + JSON.stringify(cert).replace(/"/g, '&quot;') + ')" class="bg-blue-500 text-white px-3 py-1 rounded text-sm mt-2 mr-2">View</button>' +
-        '<button onclick="deleteCert(\'' + cert.id + '\')" class="bg-red-500 text-white px-3 py-1 rounded text-sm mt-2">Delete</button>' +
-        '</div>'
-    ).join('');
+    if (values.length === 0) {
+        document.getElementById(`${type}Avg${rowIdx}`).textContent = '-';
+    } else {
+        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+        document.getElementById(`${type}Avg${rowIdx}`).textContent = avg.toFixed(2);
+    }
+    
+    // Calculate error if both averages exist
+    calculateError(rowIdx);
 }
 
-function deleteCert(id) {
-    if (confirm('Delete this certificate?')) {
-        certificates = certificates.filter(c => c.id !== id);
-        localStorage.setItem('certificates', JSON.stringify(certificates));
-        renderCertificates();
+function calculateError(rowIdx) {
+    const nominal = parseFloat(document.getElementById(`nominal${rowIdx}`).textContent);
+    const asFoundAvg = parseFloat(document.getElementById(`asFoundAvg${rowIdx}`).textContent);
+    const asLeftAvg = parseFloat(document.getElementById(`asLeftAvg${rowIdx}`).textContent);
+    
+    // Use AS LEFT if available, otherwise AS FOUND (matches Excel: IF(P17="",J17,P17))
+    let average = null;
+    if (!isNaN(asLeftAvg)) {
+        average = asLeftAvg;
+    } else if (!isNaN(asFoundAvg)) {
+        average = asFoundAvg;
+    }
+    
+    if (average !== null && nominal > 0) {
+        // Error calculation: Q17 = IF(P17="",J17-C17,P17-C17)
+        const error = average - nominal;
+        // Error %: R17 = Q17/C17*100
+        const errorPct = (error / nominal) * 100;
+        
+        document.getElementById(`error${rowIdx}`).textContent = error.toFixed(2);
+        document.getElementById(`errorPct${rowIdx}`).textContent = errorPct.toFixed(2) + '%';
+        
+        // Calculate uncertainty for this test point
+        const uncertainty = calculateUncertainty(rowIdx, nominal);
+        
+        // Update result summary
+        const tolerance = parseFloat(document.getElementById('tolerance').value) || 0.04;
+        const tolerancePct = tolerance * 100;
+        const testPointName = ['20', '60', '100'][rowIdx];
+        
+        if (Math.abs(errorPct) <= tolerancePct) {
+            document.getElementById(`result${testPointName}`).textContent = 'PASS';
+            document.getElementById(`result${testPointName}`).className = 'text-2xl font-bold text-green-600';
+        } else {
+            document.getElementById(`result${testPointName}`).textContent = 'FAIL';
+            document.getElementById(`result${testPointName}`).className = 'text-2xl font-bold text-red-600';
+        }
+        document.getElementById(`error${testPointName}`).textContent = errorPct.toFixed(2) + '%';
+    } else {
+        document.getElementById(`error${rowIdx}`).textContent = '-';
+        document.getElementById(`errorPct${rowIdx}`).textContent = '-';
+    }
+}
+
+// Uncertainty calculation based on Excel workbook
+function calculateUncertainty(rowIdx, nominalValue) {
+    // Get all AS FOUND readings for this test point
+    const readings = [];
+    for (let i = 1; i <= 5; i++) {
+        const val = parseFloat(document.getElementById(`asFound${rowIdx}_${i}`).value);
+        if (!isNaN(val)) {
+            readings.push(val);
+        }
+    }
+    
+    if (readings.length === 0 || !nominalValue) {
+        return 0;
+    }
+    
+    // Get the selected transmitter for THIS test point (from dropdown)
+    const transmitterSN = document.getElementById(`transmitter${rowIdx}`).value;
+    
+    // Get converted N.m value for uncertainty lookup
+    const convertedNm = parseFloat(document.getElementById(`converted${rowIdx}`).textContent);
+    
+    // Get transmitter uncertainty using VLOOKUP-style lookup
+    // Excel: =VLOOKUP(Worksheet!B17,Worksheet!K21:N24,2,FALSE)
+    // which becomes =VLOOKUP(D17, transmitter_table, 2, TRUE)
+    const transmitterUncertainty = getTransmitterUncertainty(transmitterSN, convertedNm);
+    
+    // Get uncertainty settings (use defaults if not set)
+    const uncSettings = calibrationSettings.uncertainty || {
+        ucDisplay: 0.3,
+        resolution: 0.05,
+        ambientEffect: 0.1,
+        thermals: 0.001,
+        dataFit: 0.05,
+        acPickup: 0.001,
+        rounding: 0.005,
+        coverageFactor: 2
+    };
+    
+    // Uncertainty components (from settings)
+    const components = [];
+    
+    // 1. Uc of Display (% of nominal from settings)
+    const ucDisplay = (uncSettings.ucDisplay / 100) * nominalValue;
+    components.push(ucDisplay);
+    
+    // 2. Drift of Display (half of Uc Display)
+    const driftDisplay = ucDisplay / 2;
+    components.push(driftDisplay);
+    
+    // 3. Uc of Transmitter (from lookup table)
+    components.push(transmitterUncertainty);
+    
+    // 4. Drift of Transmitter (half of Uc Transmitter)
+    components.push(transmitterUncertainty / 2);
+    
+    // 5. Resolution (from settings)
+    components.push(uncSettings.resolution);
+    
+    // 6. Effect of +/- 2 Deg C in ambient (from settings)
+    components.push(uncSettings.ambientEffect);
+    
+    // 7. Mean reading type A (range of readings converted to N.m)
+    const unit = document.getElementById('unit').value;
+    const conversionFactor = UNIT_CONVERSIONS[unit] || 1;
+    const range = Math.max(...readings) - Math.min(...readings);
+    const meanReadingTypeA = range * conversionFactor;
+    components.push(meanReadingTypeA);
+    
+    // 8. Thermals (from settings)
+    components.push(uncSettings.thermals);
+    
+    // 9. Data fit and interpolation (from settings)
+    components.push(uncSettings.dataFit);
+    
+    // 10. AC pickup & thermals (from settings)
+    components.push(uncSettings.acPickup);
+    
+    // 11. Rounding of final result (from settings)
+    components.push(uncSettings.rounding);
+    
+    // Calculate combined uncertainty (RSS - Root Sum of Squares)
+    const squaresSum = components.reduce((sum, component) => sum + (component * component), 0);
+    const combinedUncertainty = Math.sqrt(squaresSum);
+    
+    // Calculate degrees of freedom (Veff)
+    const uc4 = Math.pow(combinedUncertainty, 4);
+    const vi = components.map(c => Math.pow(c, 4));
+    const veff = uc4 / vi.reduce((sum, v) => sum + v, 0);
+    
+    // Coverage factor k (from settings)
+    let k = uncSettings.coverageFactor;
+    if (veff < 10) {
+        // For small degrees of freedom, k is slightly higher
+        const tValues = {
+            1: 12.71, 2: 4.30, 3: 3.18, 4: 2.78, 5: 2.57,
+            6: 2.45, 7: 2.36, 8: 2.31, 9: 2.26, 10: 2.23
+        };
+        k = tValues[Math.floor(veff)] || 2;
+    }
+    
+    // Expanded uncertainty U = k * Uc
+    const expandedUncertainty = combinedUncertainty * k;
+    
+    // Convert to percentage
+    const uncertaintyPercent = (expandedUncertainty / 100) * 100;
+    
+    // Return the calculated uncertainty percentage
+    return uncertaintyPercent;
+}
+
+function updateReferenceEquipment() {
+    const transmitterSN = document.getElementById('transmitterSN').value;
+    if (transmitterSN && REFERENCE_EQUIPMENT[transmitterSN]) {
+        const equip = REFERENCE_EQUIPMENT[transmitterSN];
+        document.getElementById('transmitterRange').value = equip.range;
+        document.getElementById('transmitterCert').value = equip.certificate;
+    } else {
+        document.getElementById('transmitterRange').value = '';
+        document.getElementById('transmitterCert').value = '';
     }
 }
 
 function newCalibration() {
-    if (confirm('Start new calibration?')) {
-        document.getElementById('certNo').value = '';
-        document.getElementById('serialNo').value = '';
-        document.getElementById('customer').value = '';
-        currentCertId = null;
-        document.getElementById('printLabelBtn').disabled = true;
-        document.getElementById('printLabelBtn').classList.add('opacity-50');
+    if (confirm('Start a new calibration? Any unsaved data will be lost.')) {
+        location.reload();
     }
+}
+
+function saveCalibration() {
+    const calibrationData = {
+        id: currentCalibration?.id || Date.now(),
+        savedDate: new Date().toISOString(),
+        // Instrument info
+        certificateNo: document.getElementById('certificateNo').value,
+        serialNumber: document.getElementById('serialNumber').value,
+        assetNo: document.getElementById('assetNo').value,
+        make: document.getElementById('make').value,
+        model: document.getElementById('model').value,
+        itemNo: document.getElementById('itemNo').value,
+        customer: document.getElementById('customer').value,
+        street: document.getElementById('street').value,
+        address: document.getElementById('address').value,
+        // Test info
+        standard: document.getElementById('standard').value,
+        tolerance: document.getElementById('tolerance').value,
+        direction: document.getElementById('direction').value,
+        rangeFrom: document.getElementById('rangeFrom').value,
+        rangeTo: document.getElementById('rangeTo').value,
+        unit: document.getElementById('unit').value,
+        soNumber: document.getElementById('soNumber').value,
+        woNumber: document.getElementById('woNumber').value,
+        poNumber: document.getElementById('poNumber').value,
+        dateTested: document.getElementById('dateTested').value,
+        dateIssued: document.getElementById('dateIssued').value,
+        dueDate: document.getElementById('dueDate').value,
+        technician: document.getElementById('technician').value,
+        // Reference equipment
+        transmitterSN: document.getElementById('transmitterSN').value,
+        displaySN: document.getElementById('displaySN').value,
+        displayCert: document.getElementById('displayCert').value,
+        transmitterCert: document.getElementById('transmitterCert').value,
+        transmitterRange: document.getElementById('transmitterRange').value,
+        // Readings data
+        readings: {}
+    };
+    
+    // Save all readings
+    for (let idx = 0; idx < 3; idx++) {
+        calibrationData.readings[`test${idx}`] = {
+            asFound: [],
+            asLeft: []
+        };
+        
+        for (let i = 1; i <= 5; i++) {
+            const asFoundInput = document.getElementById(`asFound${idx}_${i}`);
+            const asLeftInput = document.getElementById(`asLeft${idx}_${i}`);
+            calibrationData.readings[`test${idx}`].asFound.push(asFoundInput.value);
+            calibrationData.readings[`test${idx}`].asLeft.push(asLeftInput.value);
+        }
+    }
+    
+    // Load existing calibrations
+    savedCalibrations = JSON.parse(localStorage.getItem('torqueTraceCalibrations') || '[]');
+    
+    // Update or add
+    const existingIndex = savedCalibrations.findIndex(c => c.id === calibrationData.id);
+    if (existingIndex >= 0) {
+        savedCalibrations[existingIndex] = calibrationData;
+    } else {
+        savedCalibrations.push(calibrationData);
+    }
+    
+    localStorage.setItem('torqueTraceCalibrations', JSON.stringify(savedCalibrations));
+    currentCalibration = calibrationData;
+    
+    alert('Calibration saved successfully!');
+}
+
+function loadSavedCalibrations() {
+    savedCalibrations = JSON.parse(localStorage.getItem('torqueTraceCalibrations') || '[]');
+}
+
+function showSavedCalibrations() {
+    document.getElementById('savedCalibrationsModal').classList.add('show');
+    renderSavedCalibrations();
+}
+
+function closeSavedCalibrations() {
+    document.getElementById('savedCalibrationsModal').classList.remove('show');
+}
+
+function renderSavedCalibrations() {
+    const container = document.getElementById('savedCalibrationsList');
+    
+    if (savedCalibrations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-12">
+                <i class="fas fa-folder-open text-6xl mb-4"></i>
+                <p>No saved calibrations</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+                <tr>
+                    <th class="px-4 py-2 text-left">Certificate No</th>
+                    <th class="px-4 py-2 text-left">Customer</th>
+                    <th class="px-4 py-2 text-left">Make/Model</th>
+                    <th class="px-4 py-2 text-left">Serial No</th>
+                    <th class="px-4 py-2 text-left">Date Tested</th>
+                    <th class="px-4 py-2 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${savedCalibrations.map((cal, idx) => `
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="px-4 py-2">${cal.certificateNo || '-'}</td>
+                        <td class="px-4 py-2">${cal.customer || '-'}</td>
+                        <td class="px-4 py-2">${cal.make} ${cal.model}</td>
+                        <td class="px-4 py-2">${cal.serialNumber}</td>
+                        <td class="px-4 py-2">${cal.dateTested || '-'}</td>
+                        <td class="px-4 py-2 text-right">
+                            <button onclick="loadCalibration(${idx})" class="text-blue-600 hover:text-blue-800 mr-2">
+                                <i class="fas fa-folder-open"></i> Load
+                            </button>
+                            <button onclick="deleteCalibration(${idx})" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function loadCalibration(index) {
+    const cal = savedCalibrations[index];
+    if (!cal) return;
+    
+    currentCalibration = cal;
+    
+    // Load all form fields
+    document.getElementById('certificateNo').value = cal.certificateNo || '';
+    document.getElementById('serialNumber').value = cal.serialNumber || '';
+    document.getElementById('assetNo').value = cal.assetNo || '';
+    document.getElementById('make').value = cal.make || '';
+    document.getElementById('model').value = cal.model || '';
+    document.getElementById('itemNo').value = cal.itemNo || '';
+    document.getElementById('customer').value = cal.customer || '';
+    document.getElementById('street').value = cal.street || '';
+    document.getElementById('address').value = cal.address || '';
+    document.getElementById('standard').value = cal.standard || 'ISO 6789';
+    document.getElementById('tolerance').value = cal.tolerance || '0.04';
+    document.getElementById('direction').value = cal.direction || 'CW';
+    document.getElementById('rangeFrom').value = cal.rangeFrom || '';
+    document.getElementById('rangeTo').value = cal.rangeTo || '';
+    document.getElementById('unit').value = cal.unit || 'N.m';
+    document.getElementById('soNumber').value = cal.soNumber || '';
+    document.getElementById('woNumber').value = cal.woNumber || '';
+    document.getElementById('poNumber').value = cal.poNumber || '';
+    document.getElementById('dateTested').value = cal.dateTested || '';
+    document.getElementById('dateIssued').value = cal.dateIssued || '';
+    document.getElementById('dueDate').value = cal.dueDate || '';
+    document.getElementById('technician').value = cal.technician || '';
+    document.getElementById('transmitterSN').value = cal.transmitterSN || '';
+    document.getElementById('displaySN').value = cal.displaySN || '';
+    document.getElementById('displayCert').value = cal.displayCert || '';
+    
+    updateReferenceEquipment();
+    recalculate();
+    
+    // Load readings
+    for (let idx = 0; idx < 3; idx++) {
+        const testData = cal.readings[`test${idx}`];
+        if (testData) {
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`asFound${idx}_${i}`).value = testData.asFound[i-1] || '';
+                document.getElementById(`asLeft${idx}_${i}`).value = testData.asLeft[i-1] || '';
+            }
+            calculateAverages(idx, 'asFound');
+            calculateAverages(idx, 'asLeft');
+        }
+    }
+    
+    closeSavedCalibrations();
+    alert('Calibration loaded successfully!');
+}
+
+function deleteCalibration(index) {
+    if (confirm('Delete this calibration record?')) {
+        savedCalibrations.splice(index, 1);
+        localStorage.setItem('torqueTraceCalibrations', JSON.stringify(savedCalibrations));
+        renderSavedCalibrations();
+        alert('Calibration deleted!');
+    }
+}
+
+function generateCertificate() {
+    if (!currentCalibration && !document.getElementById('certificateNo').value) {
+        alert('Please save the calibration first before generating a certificate.');
+        return;
+    }
+    
+    // Save before generating
+    saveCalibration();
+    
+    // Open certificate in new window
+    const certWindow = window.open('', '_blank', 'width=900,height=1200');
+    certWindow.document.write(getCertificateHTML());
+    certWindow.document.close();
+}
+
+function toggleLabelMenu() {
+    const menu = document.getElementById('labelMenu');
+    menu.classList.toggle('hidden');
+}
+
+// Close label menu when clicking outside
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('labelMenu');
+    const button = event.target.closest('button');
+    if (menu && !menu.contains(event.target) && (!button || button.textContent.indexOf('Print Label') === -1)) {
+        menu.classList.add('hidden');
+    }
+});
+
+function printLabel(labelType) {
+    document.getElementById('labelMenu').classList.add('hidden');
+    
+    const labelWindow = window.open('', '_blank', 'width=800,height=600');
+    labelWindow.document.write(getLabelHTML(labelType));
+    labelWindow.document.close();
+}
+
+function getLabelHTML(labelType) {
+    const certificateNo = document.getElementById('certificateNo').value || 'N/A';
+    const serialNumber = document.getElementById('serialNumber').value || 'N/A';
+    const dateTested = document.getElementById('dateTested').value || '';
+    const dueDate = document.getElementById('dueDate').value || '';
+    
+    // Format dates as DD/MM/YYYY
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+    
+    if (labelType === 'TRACE18') {
+        // Large label format (102mm x 18mm) - Matches TRACE 18.png
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>TRACE 18 Label - ${certificateNo}</title>
+                <style>
+                    @page { size: 102mm 18mm; margin: 0; }
+                    * { box-sizing: border-box; }
+                    body { 
+                        margin: 0; 
+                        padding: 0;
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 18mm;
+                        width: 102mm;
+                    }
+                    .label {
+                        width: 100mm;
+                        height: 16mm;
+                        border: 2px solid black;
+                        display: flex;
+                        position: relative;
+                    }
+                    .logo-section {
+                        width: 25mm;
+                        border-right: 2px solid black;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 2mm;
+                    }
+                    .logo {
+                        border: 3px solid black;
+                        padding: 2mm 3mm;
+                        font-weight: 900;
+                        font-size: 16pt;
+                        letter-spacing: 2px;
+                    }
+                    .info-section {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        position: relative;
+                    }
+                    .phone {
+                        font-size: 11pt;
+                        font-weight: bold;
+                        text-align: right;
+                        padding: 1mm 2mm 0.5mm 0;
+                        border-bottom: 1px solid black;
+                    }
+                    .data-grid {
+                        flex: 1;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        grid-template-rows: 1fr 1fr;
+                    }
+                    .data-cell {
+                        padding: 1mm 2mm;
+                        display: flex;
+                        align-items: center;
+                        font-size: 10pt;
+                    }
+                    .data-cell:nth-child(1) {
+                        border-right: 1px solid black;
+                        border-bottom: 1px solid black;
+                    }
+                    .data-cell:nth-child(2) {
+                        border-bottom: 1px solid black;
+                    }
+                    .data-cell:nth-child(3) {
+                        border-right: 1px solid black;
+                    }
+                    .label-text {
+                        font-weight: bold;
+                        margin-right: 1mm;
+                    }
+                    .value-text {
+                        font-weight: bold;
+                    }
+                    @media print {
+                        button { display: none !important; }
+                        body { height: 18mm; width: 102mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="label">
+                    <div class="logo-section">
+                        <div class="logo">WIKA</div>
+                    </div>
+                    <div class="info-section">
+                        <div class="phone">PH.0894552298</div>
+                        <div class="data-grid">
+                            <div class="data-cell">
+                                <span class="label-text">Report:</span>
+                                <span class="value-text">${certificateNo}</span>
+                            </div>
+                            <div class="data-cell">
+                                <span class="label-text">Date:</span>
+                                <span class="value-text">${formatDate(dateTested)}</span>
+                            </div>
+                            <div class="data-cell">
+                                <span class="label-text">SN:</span>
+                                <span class="value-text">${serialNumber}</span>
+                            </div>
+                            <div class="data-cell">
+                                <span class="label-text">Due:</span>
+                                <span class="value-text">${formatDate(dueDate)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.print()" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                        Print Label
+                    </button>
+                    <button onclick="window.close()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            </body>
+            </html>
+        `;
+    } else {
+        // Small label format (62mm x 18mm) - Matches Trace 18S.png
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>TRACE 18S Label - ${certificateNo}</title>
+                <style>
+                    @page { size: 62mm 18mm; margin: 0; }
+                    * { box-sizing: border-box; }
+                    body { 
+                        margin: 0; 
+                        padding: 0;
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 18mm;
+                        width: 62mm;
+                    }
+                    .label {
+                        width: 60mm;
+                        height: 16mm;
+                        border: 2px solid black;
+                        display: flex;
+                    }
+                    .logo-section {
+                        width: 12mm;
+                        border-right: 2px solid black;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 1mm;
+                    }
+                    .logo {
+                        writing-mode: vertical-rl;
+                        text-orientation: upright;
+                        border: 2px solid black;
+                        padding: 2mm 1mm;
+                        font-weight: 900;
+                        font-size: 10pt;
+                        letter-spacing: 1px;
+                        line-height: 1;
+                    }
+                    .info-section {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-evenly;
+                        padding: 1mm 2mm;
+                    }
+                    .info-row {
+                        display: flex;
+                        align-items: center;
+                        font-size: 9pt;
+                        line-height: 1.2;
+                    }
+                    .label-text {
+                        font-weight: bold;
+                        margin-right: 1mm;
+                    }
+                    .value-text {
+                        font-weight: bold;
+                        font-size: 10pt;
+                    }
+                    @media print {
+                        button { display: none !important; }
+                        body { height: 18mm; width: 62mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="label">
+                    <div class="logo-section">
+                        <div class="logo">WIKA</div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-row">
+                            <span class="label-text">Report:</span>
+                            <span class="value-text">${certificateNo}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label-text">Date:</span>
+                            <span class="value-text">${formatDate(dateTested)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label-text">Due:</span>
+                            <span class="value-text">${formatDate(dueDate)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label-text">SN:</span>
+                            <span class="value-text">${serialNumber}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.print()" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                        Print Label
+                    </button>
+                    <button onclick="window.close()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+}
+
+function getCertificateHTML() {
+    const unit = document.getElementById('unit').value;
+    const conversionFactor = UNIT_CONVERSIONS[unit];
+    const conversionText = unit === 'N.m' ? '#N/A' : `${unit} = ${conversionFactor} N.m`;
+    
+    // Determine if device was adjusted
+    const hasAsLeft = document.getElementById('asLeftAvg0').textContent !== '-';
+    const adjustmentText = hasAsLeft ? 'adjusted' : 'not adjusted';
+    
+    // Get transmitter selections from test points
+    const tx1 = document.getElementById('transmitter0').value;
+    const tx2 = document.getElementById('transmitter1').value;
+    const tx3 = document.getElementById('transmitter2').value;
+    
+    // Get unique transmitters
+    const transmitters = [...new Set([tx1, tx2, tx3])].filter(t => t);
+    
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Certificate - ${document.getElementById('certificateNo').value}</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+            <style>
+                @page { size: A4; margin: 1cm 3.5cm 1.5cm 3.5cm; }
+                body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; line-height: 1.4; }
+                .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+                .header-left h2 { margin: 0; font-size: 18pt; font-weight: 900; }
+                .header-right { text-align: right; }
+                .logo-box { border: 2px solid #000; padding: 8px 15px; display: inline-block; }
+                .logo-text { font-size: 18pt; font-weight: 900; color: #000; letter-spacing: 2px; }
+                .tagline { font-size: 9pt; color: #0066cc; font-weight: bold; margin-top: 2px; }
+                .company-details { font-size: 7pt; line-height: 1.4; color: #333; margin-top: 5px; }
+                .info-section { margin-bottom: 8px; }
+                .info-line { display: flex; margin: 2px 0; font-size: 10pt; }
+                .info-label { font-weight: bold; min-width: 150px; }
+                .info-value { flex: 1; }
+                .two-col { display: flex; gap: 40px; margin: 2px 0; }
+                .two-col > div { flex: 1; }
+                .data-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10pt; }
+                .data-table th, .data-table td { border: 1px solid #000; padding: 6px; text-align: center; }
+                .data-table th { background-color: #e0e0e0; font-weight: bold; }
+                .section-title { font-weight: bold; font-size: 10pt; margin: 12px 0 4px 0; }
+                .conditions { margin-left: 0; line-height: 1.4; font-size: 8pt; }
+                .conditions div { margin-bottom: 3px; }
+                .signature-section { text-align: center; font-size: 10pt; margin-top: 60px; margin-bottom: 30px; }
+                .signature-line { display: inline-block; width: 250px; border-bottom: 1px solid #000; margin-left: 10px; }
+                .traceability { text-align: center; font-size: 8pt; margin: 40px 0 20px 0; line-height: 1.3; }
+                .footer-row { display: flex; justify-content: space-between; font-size: 7pt; color: #666; }
+                @media print { button { display: none !important; } }
+            </style>
+        </head>
+        <body>
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left" style="flex: 1;">
+                    <h2>CALIBRATION REPORT</h2>
+                    <div class="info-line" style="margin-top: 10px;">
+                        <span class="info-label">Report on:</span>
+                        <span class="info-value">Hand Torque Tool</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <img src="wika-logo.png" alt="WIKA Logo" style="max-width: 180px; height: auto;">
+                    <div class="company-details">
+                        WIKA Australia Pty Ltd<br>
+                        Unit 1, 6-8 Harvard Way<br>
+                        Canning Vale WA 6155<br>
+                        ABN: 80 152 894 652<br>
+                        Ph (08) 9452 3100<br>
+                        www.wika.com.au
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-line">
+                    <span class="info-label">Customer:</span>
+                    <span class="info-value">${document.getElementById('customer').value}</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label"></span>
+                    <span class="info-value">${document.getElementById('street').value}</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label"></span>
+                    <span class="info-value">${document.getElementById('address').value}</span>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <div class="two-col">
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Certificate No:</span>
+                            <span class="info-value">${document.getElementById('certificateNo').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Date Tested:</span>
+                            <span class="info-value">${document.getElementById('dateTested').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Date Issued:</span>
+                            <span class="info-value">${document.getElementById('dateIssued').value}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Our Ref No:</span>
+                            <span class="info-value">${document.getElementById('soNumber').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Customer PO:</span>
+                            <span class="info-value">${document.getElementById('poNumber').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Item/Cat No:</span>
+                            <span class="info-value">${document.getElementById('itemNo').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Make:</span>
+                            <span class="info-value">${document.getElementById('make').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Type/Model:</span>
+                            <span class="info-value">${document.getElementById('model').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Direction:</span>
+                            <span class="info-value">${document.getElementById('direction').value}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-title">Reference Equipment Used:</div>
+            <div class="info-section">
+                <div class="two-col">
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Display Serial No:</span>
+                            <span class="info-value">${document.getElementById('displaySN').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Certificate No:</span>
+                            <span class="info-value">${document.getElementById('displayCert').value}</span>
+                        </div>
+                        ${transmitters.map(txSN => {
+                            const txEquip = REFERENCE_EQUIPMENT[txSN];
+                            return `
+                            <div class="info-line">
+                                <span class="info-label">Tx Serial No:</span>
+                                <span class="info-value">${txSN}</span>
+                            </div>
+                            <div class="info-line">
+                                <span class="info-label">Certificate No:</span>
+                                <span class="info-value">${txEquip ? txEquip.certificate : '#N/A'}</span>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Measurement Range:</span>
+                            <span class="info-value">${document.getElementById('rangeFrom').value} to ${document.getElementById('rangeTo').value} ${unit}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">ID No:</span>
+                            <span class="info-value">${document.getElementById('assetNo').value}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Serial No:</span>
+                            <span class="info-value">${document.getElementById('serialNumber').value}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Set Torque<br>${unit}</th>
+                        <th>As Found Average<br>${unit}</th>
+                        <th>As Left Average<br>${unit}</th>
+                        <th>Tolerance<br>${unit}</th>
+                        <th>Uncertainty<br>%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${document.getElementById('nominal0').textContent}</td>
+                        <td>${document.getElementById('asFoundAvg0').textContent}</td>
+                        <td>${document.getElementById('asLeftAvg0').textContent !== '-' ? document.getElementById('asLeftAvg0').textContent : document.getElementById('asFoundAvg0').textContent}</td>
+                        <td>${(parseFloat(document.getElementById('nominal0').textContent) * parseFloat(document.getElementById('tolerance').value)).toFixed(2)}</td>
+                        <td>0.16</td>
+                    </tr>
+                    <tr>
+                        <td>${document.getElementById('nominal1').textContent}</td>
+                        <td>${document.getElementById('asFoundAvg1').textContent}</td>
+                        <td>${document.getElementById('asLeftAvg1').textContent !== '-' ? document.getElementById('asLeftAvg1').textContent : document.getElementById('asFoundAvg1').textContent}</td>
+                        <td>${(parseFloat(document.getElementById('nominal1').textContent) * parseFloat(document.getElementById('tolerance').value)).toFixed(2)}</td>
+                        <td>0.097</td>
+                    </tr>
+                    <tr>
+                        <td>${document.getElementById('nominal2').textContent}</td>
+                        <td>${document.getElementById('asFoundAvg2').textContent}</td>
+                        <td>${document.getElementById('asLeftAvg2').textContent !== '-' ? document.getElementById('asLeftAvg2').textContent : document.getElementById('asFoundAvg2').textContent}</td>
+                        <td>${(parseFloat(document.getElementById('nominal2').textContent) * parseFloat(document.getElementById('tolerance').value)).toFixed(2)}</td>
+                        <td>0.085</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="margin: 10px 0; font-size: 10pt;">
+                <strong>Accuracy (Tolerance):</strong> ±${(parseFloat(document.getElementById('tolerance').value) * 100).toFixed(1)}%<br>
+                <strong>${conversionText}</strong>
+            </div>
+            
+            <div class="section-title">Conditions of Test</div>
+            <div class="conditions">
+                <div>1.  Uncertainty of Measurement with a Confidence Level of 95%, k= 2</div>
+                <div>2.  Tested in accordance with Work Instructions PWI-101 as well as ISO 6789-1:2017</div>
+                <div>3.  Average Ambient Temperature at time of test was 20°C ± 2°C at a relative humidity not exceeding 90%</div>
+                <div>4.  Results relate only to the item calibrated. The uncertainty stated is only for the nominated points unless otherwise stated.</div>
+                <div>5.  Test averages are a true average taken from 5 readings</div>
+                <div>6.  The observed values fall within the maximum permissible relative deviation at each target setting</div>
+                <div>7.  The device under test was ${adjustmentText}</div>
+            </div>
+            
+            <div style="margin-top: 15px; font-size: 10pt;">
+                <strong>Comments:</strong> NIL
+            </div>
+            
+            <div style="margin-top: 15px; font-size: 10pt;">
+                <strong>Calibration was performed at:</strong> Unit 1, 6-8 Harvard Way, Canning Vale WA 6155
+            </div>
+            
+            <div class="signature-section">
+                Approved Signatory: <span class="signature-line"></span>
+            </div>
+            
+            <div class="traceability">
+                The results of the tests, calibrations and/or measurements included in this document are traceable to Australian/National Standards.
+            </div>
+            
+            <div class="footer-row">
+                <div>SVP-001-101W Version 1</div>
+                <div>Page 1 of 1</div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px;">
+                <button onclick="window.print()" style="background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+                    <i class="fas fa-print"></i> Print Certificate
+                </button>
+                <button onclick="window.close()" style="background: #6b7280; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px; font-size: 14px;">
+                    Close
+                </button>
+            </div>
+        </body>
+        </html>
+    `;
 }
 </script>
 </body>
 </html>
+
