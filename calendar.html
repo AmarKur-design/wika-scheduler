@@ -333,16 +333,17 @@
                 </div>
                 <div class="mb-4">
                     <h3 class="text-md font-semibold text-gray-700 mb-2">Item Details</h3>
-                    <div class="mb-3">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Existing Item (Optional)</label>
-                        <select id="existingItemSelect" class="w-full border border-gray-300 rounded px-3 py-2" onchange="fillItemFromExisting()">
-                            <option value="">-- Create New Item or Select Existing --</option>
-                        </select>
-                    </div>
+                    <p class="text-xs text-gray-600 mb-3">Start typing to search existing items, or enter new details to create an item automatically</p>
                     <div class="grid grid-cols-3 gap-4">
-                        <div>
+                        <div class="relative">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
-                            <input id="itemMake" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Make">
+                            <input id="itemMake" type="text" 
+                                   class="w-full border border-gray-300 rounded px-3 py-2" 
+                                   placeholder="Start typing..." 
+                                   oninput="showItemSearchSuggestions()"
+                                   onfocus="showItemSearchSuggestions()"
+                                   autocomplete="off">
+                            <div id="itemSearchSuggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b shadow-lg max-h-60 overflow-y-auto" style="top: 100%; left: 0;"></div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
@@ -478,7 +479,26 @@ function logout() {
 
 // Load parts database
 function loadPartsDatabase() {
-    partsDatabase = JSON.parse(localStorage.getItem('partsDatabase') || '[]');
+    const stored = localStorage.getItem('partsDatabase');
+    
+    if (stored) {
+        partsDatabase = JSON.parse(stored);
+    } else {
+        // Initialize with default parts
+        partsDatabase = [
+            { partNumber: 'TRACE-83', workType: 'Torque Wrench Calibration (0-400NM)', hours: 2.5, certType: 'TRACE' },
+            { partNumber: 'TRACE-84', workType: 'Torque Wrench Calibration (400-1500NM)', hours: 2.5, certType: 'TRACE' },
+            { partNumber: 'TRACE-P-001', workType: 'Pressure Gauge Calibration', hours: 1.5, certType: 'TRACE' },
+            { partNumber: 'TRACE-T-001', workType: 'Temperature Calibration', hours: 2.0, certType: 'TRACE' },
+            { partNumber: 'TRACE-E-001', workType: 'Electrical Calibration', hours: 2.0, certType: 'TRACE' },
+            { partNumber: 'TRACE-D-001', workType: 'Dimensional Calibration', hours: 1.5, certType: 'TRACE' },
+            { partNumber: 'NATA-001', workType: 'NATA Calibration', hours: 3.0, certType: 'NATA' },
+            { partNumber: 'MAINT-001', workType: 'Preventive Maintenance', hours: 1.0, certType: 'Other' },
+            { partNumber: 'REPAIR-001', workType: 'Equipment Repair', hours: 2.0, certType: 'Other' }
+        ];
+        localStorage.setItem('partsDatabase', JSON.stringify(partsDatabase));
+    }
+    
     populatePartNumbersList();
 }
 
@@ -525,33 +545,167 @@ function populateExistingItems() {
     }
 }
 
-function fillItemFromExisting() {
-    const select = document.getElementById('existingItemSelect');
-    const value = select.value;
+// ============================================================================
+// ITEM AUTOCOMPLETE SEARCH FUNCTIONALITY
+// ============================================================================
+
+function showItemSearchSuggestions() {
+    const input = document.getElementById('itemMake');
+    const query = input.value.toLowerCase().trim();
+    const suggestionsDiv = document.getElementById('itemSearchSuggestions');
     
-    if (!value) {
-        // Clear fields if "Create New" is selected
-        document.getElementById('itemMake').value = '';
-        document.getElementById('itemModel').value = '';
-        document.getElementById('itemSerialNumber').value = '';
+    if (query.length < 2) {
+        suggestionsDiv.classList.add('hidden');
         return;
     }
     
-    try {
-        const itemData = JSON.parse(value);
-        
-        // Fill the form fields
-        document.getElementById('itemMake').value = itemData.make || '';
-        document.getElementById('itemModel').value = itemData.model || '';
-        document.getElementById('itemSerialNumber').value = itemData.serialNumber || '';
-        
-        // Store the source and index for later use
-        sessionStorage.setItem('selectedItemSource', itemData.source);
-        sessionStorage.setItem('selectedItemIndex', itemData.index);
-        sessionStorage.setItem('selectedItemId', itemData.id || '');
-    } catch (e) {
-        console.error('Error parsing item data:', e);
+    // Load items from database
+    const items = JSON.parse(localStorage.getItem('items') || '[]');
+    
+    // Filter items by make, model, serial, or barcode
+    const matches = items.filter(item => 
+        item.make.toLowerCase().includes(query) ||
+        item.model.toLowerCase().includes(query) ||
+        item.serialNumber.toLowerCase().includes(query) ||
+        (item.barcode && item.barcode.toLowerCase().includes(query))
+    ).slice(0, 15); // Limit to 15 suggestions
+    
+    if (matches.length === 0) {
+        suggestionsDiv.innerHTML = `
+            <div class="px-4 py-3 text-sm text-gray-500 italic bg-yellow-50 border-b">
+                <i class="fas fa-info-circle mr-2"></i>No existing items found. Continue typing to create new item.
+            </div>
+        `;
+        suggestionsDiv.classList.remove('hidden');
+        return;
     }
+    
+    suggestionsDiv.innerHTML = matches.map(item => `
+        <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 transition"
+             onclick="selectItemFromSearch(${item.id})">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="font-semibold text-sm text-gray-900">${item.make} ${item.model}</div>
+                    <div class="text-xs text-gray-600 mt-1">
+                        <span class="font-medium">SN:</span> ${item.serialNumber}
+                        ${item.barcode ? `<span class="ml-2"><i class="fas fa-barcode mr-1"></i>${item.barcode}</span>` : ''}
+                    </div>
+                    ${item.lastCalibrationDate ? 
+                        `<div class="text-xs text-green-600 mt-1"><i class="fas fa-check-circle mr-1"></i>Last cal: ${item.lastCalibrationDate}</div>` : 
+                        '<div class="text-xs text-gray-400 mt-1">Not calibrated yet</div>'
+                    }
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    suggestionsDiv.classList.remove('hidden');
+}
+
+function selectItemFromSearch(itemId) {
+    const items = JSON.parse(localStorage.getItem('items') || '[]');
+    const item = items.find(i => i.id === itemId);
+    
+    if (item) {
+        document.getElementById('itemMake').value = item.make;
+        document.getElementById('itemModel').value = item.model;
+        document.getElementById('itemSerialNumber').value = item.serialNumber;
+        document.getElementById('itemMake').dataset.selectedItemId = item.id;
+        document.getElementById('itemSearchSuggestions').classList.add('hidden');
+    }
+}
+
+// Close suggestions when clicking outside
+document.addEventListener('click', function(event) {
+    const suggestionsDiv = document.getElementById('itemSearchSuggestions');
+    const input = document.getElementById('itemMake');
+    
+    if (suggestionsDiv && input && 
+        !suggestionsDiv.contains(event.target) && 
+        event.target !== input) {
+        suggestionsDiv.classList.add('hidden');
+    }
+});
+
+function checkForDuplicateItem() {
+    const make = document.getElementById('itemMake').value.trim();
+    const model = document.getElementById('itemModel').value.trim();
+    const serial = document.getElementById('itemSerialNumber').value.trim();
+    
+    if (!make || !model || !serial) {
+        return null; // Not enough info
+    }
+    
+    // Check if item already exists
+    const items = JSON.parse(localStorage.getItem('items') || '[]');
+    const duplicate = items.find(item => 
+        item.make.toLowerCase() === make.toLowerCase() && 
+        item.model.toLowerCase() === model.toLowerCase() && 
+        item.serialNumber.toLowerCase() === serial.toLowerCase()
+    );
+    
+    return duplicate;
+}
+
+function autoCreateItemInDatabase(workOrder) {
+    const make = workOrder.itemMake?.trim();
+    const model = workOrder.itemModel?.trim();
+    const serial = workOrder.itemSerialNumber?.trim();
+    
+    // Check if item data was provided
+    if (!make || !model || !serial) {
+        return null; // No item to create
+    }
+    
+    // Check if user selected an existing item
+    const selectedItemId = workOrder.itemId;
+    if (selectedItemId) {
+        console.log('Using existing item:', selectedItemId);
+        return selectedItemId;
+    }
+    
+    // Check if item already exists (this should have been caught by duplicate check, but double-check)
+    let items = JSON.parse(localStorage.getItem('items') || '[]');
+    const existingItem = items.find(item => 
+        item.make.toLowerCase() === make.toLowerCase() && 
+        item.model.toLowerCase() === model.toLowerCase() && 
+        item.serialNumber.toLowerCase() === serial.toLowerCase()
+    );
+    
+    if (existingItem) {
+        console.log('Item already exists:', existingItem.id);
+        return existingItem.id;
+    }
+    
+    // Create new item in items database
+    const newItem = {
+        id: Date.now() + Math.random(), // Ensure unique
+        barcode: generateItemBarcode(),
+        make: make,
+        model: model,
+        serialNumber: serial,
+        createdDate: new Date().toISOString(),
+        createdFrom: 'work-order',
+        createdBy: currentUser.name,
+        workOrderNumber: workOrder.workOrderNumber
+    };
+    
+    items.push(newItem);
+    localStorage.setItem('items', JSON.stringify(items));
+    
+    console.log('Auto-created new item in database:', newItem);
+    return newItem.id;
+}
+
+function generateItemBarcode() {
+    // Generate unique barcode
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `WIKA${timestamp}${random}`;
+}
+
+function fillItemFromExisting() {
+    // Deprecated - now using autocomplete
 }
 
 function populatePartNumbersList() {
@@ -1379,6 +1533,30 @@ function createWorkOrder(event) {
             }
         }
         
+        // Check for duplicate item BEFORE creating work order
+        const duplicateItem = checkForDuplicateItem();
+        let proceedWithDuplicate = true;
+        
+        if (duplicateItem && !document.getElementById('itemMake').dataset.selectedItemId) {
+            const confirmMsg = `⚠️ DUPLICATE ITEM WARNING ⚠️\n\n` +
+                `An item with these exact details already exists:\n\n` +
+                `Make: ${duplicateItem.make}\n` +
+                `Model: ${duplicateItem.model}\n` +
+                `Serial Number: ${duplicateItem.serialNumber}\n` +
+                `Barcode: ${duplicateItem.barcode || 'N/A'}\n\n` +
+                `Do you want to continue and link this work order to the existing item?\n\n` +
+                `Click OK to use existing item, or Cancel to go back and modify.`;
+            
+            proceedWithDuplicate = confirm(confirmMsg);
+            
+            if (!proceedWithDuplicate) {
+                return; // User cancelled
+            }
+            
+            // User confirmed - link to existing item
+            document.getElementById('itemMake').dataset.selectedItemId = duplicateItem.id;
+        }
+        
         // Create new work order
         const workOrder = {
             id: Date.now(),
@@ -1398,16 +1576,20 @@ function createWorkOrder(event) {
             attachment: document.getElementById('workOrderAttachment').files[0]?.name || '',
             itemMake: document.getElementById('itemMake').value,
             itemModel: document.getElementById('itemModel').value,
-            itemSerialNumber: document.getElementById('itemSerialNumber').value
+            itemSerialNumber: document.getElementById('itemSerialNumber').value,
+            itemId: document.getElementById('itemMake').dataset.selectedItemId || null
         };
         
         workOrders.push(workOrder);
         saveData();
         
+        // Auto-create item in items database if new
+        autoCreateItemInDatabase(workOrder);
+        
         // Handle item - either from existing selection or create new
         const selectedItemSource = sessionStorage.getItem('selectedItemSource');
         const selectedItemIndex = sessionStorage.getItem('selectedItemIndex');
-        const selectedItemId = sessionStorage.getItem('selectedItemId');
+        const selectedItemId = workOrder.itemId || sessionStorage.getItem('selectedItemId');
         
         if (selectedItemSource || (workOrder.itemMake && workOrder.itemModel && workOrder.itemSerialNumber)) {
             const labItems = JSON.parse(localStorage.getItem('labItems') || '[]');
