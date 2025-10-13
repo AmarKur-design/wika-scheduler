@@ -324,7 +324,15 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                        <input id="customerName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Customer Name">
+                        <div class="relative">
+                            <input id="customerName" type="text" required 
+                                   class="w-full border border-gray-300 rounded px-3 py-2" 
+                                   placeholder="Start typing customer name..." 
+                                   oninput="showCustomerSuggestions()"
+                                   onfocus="showCustomerSuggestions()"
+                                   autocomplete="off">
+                            <div id="customerSuggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b shadow-lg max-h-60 overflow-y-auto" style="top: 100%; left: 0;"></div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Hours Required</label>
@@ -646,6 +654,101 @@ function checkForDuplicateItem() {
     
     return duplicate;
 }
+
+// ============================================================================
+// CUSTOMER AUTOCOMPLETE FUNCTIONALITY
+// ============================================================================
+
+async function loadCustomersDatabase() {
+    // Try to load from localStorage first
+    let customersDB = localStorage.getItem('customers');
+    if (customersDB) {
+        return JSON.parse(customersDB);
+    }
+    
+    // Try to load from JSON file
+    try {
+        const response = await fetch('customers-data.json');
+        if (response.ok) {
+            const customers = await response.json();
+            localStorage.setItem('customers', JSON.stringify(customers));
+            return customers;
+        }
+    } catch (error) {
+        console.log('No customers database found');
+    }
+    return [];
+}
+
+function showCustomerSuggestions() {
+    const input = document.getElementById('customerName');
+    const query = input.value.toLowerCase().trim();
+    const suggestionsDiv = document.getElementById('customerSuggestions');
+    
+    if (query.length < 2) {
+        suggestionsDiv.classList.add('hidden');
+        return;
+    }
+    
+    // Load customers
+    loadCustomersDatabase().then(customersDB => {
+        // Filter customers by name, account, or city
+        const matches = customersDB.filter(cust => 
+            cust.name.toLowerCase().includes(query) ||
+            cust.customerAccount.toLowerCase().includes(query) ||
+            (cust.city && cust.city.toLowerCase().includes(query))
+        ).slice(0, 15); // Limit to 15 suggestions
+        
+        if (matches.length === 0) {
+            suggestionsDiv.innerHTML = `
+                <div class="px-4 py-3 text-sm text-gray-500 italic bg-yellow-50">
+                    <i class="fas fa-info-circle mr-2"></i>No customers found. Continue typing to create new customer.
+                </div>
+            `;
+            suggestionsDiv.classList.remove('hidden');
+            return;
+        }
+        
+        suggestionsDiv.innerHTML = matches.map(cust => `
+            <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 transition"
+                 onclick="selectCustomer('${cust.customerAccount}', '${escapeHtml(cust.name)}', '${escapeHtml(cust.street)}', '${escapeHtml(cust.city)}')">
+                <div class="font-semibold text-sm text-gray-900">${cust.name}</div>
+                <div class="text-xs text-gray-600 mt-1">
+                    <span class="font-medium">${cust.customerAccount}</span>
+                    ${cust.city ? ` • ${cust.city}` : ''}
+                </div>
+                ${cust.street ? `<div class="text-xs text-gray-500 mt-1">${cust.street}</div>` : ''}
+            </div>
+        `).join('');
+        
+        suggestionsDiv.classList.remove('hidden');
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+}
+
+function selectCustomer(account, name, street, city) {
+    document.getElementById('customerName').value = name;
+    document.getElementById('customerName').dataset.customerAccount = account;
+    document.getElementById('customerName').dataset.customerStreet = street;
+    document.getElementById('customerName').dataset.customerCity = city;
+    document.getElementById('customerSuggestions').classList.add('hidden');
+}
+
+// Close customer suggestions when clicking outside
+document.addEventListener('click', function(event) {
+    const suggestionsDiv = document.getElementById('customerSuggestions');
+    const input = document.getElementById('customerName');
+    
+    if (suggestionsDiv && input && 
+        !suggestionsDiv.contains(event.target) && 
+        event.target !== input) {
+        suggestionsDiv.classList.add('hidden');
+    }
+});
 
 function autoCreateItemInDatabase(workOrder) {
     const make = workOrder.itemMake?.trim();

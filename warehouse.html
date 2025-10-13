@@ -137,9 +137,15 @@
             <h2 class="text-2xl font-bold mb-4">Add Item to Inbound</h2>
             <form id="inboundForm" onsubmit="saveInboundItem(event)">
                 <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
+                    <div class="relative">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
-                        <input id="companyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2">
+                        <input id="companyName" type="text" required 
+                               class="w-full border border-gray-300 rounded px-3 py-2" 
+                               placeholder="Start typing customer name..."
+                               oninput="showInboundCustomerSuggestions()"
+                               onfocus="showInboundCustomerSuggestions()"
+                               autocomplete="off">
+                        <div id="inboundCustomerSuggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b shadow-lg max-h-60 overflow-y-auto" style="top: 100%; left: 0;"></div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">WO Number</label>
@@ -205,9 +211,15 @@
             <h2 class="text-2xl font-bold mb-4">Add Item to Outbound</h2>
             <form id="outboundForm" onsubmit="saveOutboundItem(event)">
                 <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
+                    <div class="relative">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
-                        <input id="outboundCompanyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2">
+                        <input id="outboundCompanyName" type="text" required 
+                               class="w-full border border-gray-300 rounded px-3 py-2"
+                               placeholder="Start typing customer name..."
+                               oninput="showOutboundCustomerSuggestions()"
+                               onfocus="showOutboundCustomerSuggestions()"
+                               autocomplete="off">
+                        <div id="outboundCustomerSuggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b shadow-lg max-h-60 overflow-y-auto" style="top: 100%; left: 0;"></div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Sales Order Number</label>
@@ -1790,6 +1802,148 @@ function renderExpandedOutbound() {
     // Reuse the same rendering logic
     container.innerHTML = document.getElementById('outboundList').innerHTML;
 }
+
+// ============================================================================
+// CUSTOMER AUTOCOMPLETE FUNCTIONALITY
+// ============================================================================
+
+async function loadCustomersDatabase() {
+    // Try to load from localStorage first
+    let customersDB = localStorage.getItem('customers');
+    if (customersDB) {
+        return JSON.parse(customersDB);
+    }
+    
+    // Try to load from JSON file
+    try {
+        const response = await fetch('customers-data.json');
+        if (response.ok) {
+            const customers = await response.json();
+            localStorage.setItem('customers', JSON.stringify(customers));
+            return customers;
+        }
+    } catch (error) {
+        console.log('No customers database found');
+    }
+    return [];
+}
+
+function showInboundCustomerSuggestions() {
+    const input = document.getElementById('companyName');
+    const query = input.value.toLowerCase().trim();
+    const suggestionsDiv = document.getElementById('inboundCustomerSuggestions');
+    
+    if (query.length < 2) {
+        suggestionsDiv.classList.add('hidden');
+        return;
+    }
+    
+    loadCustomersDatabase().then(customersDB => {
+        const matches = customersDB.filter(cust => 
+            cust.name.toLowerCase().includes(query) ||
+            cust.customerAccount.toLowerCase().includes(query) ||
+            (cust.city && cust.city.toLowerCase().includes(query))
+        ).slice(0, 15);
+        
+        if (matches.length === 0) {
+            suggestionsDiv.innerHTML = `
+                <div class="px-4 py-3 text-sm text-gray-500 italic bg-yellow-50">
+                    <i class="fas fa-info-circle mr-2"></i>No customers found. Continue typing.
+                </div>
+            `;
+            suggestionsDiv.classList.remove('hidden');
+            return;
+        }
+        
+        suggestionsDiv.innerHTML = matches.map(cust => `
+            <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                 onclick="selectInboundCustomer('${escapeHtml(cust.name)}')">
+                <div class="font-semibold text-sm">${cust.name}</div>
+                <div class="text-xs text-gray-600 mt-1">
+                    ${cust.customerAccount} ${cust.city ? ` • ${cust.city}` : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        suggestionsDiv.classList.remove('hidden');
+    });
+}
+
+function showOutboundCustomerSuggestions() {
+    const input = document.getElementById('outboundCompanyName');
+    const query = input.value.toLowerCase().trim();
+    const suggestionsDiv = document.getElementById('outboundCustomerSuggestions');
+    
+    if (query.length < 2) {
+        suggestionsDiv.classList.add('hidden');
+        return;
+    }
+    
+    loadCustomersDatabase().then(customersDB => {
+        const matches = customersDB.filter(cust => 
+            cust.name.toLowerCase().includes(query) ||
+            cust.customerAccount.toLowerCase().includes(query) ||
+            (cust.city && cust.city.toLowerCase().includes(query))
+        ).slice(0, 15);
+        
+        if (matches.length === 0) {
+            suggestionsDiv.innerHTML = `
+                <div class="px-4 py-3 text-sm text-gray-500 italic bg-yellow-50">
+                    <i class="fas fa-info-circle mr-2"></i>No customers found. Continue typing.
+                </div>
+            `;
+            suggestionsDiv.classList.remove('hidden');
+            return;
+        }
+        
+        suggestionsDiv.innerHTML = matches.map(cust => `
+            <div class="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                 onclick="selectOutboundCustomer('${escapeHtml(cust.name)}')">
+                <div class="font-semibold text-sm">${cust.name}</div>
+                <div class="text-xs text-gray-600 mt-1">
+                    ${cust.customerAccount} ${cust.city ? ` • ${cust.city}` : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        suggestionsDiv.classList.remove('hidden');
+    });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+}
+
+function selectInboundCustomer(name) {
+    document.getElementById('companyName').value = name;
+    document.getElementById('inboundCustomerSuggestions').classList.add('hidden');
+}
+
+function selectOutboundCustomer(name) {
+    document.getElementById('outboundCompanyName').value = name;
+    document.getElementById('outboundCustomerSuggestions').classList.add('hidden');
+}
+
+// Close suggestions when clicking outside
+document.addEventListener('click', function(event) {
+    const inboundSuggestions = document.getElementById('inboundCustomerSuggestions');
+    const outboundSuggestions = document.getElementById('outboundCustomerSuggestions');
+    const inboundInput = document.getElementById('companyName');
+    const outboundInput = document.getElementById('outboundCompanyName');
+    
+    if (inboundSuggestions && inboundInput && 
+        !inboundSuggestions.contains(event.target) && 
+        event.target !== inboundInput) {
+        inboundSuggestions.classList.add('hidden');
+    }
+    
+    if (outboundSuggestions && outboundInput && 
+        !outboundSuggestions.contains(event.target) && 
+        event.target !== outboundInput) {
+        outboundSuggestions.classList.add('hidden');
+    }
+});
 
 </script>
 </body>
