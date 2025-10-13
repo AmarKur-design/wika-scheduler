@@ -310,6 +310,45 @@
         </div>
     </div>
 
+    <!-- Digital Signature Modal -->
+    <div id="digitalSignatureModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Sign Digitally</h2>
+                <button onclick="closeDigitalSignature()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 mb-4">Draw your signature below or type your name for a text signature</p>
+                
+                <!-- Canvas for drawing -->
+                <div class="border-2 border-gray-300 rounded mb-3">
+                    <canvas id="signatureCanvas" width="500" height="150" style="cursor: crosshair; display: block; width: 100%;"></canvas>
+                </div>
+                
+                <!-- Drawing controls -->
+                <div class="flex space-x-2 mb-4">
+                    <button onclick="clearSignatureCanvas()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm">
+                        <i class="fas fa-eraser mr-2"></i>Clear
+                    </button>
+                    <span class="text-sm text-gray-500 flex items-center">or</span>
+                    <input id="typedSignature" type="text" placeholder="Type your name here" class="flex-1 border rounded px-3 py-2 text-sm" oninput="generateTypedSignature()">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeDigitalSignature()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                    Cancel
+                </button>
+                <button onclick="saveDigitalSignature()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-check mr-2"></i>Use This Signature
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Enhanced Settings Modal with Tabs -->
     <div id="settingsModal" class="modal">
         <div class="modal-content" style="max-width: 1000px;">
@@ -1378,74 +1417,33 @@ function deleteCalibration(index) {
 }
 
 function generateCertificate() {
-    // Check for signature first
-    const userSig = localStorage.getItem(`signature_${currentUser.id || currentUser.name}`);
-    if (!userSig) {
-        alert('Please upload your signature first!\n\nGo to Calibration Menu → Manage User Signatures');
-        return;
-    }
-    
     if (!document.getElementById('certificateNo').value) {
         alert('Please enter a Certificate Number first.');
         return;
     }
     
-    // Save calibration data
-    saveCalibration();
+    // Check for signature - offer options if not uploaded
+    const userSig = localStorage.getItem(`signature_${currentUser.id || currentUser.name}`);
     
-    // Create certificate data with item linking
-    const certData = {
-        id: Date.now().toString(),
-        certificateNo: document.getElementById('certificateNo').value,
-        serialNumber: document.getElementById('serialNumber').value,
-        assetNo: document.getElementById('assetNo').value,
-        customer: document.getElementById('customer').value,
-        make: document.getElementById('make').value,
-        model: document.getElementById('model').value,
-        itemNo: document.getElementById('itemNo').value,
-        street: document.getElementById('street').value,
-        address: document.getElementById('address').value,
-        standard: document.getElementById('standard').value,
-        tolerance: document.getElementById('tolerance').value,
-        direction: document.getElementById('direction').value,
-        rangeFrom: document.getElementById('rangeFrom').value,
-        rangeTo: document.getElementById('rangeTo').value,
-        unit: document.getElementById('unit').value,
-        soNumber: document.getElementById('soNumber').value,
-        woNumber: document.getElementById('woNumber').value,
-        poNumber: document.getElementById('poNumber').value,
-        dateTested: document.getElementById('dateTested').value,
-        dateIssued: document.getElementById('dateIssued').value,
-        dueDate: document.getElementById('dueDate').value,
-        technician: document.getElementById('technician').value || currentUser.name,
-        signature: userSig,
-        generatedDate: new Date().toISOString(),
-        generatedBy: currentUser.name,
-        // Test results
-        testResults: gatherTestResults(),
-        // Item linking
-        itemIdentifier: `${document.getElementById('make').value}_${document.getElementById('model').value}_${document.getElementById('serialNumber').value}`
-    };
+    if (!userSig) {
+        const signChoice = confirm(
+            'No signature uploaded.\n\n' +
+            'Click OK to sign digitally now, or\n' +
+            'Click Cancel to upload a signature image first.\n\n' +
+            '(You can upload a signature in Calibration Menu → Manage User Signatures)'
+        );
+        
+        if (!signChoice) {
+            return; // User wants to upload signature first
+        }
+        
+        // Show digital signature dialog
+        showDigitalSignatureDialog();
+        return;
+    }
     
-    // Save to certificates database
-    let certs = JSON.parse(localStorage.getItem('torqueCertificates') || '[]');
-    certs.unshift(certData);
-    localStorage.setItem('torqueCertificates', JSON.stringify(certs));
-    
-    // Update item in database with latest cert ID
-    updateItemWithCertificate(certData);
-    
-    // Mark current calibration as having certificate
-    currentCalibration = currentCalibration || {};
-    currentCalibration.certificateId = certData.id;
-    currentCalibration.hasCertificate = true;
-    
-    // Open certificate in formatted print view
-    const certWindow = window.open('', '_blank', 'width=900,height=1200');
-    certWindow.document.write(getCertificateHTML(certData));
-    certWindow.document.close();
-    
-    alert('Certificate generated and saved!');
+    // User has uploaded signature - proceed directly
+    proceedWithCertificateGeneration(userSig);
 }
 
 function gatherTestResults() {
@@ -1504,6 +1502,197 @@ function printLabel(labelType) {
     const labelWindow = window.open('', '_blank', 'width=800,height=600');
     labelWindow.document.write(getLabelHTML(labelType));
     labelWindow.document.close();
+}
+
+// ============================================================================
+// DIGITAL SIGNATURE FUNCTIONALITY
+// ============================================================================
+
+let signatureCanvas = null;
+let signatureCtx = null;
+let isDrawing = false;
+let tempDigitalSignature = null;
+
+function showDigitalSignatureDialog() {
+    document.getElementById('digitalSignatureModal').classList.add('show');
+    
+    // Initialize canvas
+    signatureCanvas = document.getElementById('signatureCanvas');
+    signatureCtx = signatureCanvas.getContext('2d');
+    
+    // Set canvas background to white
+    signatureCtx.fillStyle = 'white';
+    signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    
+    // Set up drawing
+    signatureCtx.strokeStyle = '#000';
+    signatureCtx.lineWidth = 2;
+    signatureCtx.lineCap = 'round';
+    
+    // Add event listeners for drawing
+    signatureCanvas.addEventListener('mousedown', startDrawing);
+    signatureCanvas.addEventListener('mousemove', draw);
+    signatureCanvas.addEventListener('mouseup', stopDrawing);
+    signatureCanvas.addEventListener('mouseout', stopDrawing);
+    
+    // Touch support
+    signatureCanvas.addEventListener('touchstart', handleTouchStart);
+    signatureCanvas.addEventListener('touchmove', handleTouchMove);
+    signatureCanvas.addEventListener('touchend', stopDrawing);
+}
+
+function closeDigitalSignature() {
+    document.getElementById('digitalSignatureModal').classList.remove('show');
+    tempDigitalSignature = null;
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = signatureCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    signatureCtx.beginPath();
+    signatureCtx.moveTo(x, y);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    const rect = signatureCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    signatureCtx.lineTo(x, y);
+    signatureCtx.stroke();
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function handleTouchStart(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+    });
+    signatureCanvas.dispatchEvent(mouseEvent);
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+    });
+    signatureCanvas.dispatchEvent(mouseEvent);
+}
+
+function clearSignatureCanvas() {
+    signatureCtx.fillStyle = 'white';
+    signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    document.getElementById('typedSignature').value = '';
+}
+
+function generateTypedSignature() {
+    const name = document.getElementById('typedSignature').value;
+    if (!name) return;
+    
+    // Clear canvas
+    signatureCtx.fillStyle = 'white';
+    signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+    
+    // Draw typed name in signature style
+    signatureCtx.fillStyle = '#000';
+    signatureCtx.font = 'italic 32px "Brush Script MT", cursive, serif';
+    signatureCtx.textAlign = 'center';
+    signatureCtx.textBaseline = 'middle';
+    signatureCtx.fillText(name, signatureCanvas.width / 2, signatureCanvas.height / 2);
+}
+
+function saveDigitalSignature() {
+    // Check if canvas has content
+    const canvasData = signatureCanvas.toDataURL('image/png');
+    
+    // Simple check if canvas is blank (all white)
+    const blankCanvas = document.createElement('canvas');
+    blankCanvas.width = signatureCanvas.width;
+    blankCanvas.height = signatureCanvas.height;
+    const blankCtx = blankCanvas.getContext('2d');
+    blankCtx.fillStyle = 'white';
+    blankCtx.fillRect(0, 0, blankCanvas.width, blankCanvas.height);
+    
+    if (canvasData === blankCanvas.toDataURL('image/png')) {
+        alert('Please draw your signature or type your name');
+        return;
+    }
+    
+    // Save as temporary signature for this certificate only
+    tempDigitalSignature = canvasData;
+    
+    // Close modal and proceed with certificate generation
+    closeDigitalSignature();
+    
+    // Continue with certificate generation using digital signature
+    proceedWithCertificateGeneration(tempDigitalSignature);
+}
+
+function proceedWithCertificateGeneration(signature) {
+    // Save calibration data
+    saveCalibration();
+    
+    // Create certificate data with item linking
+    const certData = {
+        id: Date.now().toString(),
+        certificateNo: document.getElementById('certificateNo').value,
+        serialNumber: document.getElementById('serialNumber').value,
+        assetNo: document.getElementById('assetNo').value,
+        customer: document.getElementById('customer').value,
+        make: document.getElementById('make').value,
+        model: document.getElementById('model').value,
+        itemNo: document.getElementById('itemNo').value,
+        street: document.getElementById('street').value,
+        address: document.getElementById('address').value,
+        standard: document.getElementById('standard').value,
+        tolerance: document.getElementById('tolerance').value,
+        direction: document.getElementById('direction').value,
+        rangeFrom: document.getElementById('rangeFrom').value,
+        rangeTo: document.getElementById('rangeTo').value,
+        unit: document.getElementById('unit').value,
+        soNumber: document.getElementById('soNumber').value,
+        woNumber: document.getElementById('woNumber').value,
+        poNumber: document.getElementById('poNumber').value,
+        dateTested: document.getElementById('dateTested').value,
+        dateIssued: document.getElementById('dateIssued').value,
+        dueDate: document.getElementById('dueDate').value,
+        technician: document.getElementById('technician').value || currentUser.name,
+        signature: signature,
+        signatureType: signature === localStorage.getItem(`signature_${currentUser.id || currentUser.name}`) ? 'uploaded' : 'digital',
+        generatedDate: new Date().toISOString(),
+        generatedBy: currentUser.name,
+        testResults: gatherTestResults(),
+        itemIdentifier: `${document.getElementById('make').value}_${document.getElementById('model').value}_${document.getElementById('serialNumber').value}`
+    };
+    
+    // Save to certificates database
+    let certs = JSON.parse(localStorage.getItem('torqueCertificates') || '[]');
+    certs.unshift(certData);
+    localStorage.setItem('torqueCertificates', JSON.stringify(certs));
+    
+    // Update item in database with latest cert ID
+    updateItemWithCertificate(certData);
+    
+    // Mark current calibration as having certificate
+    currentCalibration = currentCalibration || {};
+    currentCalibration.certificateId = certData.id;
+    currentCalibration.hasCertificate = true;
+    
+    // Open certificate in formatted print view
+    const certWindow = window.open('', '_blank', 'width=900,height=1200');
+    certWindow.document.write(getCertificateHTML(certData));
+    certWindow.document.close();
+    
+    alert('Certificate generated and saved!');
 }
 
 function getLabelHTML(labelType) {
