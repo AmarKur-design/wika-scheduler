@@ -882,6 +882,12 @@ function preFillFromWorkOrder(urlParams) {
     if (urlParams.get('customer')) {
         document.getElementById('customer').value = urlParams.get('customer');
     }
+    if (urlParams.get('customerStreet')) {
+        document.getElementById('street').value = urlParams.get('customerStreet');
+    }
+    if (urlParams.get('customerCity')) {
+        document.getElementById('address').value = urlParams.get('customerCity');
+    }
     if (urlParams.get('make')) {
         document.getElementById('make').value = urlParams.get('make');
     }
@@ -1449,19 +1455,27 @@ function generateCertificate() {
 function gatherTestResults() {
     const results = [];
     for (let idx = 0; idx < 3; idx++) {
+        const nominalEl = document.getElementById(`nominal${idx}`);
+        const asFoundAvgEl = document.getElementById(`asFoundAvg${idx}`);
+        const asLeftAvgEl = document.getElementById(`asLeftAvg${idx}`);
+        const errorEl = document.getElementById(`error${idx}`);
+        const errorPctEl = document.getElementById(`errorPct${idx}`);
+        const transmitterEl = document.getElementById(`transmitter${idx}`);
+        
         results.push({
             testPoint: ['20%', '60%', '100%'][idx],
-            transmitter: document.getElementById(`transmitter${idx}`).value,
-            nominal: document.getElementById(`nominal${idx}`).textContent,
-            converted: document.getElementById(`converted${idx}`).textContent,
-            asFoundReadings: [1,2,3,4,5].map(i => document.getElementById(`asFound${idx}_${i}`).value),
-            asFoundAvg: document.getElementById(`asFoundAvg${idx}`).textContent,
-            asLeftReadings: [1,2,3,4,5].map(i => document.getElementById(`asLeft${idx}_${i}`).value),
-            asLeftAvg: document.getElementById(`asLeftAvg${idx}`).textContent,
-            error: document.getElementById(`error${idx}`).textContent,
-            errorPct: document.getElementById(`errorPct${idx}`).textContent
+            transmitter: transmitterEl ? transmitterEl.value : '',
+            nominal: nominalEl ? nominalEl.textContent : '0',
+            converted: document.getElementById(`converted${idx}`)?.textContent || '0',
+            asFoundReadings: [1,2,3,4,5].map(i => document.getElementById(`asFound${idx}_${i}`)?.value || ''),
+            asFoundAvg: asFoundAvgEl ? asFoundAvgEl.textContent : '-',
+            asLeftReadings: [1,2,3,4,5].map(i => document.getElementById(`asLeft${idx}_${i}`)?.value || ''),
+            asLeftAvg: asLeftAvgEl ? asLeftAvgEl.textContent : '-',
+            error: errorEl ? errorEl.textContent : '-',
+            errorPct: errorPctEl ? errorPctEl.textContent : '-'
         });
     }
+    console.log('Gathered test results:', results);
     return results;
 }
 
@@ -1949,16 +1963,25 @@ function getLabelHTML(labelType) {
 }
 
 function getCertificateHTML(certData) {
-    const conversionFactor = UNIT_CONVERSIONS[certData.unit];
+    // Safety checks
+    if (!certData || !certData.certificateNo) {
+        console.error('Invalid certificate data:', certData);
+        return '<html><body><h1>Error: Invalid certificate data</h1></body></html>';
+    }
+    
+    const conversionFactor = UNIT_CONVERSIONS[certData.unit] || 1;
     const conversionText = certData.unit === 'N.m' ? '#N/A' : `${certData.unit} = ${conversionFactor} N.m`;
     
     // Determine if device was adjusted
-    const hasAsLeft = certData.testResults && certData.testResults[0].asLeftAvg !== '-';
+    const hasAsLeft = certData.testResults && certData.testResults.length > 0 && certData.testResults[0].asLeftAvg !== '-';
     const adjustmentText = hasAsLeft ? 'adjusted' : 'not adjusted';
     
     // Get unique transmitters
-    const transmitters = certData.testResults ? 
+    const transmitters = certData.testResults && certData.testResults.length > 0 ? 
         [...new Set(certData.testResults.map(r => r.transmitter))].filter(t => t) : [];
+    
+    console.log('Generating certificate HTML for:', certData.certificateNo);
+    console.log('Test results:', certData.testResults);
     
     return `
         <!DOCTYPE html>
@@ -2070,33 +2093,33 @@ function getCertificateHTML(certData) {
                         </div>
                         <div class="info-line">
                             <span class="info-label">Date Issued:</span>
-                            <span class="info-value">${document.getElementById('dateIssued').value}</span>
+                            <span class="info-value">${certData.dateIssued}</span>
                         </div>
                     </div>
                     <div>
                         <div class="info-line">
                             <span class="info-label">Our Ref No:</span>
-                            <span class="info-value">${document.getElementById('soNumber').value}</span>
+                            <span class="info-value">${certData.soNumber}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Customer PO:</span>
-                            <span class="info-value">${document.getElementById('poNumber').value}</span>
+                            <span class="info-value">${certData.poNumber}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Item/Cat No:</span>
-                            <span class="info-value">${document.getElementById('itemNo').value}</span>
+                            <span class="info-value">${certData.itemNo}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Make:</span>
-                            <span class="info-value">${document.getElementById('make').value}</span>
+                            <span class="info-value">${certData.make}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Type/Model:</span>
-                            <span class="info-value">${document.getElementById('model').value}</span>
+                            <span class="info-value">${certData.model}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Direction:</span>
-                            <span class="info-value">${document.getElementById('direction').value}</span>
+                            <span class="info-value">${certData.direction}</span>
                         </div>
                     </div>
                 </div>
@@ -2108,11 +2131,11 @@ function getCertificateHTML(certData) {
                     <div>
                         <div class="info-line">
                             <span class="info-label">Display Serial No:</span>
-                            <span class="info-value">${document.getElementById('displaySN').value}</span>
+                            <span class="info-value">212045</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Certificate No:</span>
-                            <span class="info-value">${document.getElementById('displayCert').value}</span>
+                            <span class="info-value">33665A</span>
                         </div>
                         ${transmitters.map(txSN => {
                             const txEquip = REFERENCE_EQUIPMENT[txSN];
@@ -2131,15 +2154,15 @@ function getCertificateHTML(certData) {
                     <div>
                         <div class="info-line">
                             <span class="info-label">Measurement Range:</span>
-                            <span class="info-value">${document.getElementById('rangeFrom').value} to ${document.getElementById('rangeTo').value} ${unit}</span>
+                            <span class="info-value">${certData.rangeFrom} to ${certData.rangeTo} ${certData.unit}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">ID No:</span>
-                            <span class="info-value">${document.getElementById('assetNo').value}</span>
+                            <span class="info-value">${certData.assetNo}</span>
                         </div>
                         <div class="info-line">
                             <span class="info-label">Serial No:</span>
-                            <span class="info-value">${document.getElementById('serialNumber').value}</span>
+                            <span class="info-value">${certData.serialNumber}</span>
                         </div>
                     </div>
                 </div>
@@ -2148,40 +2171,31 @@ function getCertificateHTML(certData) {
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Set Torque<br>${unit}</th>
-                        <th>As Found Average<br>${unit}</th>
-                        <th>As Left Average<br>${unit}</th>
-                        <th>Tolerance<br>${unit}</th>
+                        <th>Set Torque<br>${certData.unit}</th>
+                        <th>As Found Average<br>${certData.unit}</th>
+                        <th>As Left Average<br>${certData.unit}</th>
+                        <th>Tolerance<br>${certData.unit}</th>
                         <th>Uncertainty<br>%</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>${document.getElementById('nominal0').textContent}</td>
-                        <td>${document.getElementById('asFoundAvg0').textContent}</td>
-                        <td>${document.getElementById('asLeftAvg0').textContent !== '-' ? document.getElementById('asLeftAvg0').textContent : document.getElementById('asFoundAvg0').textContent}</td>
-                        <td>${(parseFloat(document.getElementById('nominal0').textContent) * parseFloat(document.getElementById('tolerance').value)).toFixed(2)}</td>
-                        <td>0.16</td>
-                    </tr>
-                    <tr>
-                        <td>${document.getElementById('nominal1').textContent}</td>
-                        <td>${document.getElementById('asFoundAvg1').textContent}</td>
-                        <td>${document.getElementById('asLeftAvg1').textContent !== '-' ? document.getElementById('asLeftAvg1').textContent : document.getElementById('asFoundAvg1').textContent}</td>
-                        <td>${(parseFloat(document.getElementById('nominal1').textContent) * parseFloat(document.getElementById('tolerance').value)).toFixed(2)}</td>
-                        <td>0.097</td>
-                    </tr>
-                    <tr>
-                        <td>${document.getElementById('nominal2').textContent}</td>
-                        <td>${document.getElementById('asFoundAvg2').textContent}</td>
-                        <td>${document.getElementById('asLeftAvg2').textContent !== '-' ? document.getElementById('asLeftAvg2').textContent : document.getElementById('asFoundAvg2').textContent}</td>
-                        <td>${(parseFloat(document.getElementById('nominal2').textContent) * parseFloat(document.getElementById('tolerance').value)).toFixed(2)}</td>
-                        <td>0.085</td>
-                    </tr>
+                    ${certData.testResults && certData.testResults.length > 0 ? 
+                        certData.testResults.map((test, idx) => `
+                        <tr>
+                            <td>${test.nominal || '0'}</td>
+                            <td>${test.asFoundAvg || '-'}</td>
+                            <td>${test.asLeftAvg && test.asLeftAvg !== '-' ? test.asLeftAvg : (test.asFoundAvg || '-')}</td>
+                            <td>${(parseFloat(test.nominal || 0) * parseFloat(certData.tolerance || 0)).toFixed(2)}</td>
+                            <td>${['0.16', '0.097', '0.085'][idx] || '0.10'}</td>
+                        </tr>
+                        `).join('') :
+                        '<tr><td colspan="5">No test data available</td></tr>'
+                    }
                 </tbody>
             </table>
             
             <div style="margin: 10px 0; font-size: 10pt;">
-                <strong>Accuracy (Tolerance):</strong> ±${(parseFloat(document.getElementById('tolerance').value) * 100).toFixed(1)}%<br>
+                <strong>Accuracy (Tolerance):</strong> ±${(parseFloat(certData.tolerance) * 100).toFixed(1)}%<br>
                 <strong>${conversionText}</strong>
             </div>
             

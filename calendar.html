@@ -1109,11 +1109,13 @@ function openTorqueCalibration(workOrderId) {
     const workOrder = workOrders.find(wo => wo.id === workOrderId);
     if (!workOrder) return;
     
-    // Build URL with pre-filled parameters
+    // Build URL with pre-filled parameters including customer address
     const params = new URLSearchParams({
         woNumber: workOrder.workOrderNumber,
         soNumber: workOrder.salesOrderNumber || '',
         customer: workOrder.customerName,
+        customerStreet: workOrder.customerStreet || '',
+        customerCity: workOrder.customerCity || '',
         make: workOrder.itemMake || '',
         model: workOrder.itemModel || '',
         serialNumber: workOrder.itemSerialNumber || '',
@@ -1543,6 +1545,8 @@ function createWorkOrder(event) {
             const oldStatus = workOrders[workOrderIndex].status;
             const newStatus = document.getElementById('workOrderStatus').value;
             
+            const customerNameEl = document.getElementById('customerName');
+            
             workOrders[workOrderIndex] = {
                 ...workOrders[workOrderIndex],
                 workOrderNumber: document.getElementById('workOrderNumber').value,
@@ -1550,7 +1554,10 @@ function createWorkOrder(event) {
                 technicianId: technicianId,
                 partNumber: document.getElementById('partNumberSearch').value || workOrders[workOrderIndex].partNumber || '',
                 workType: document.getElementById('workType').value,
-                customerName: document.getElementById('customerName').value,
+                customerName: customerNameEl.value,
+                customerAccount: customerNameEl.dataset.customerAccount || workOrders[workOrderIndex].customerAccount || '',
+                customerStreet: customerNameEl.dataset.customerStreet || workOrders[workOrderIndex].customerStreet || '',
+                customerCity: customerNameEl.dataset.customerCity || workOrders[workOrderIndex].customerCity || '',
                 hoursRequired: hoursRequired,
                 startDate: startDate,
                 startTime: startTime,
@@ -1660,6 +1667,9 @@ function createWorkOrder(event) {
             document.getElementById('itemMake').dataset.selectedItemId = duplicateItem.id;
         }
         
+        // Get customer data (from autocomplete dataset or just name)
+        const customerNameEl = document.getElementById('customerName');
+        
         // Create new work order
         const workOrder = {
             id: Date.now(),
@@ -1668,7 +1678,10 @@ function createWorkOrder(event) {
             technicianId: technicianId,
             partNumber: document.getElementById('partNumberSearch').value || '',
             workType: document.getElementById('workType').value,
-            customerName: document.getElementById('customerName').value,
+            customerName: customerNameEl.value,
+            customerAccount: customerNameEl.dataset.customerAccount || '',
+            customerStreet: customerNameEl.dataset.customerStreet || '',
+            customerCity: customerNameEl.dataset.customerCity || '',
             hoursRequired: hoursRequired,
             startDate: startDate,
             startTime: startTime,
