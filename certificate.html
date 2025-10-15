@@ -6,7 +6,7 @@
     <title>Certificate Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @page { size: A4; margin: 0; }
+        @page { size: A4; margin: 10mm; }
         * { box-sizing: border-box; }
         body { margin: 0; background: #f5f5f5; font-family: Arial, sans-serif; }
         
@@ -40,7 +40,7 @@
         /* Certificate Viewport */
         .cert-viewport { flex: 1; overflow-y: auto; padding: 20px; background: #e5e7eb; }
         .page-wrap { max-width: 210mm; margin: 0 auto; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-height: 297mm; }
-        .page { padding: 20mm; position: relative; }
+        .page { padding: 15mm; position: relative; }
         
         /* Certificate Styles */
         #certLogo { max-width: 180px; max-height: 80px; display: block; cursor: pointer; transition: opacity 0.2s; }
@@ -67,7 +67,7 @@
         .section-title { font-weight: bold; font-size: 10pt; margin: 12px 0 4px 0; }
         .conditions { line-height: 1.5; font-size: 8pt; }
         
-        .signature { text-align: center; font-size: 10pt; margin-top: 50px; }
+        .signature { text-align: center; font-size: 10pt; margin-top: 20px; }
         .sig-line { display: inline-block; width: 260px; border-bottom: 1px solid #000; margin-left: 10px; height: 28px; background-position: center left; background-repeat: no-repeat; background-size: contain; }
         
         .editable { outline: 2px dashed #60a5fa; outline-offset: 2px; cursor: text; padding: 2px 4px; border-radius: 2px; transition: all 0.2s; }
@@ -80,12 +80,16 @@
         
         @media print { 
             #toolbar, #editPanel { display: none !important; } 
-            body { background: white; } 
+            body { background: white; margin: 0; } 
             .cert-viewport { padding: 0; background: white; }
-            .page-wrap { box-shadow: none; margin: 0; max-width: 100%; }
-            .page { padding: 0; }
+            .page-wrap { box-shadow: none; margin: 0; max-width: 100%; min-height: auto; height: 100vh; }
+            .page { padding: 8mm 12mm; height: 100%; display: flex; flex-direction: column; }
             .editable { outline: none !important; }
-            #certLogo { cursor: default; }
+            #certLogo { cursor: default; max-height: 55px; }
+            h2 { font-size: 15pt !important; }
+            .signature { margin-top: 20px !important; }
+            table { font-size: 9pt !important; margin: 10px 0 !important; }
+            .conditions { font-size: 7.5pt !important; line-height: 1.4 !important; }
         }
     </style>
 </head>
@@ -181,14 +185,14 @@
         let draggedElement = null;
         let placeholder = null;
         let layoutSettings = {
-            marginTop: 20,
-            marginBottom: 20,
-            marginLR: 20,
-            titleSize: 18,
-            bodySize: 10,
-            lineSpacing: 1.5,
-            headerSpace: 18,
-            sectionSpace: 12,
+            marginTop: 27,
+            marginBottom: 15,
+            marginLR: 15,
+            titleSize: 16,
+            bodySize: 9,
+            lineSpacing: 1.3,
+            headerSpace: 12,
+            sectionSpace: 8,
             fieldWidth: 100
         };
         
@@ -247,17 +251,17 @@
                         <div class="info-line"><span class="info-label">Certificate No:</span><span class="info-value editable" data-field="certificateNo">${cert.certificateNo||''}</span></div>
                         <div class="info-line"><span class="info-label">Date Tested:</span><span class="info-value editable" data-field="dateTested">${cert.dateTested||''}</span></div>
                         <div class="info-line"><span class="info-label">Date Issued:</span><span class="info-value editable" data-field="dateIssued">${cert.dateIssued||''}</span></div>
+                        <div class="info-line"><span class="info-label">ID No:</span><span class="info-value editable" data-field="assetNo">${cert.assetNo||''}</span></div>
+                        <div class="info-line"><span class="info-label">Serial No:</span><span class="info-value editable" data-field="serialNumber">${cert.serialNumber||''}</span></div>
+                    </div>
+                    <div>
                         <div class="info-line"><span class="info-label">Our Ref No:</span><span class="info-value editable" data-field="woNumber">${cert.woNumber||''}</span></div>
                         <div class="info-line"><span class="info-label">Customer PO:</span><span class="info-value editable" data-field="poNumber">${cert.poNumber||''}</span></div>
                         <div class="info-line"><span class="info-label">Item/Cat No:</span><span class="info-value editable" data-field="itemNo">${cert.itemNo||''}</span></div>
                         <div class="info-line"><span class="info-label">Make:</span><span class="info-value editable" data-field="make">${cert.make||''}</span></div>
                         <div class="info-line"><span class="info-label">Type/Model:</span><span class="info-value editable" data-field="model">${cert.model||''}</span></div>
-                    </div>
-                    <div>
                         <div class="info-line"><span class="info-label">Direction:</span><span class="info-value editable" data-field="direction">${cert.direction||'CW'}</span></div>
                         <div class="info-line"><span class="info-label">Measurement Range:</span><span class="info-value editable" data-field="range">${cert.rangeFrom||'0'} to ${cert.rangeTo||'400'} ${cert.unit||'N.m'}</span></div>
-                        <div class="info-line"><span class="info-label">ID No:</span><span class="info-value editable" data-field="assetNo">${cert.assetNo||''}</span></div>
-                        <div class="info-line"><span class="info-label">Serial No:</span><span class="info-value editable" data-field="serialNumber">${cert.serialNumber||''}</span></div>
                     </div>
                 </div>
                 
@@ -293,12 +297,12 @@
                     7. The device under test was ${hasAsLeft?'adjusted':'not adjusted'}
                 </div>
                     
-                <div class="signature">
+                <div class="signature" style="margin-top: 30px;">
                     Approved Signatory:<span class="sig-line" ${sigStyle}></span>
                     <div style="margin-top:6px; font-weight: 600;">${cert.technician || cert.generatedBy || 'System Administrator'}</div>
                     </div>
                     
-                    <div style="margin-top: 30px; font-size: 8pt; text-align: center; color: #666; padding-top: 15px; border-top: 1px solid #ddd;">
+                    <div style="margin-top: 15px; font-size: 8pt; text-align: center; color: #666;">
                         The results of the tests, calibrations and/ or measurements included in this document are traceable to Australian/ National Standards.
                     </div>
                 </div>
@@ -447,27 +451,27 @@
             if(!confirm('Reset ALL changes (text, layout, logo)?')) return;
             customLogo = null;
             layoutSettings = {
-                marginTop: 20, marginBottom: 20, marginLR: 20,
-                titleSize: 18, bodySize: 10, lineSpacing: 1.5,
-                headerSpace: 18, sectionSpace: 12, fieldWidth: 100
+                marginTop: 27, marginBottom: 15, marginLR: 15,
+                titleSize: 16, bodySize: 9, lineSpacing: 1.3,
+                headerSpace: 12, sectionSpace: 8, fieldWidth: 100
             };
             // Reset sliders
-            document.getElementById('marginTop').value = 20;
-            document.getElementById('marginBottom').value = 20;
-            document.getElementById('marginLR').value = 20;
-            document.getElementById('titleSize').value = 18;
-            document.getElementById('bodySize').value = 10;
-            document.getElementById('headerSpace').value = 18;
-            document.getElementById('sectionSpace').value = 12;
+            document.getElementById('marginTop').value = 27;
+            document.getElementById('marginBottom').value = 15;
+            document.getElementById('marginLR').value = 15;
+            document.getElementById('titleSize').value = 16;
+            document.getElementById('bodySize').value = 9;
+            document.getElementById('headerSpace').value = 12;
+            document.getElementById('sectionSpace').value = 8;
             document.getElementById('fieldWidth').value = 100;
             // Update displays
-            document.getElementById('marginTopVal').textContent = '20mm';
-            document.getElementById('marginBottomVal').textContent = '20mm';
-            document.getElementById('marginLRVal').textContent = '20mm';
-            document.getElementById('titleSizeVal').textContent = '18pt';
-            document.getElementById('bodySizeVal').textContent = '10pt';
-            document.getElementById('headerSpaceVal').textContent = '18px';
-            document.getElementById('sectionSpaceVal').textContent = '12px';
+            document.getElementById('marginTopVal').textContent = '27mm';
+            document.getElementById('marginBottomVal').textContent = '15mm';
+            document.getElementById('marginLRVal').textContent = '15mm';
+            document.getElementById('titleSizeVal').textContent = '16pt';
+            document.getElementById('bodySizeVal').textContent = '9pt';
+            document.getElementById('headerSpaceVal').textContent = '12px';
+            document.getElementById('sectionSpaceVal').textContent = '8px';
             document.getElementById('fieldWidthVal').textContent = '100%';
             document.getElementById('logoPreview').style.display = 'none';
             
