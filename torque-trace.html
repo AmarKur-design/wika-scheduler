@@ -149,7 +149,10 @@
                     <div class="grid grid-cols-3 gap-2">
                         <div>
                             <label class="compact-label">Standard:</label>
-                            <input id="standard" type="text" value="ISO 6789" class="w-full border rounded compact-input">
+                            <select id="standard" class="w-full border rounded compact-input">
+                                <option value="ISO 6789">ISO 6789</option>
+                                <option value="Manufacturer Specifications">Manufacturer Specifications</option>
+                            </select>
                         </div>
                         <div>
                             <label class="compact-label">Tolerance:</label>
@@ -222,7 +225,7 @@
                 <div class="flex items-center space-x-2">
                     <label class="compact-label whitespace-nowrap">Test Standard:</label>
                     <input id="testStandard" type="text" value="PWI-101" readonly class="border rounded compact-input bg-gray-100 w-32">
-                    <a href="PWI-101-TRACE-Calibration-Procedures.pdf" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1" title="View Standard">
+                    <a href="/Users/amarmac/Desktop/PWI-101-TRACE-Calibration-Procedures.pdf" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1" title="View Standard">
                         <i class="fas fa-file-pdf text-lg"></i>
                         <span class="text-sm">View Standard</span>
                     </a>
@@ -583,6 +586,8 @@ let calibrationSettings = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('userName').textContent = currentUser.name;
+    // Auto-populate technician field with logged-in user's name
+    document.getElementById('technician').value = currentUser.name;
     loadSavedCalibrations();
     loadSettings();
     initializeReadingsTable();
@@ -1704,13 +1709,9 @@ function proceedWithCertificateGeneration(signature) {
     currentCalibration.certificateId = certData.id;
     currentCalibration.hasCertificate = true;
     
-    // Show success message BEFORE opening certificate window
-    alert('Calibration saved successfully and certificate generated!');
-    
-    // Open certificate in formatted print view
-    const certWindow = window.open('', '_blank', 'width=900,height=1200');
-    certWindow.document.write(getCertificateHTML(certData));
-    certWindow.document.close();
+    // Route to dedicated certificate page with data
+    try { sessionStorage.setItem('currentCert', JSON.stringify(certData)); } catch(e) {}
+    window.location.href = `certificate.html?id=${certData.id}`;
 }
 
 function getLabelHTML(labelType) {
@@ -2055,9 +2056,7 @@ function getCertificateHTML(certData) {
                     </div>
                 </div>
                 <div class="header-right">
-                    <div class="logo-box">
-                        <div class="logo-text">WIKA</div>
-                    </div>
+                    <div class="logo-box"><div class="logo-text">WIKA</div></div>
                     <div class="company-details">
                         WIKA Australia Pty Ltd<br>
                         Unit 1, 6-8 Harvard Way<br>
@@ -2206,7 +2205,7 @@ function getCertificateHTML(certData) {
             <div class="section-title">Conditions of Test</div>
             <div class="conditions">
                 <div>1.  Uncertainty of Measurement with a Confidence Level of 95%, k= 2</div>
-                <div>2.  Tested in accordance with Work Instructions PWI-101 as well as ISO 6789-1:2017</div>
+                <div>2.  Tested in accordance with Work Instructions PWI-101 as well as ${certData.standard || 'ISO 6789'}</div>
                 <div>3.  Average Ambient Temperature at time of test was 20°C ± 2°C at a relative humidity not exceeding 90%</div>
                 <div>4.  Results relate only to the item calibrated. The uncertainty stated is only for the nominated points unless otherwise stated.</div>
                 <div>5.  Test averages are a true average taken from 5 readings</div>
