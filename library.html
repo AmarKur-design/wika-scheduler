@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Model Library - WIKA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <img src="wika-logo.png" alt="WIKA Logo" class="h-8 w-auto">
+                    <h1 class="ml-3 text-2xl font-bold text-gray-900">Electrical Model Library</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="electrical-new.html" class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        Back to Calibration
+                    </a>
+                    <a href="dashboard.html" class="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <!-- Library Controls -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex space-x-3">
+                    <button id="downloadTemplateBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        Download Template
+                    </button>
+                    <button id="addMakeModelBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Add Make/Model
+                    </button>
+                    <button id="uploadWorkbookBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        Upload Workbook
+                    </button>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Manage electrical model library and workbooks
+                </div>
+            </div>
+
+            <!-- Library Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h4 class="font-medium text-gray-900">Electrical Model Library</h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Make</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Ranges</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Workbook</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="libraryTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Table rows will be dynamically generated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Workbook Sections -->
+            <div id="workbookSections" class="mt-6 hidden">
+                <h4 class="font-medium text-gray-900 mb-4">Workbook Sections</h4>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- As Found Section -->
+                    <div class="bg-white border border-gray-300 rounded-lg p-4">
+                        <h5 class="font-medium text-gray-800 mb-3">As Found</h5>
+                        <div id="asFoundWorkbook" class="space-y-2">
+                            <!-- As Found workbook content will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- As Left Section -->
+                    <div class="bg-white border border-gray-300 rounded-lg p-4">
+                        <h5 class="font-medium text-gray-800 mb-3">As Left</h5>
+                        <div id="asLeftWorkbook" class="space-y-2">
+                            <!-- As Left workbook content will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Make/Model Modal -->
+    <div id="addMakeModelModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Add New Make/Model</h3>
+                    <button id="closeAddMakeModelModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="addMakeModelForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
+                        <input type="text" id="newMake" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Fluke" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                        <input type="text" id="newModel" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., 8846A" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="newDescription" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3" placeholder="Optional description"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancelAddMakeModel" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            Add Make/Model
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Upload Modal -->
+    <div id="excelUploadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Upload Workbook from Excel</h3>
+                    <button id="closeExcelUploadModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Make/Model</label>
+                        <select id="uploadMakeModel" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            <option value="">Select Make/Model</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Upload Excel File</label>
+                        <input type="file" id="excelFile" accept=".xlsx,.xlsm,.xls" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        <p class="text-xs text-gray-500 mt-1">Supported formats: .xlsx, .xlsm, .xls</p>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <h4 class="font-medium text-blue-900 mb-2">Excel Format Requirements:</h4>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>• Sheet 1: "As Found" data</li>
+                            <li>• Sheet 2: "As Left" data</li>
+                            <li>• Columns: Range, Unit, Resolution, Meas1, Meas2, Meas3, Meas4</li>
+                            <li>• First row should contain headers</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancelExcelUpload" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                            Cancel
+                        </button>
+                        <button type="button" id="processExcelUpload" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            Process Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workbook Popup Modal -->
+    <div id="workbookModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="workbookModalTitle" class="text-lg font-medium text-gray-900">Workbook</h3>
+                    <button id="closeWorkbookModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Unified Workbook Section (applies to both As Found and As Left in calibrate) -->
+                    <div class="bg-white border border-gray-300 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h5 class="font-medium text-gray-800">Workbook Lines</h5>
+                            <button id="addWorkbookRow" class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm" type="button">+ Add line</button>
+                        </div>
+                        <div id="workbookAsFound" class="space-y-2">
+                            <!-- Workbook content will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end mt-6">
+                    <button id="closeWorkbookModalBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Electrical Model Register
+        let electricalModelRegister = {
+            'Fluke': {
+                '8846A': {
+                    description: '6.5 Digit Precision Multimeter',
+                    testRanges: [
+                        { range: '100', unit: 'mV DC', resolution: '0.0001' },
+                        { range: '1', unit: 'V DC', resolution: '1e-06' },
+                        { range: '10', unit: 'V DC', resolution: '1e-05' },
+                        { range: '100', unit: 'V DC', resolution: '0.0001' },
+                        { range: '1000', unit: 'V DC', resolution: '0.001' },
+                        { range: '1', unit: 'VDC Diode', resolution: '1e-06' },
+                        { range: '100', unit: 'mV @ 50Hz AC', resolution: '0.0001' },
+                        { range: '100', unit: 'mV @ 10kHz AC', resolution: '0.0001' },
+                        { range: '1', unit: 'V @ 50Hz AC', resolution: '1e-06' },
+                        { range: '1', unit: 'V @10kHz AC', resolution: '1e-06' },
+                        { range: '10', unit: 'V @ 50Hz AC', resolution: '1e-05' },
+                        { range: '10', unit: 'V @10kHz AC', resolution: '1e-05' },
+                        { range: '100', unit: 'V @ 50Hz AC', resolution: '0.0001' },
+                        { range: '100', unit: 'V @10kHz AC', resolution: '0.0001' },
+                        { range: '1000', unit: 'V @ 50Hz AC', resolution: '0.001' }
+                    ]
+                }
+            }
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedElectricalModelRegister();
+            initializeLibrary();
+            populateLibraryTable();
+        });
+
+        function loadSavedElectricalModelRegister() {
+            const saved = localStorage.getItem('electricalModelRegister');
+            if (saved) {
+                try {
+                    const savedData = JSON.parse(saved);
+                    Object.keys(savedData).forEach(make => {
+                        if (electricalModelRegister[make]) {
+                            Object.keys(savedData[make]).forEach(model => {
+                                electricalModelRegister[make][model] = {
+                                    ...electricalModelRegister[make][model],
+                                    ...savedData[make][model]
+                                };
+                            });
+                        } else {
+                            electricalModelRegister[make] = savedData[make];
+                        }
+                    });
+                } catch (e) {
+                    console.log('Could not load saved electrical model register data');
+                }
+            }
+        }
+
+        function initializeLibrary() {
+            document.getElementById('downloadTemplateBtn').addEventListener('click', downloadTemplate);
+            document.getElementById('addMakeModelBtn').addEventListener('click', showAddMakeModelModal);
+            document.getElementById('closeAddMakeModelModal').addEventListener('click', hideAddMakeModelModal);
+            document.getElementById('cancelAddMakeModel').addEventListener('click', hideAddMakeModelModal);
+            document.getElementById('addMakeModelForm').addEventListener('submit', addNewMakeModel);
+            document.getElementById('uploadWorkbookBtn').addEventListener('click', showExcelUploadModal);
+            document.getElementById('closeExcelUploadModal').addEventListener('click', hideExcelUploadModal);
+            document.getElementById('cancelExcelUpload').addEventListener('click', hideExcelUploadModal);
+            document.getElementById('processExcelUpload').addEventListener('click', processExcelUpload);
+            document.getElementById('closeWorkbookModal').addEventListener('click', hideWorkbookModal);
+            document.getElementById('closeWorkbookModalBtn').addEventListener('click', hideWorkbookModal);
+            // Delegate table buttons
+            document.addEventListener('click', (e) => {
+                const viewBtn = e.target && e.target.closest && e.target.closest('.viewWorkbookBtn');
+                if (viewBtn) {
+                    const make = viewBtn.getAttribute('data-make');
+                    const model = viewBtn.getAttribute('data-model');
+                    showWorkbook(make, model);
+                    return;
+                }
+                const uploadBtn = e.target && e.target.closest && e.target.closest('.uploadWorkbookBtn');
+                if (uploadBtn) {
+                    const make = uploadBtn.getAttribute('data-make');
+                    const model = uploadBtn.getAttribute('data-model');
+                    uploadWorkbookForModel(make, model);
+                    return;
+                }
+            });
+        }
+
+        function populateLibraryTable() {
+            const tbody = document.getElementById('libraryTableBody');
+            tbody.innerHTML = '';
+            
+            Object.keys(electricalModelRegister).forEach(make => {
+                Object.keys(electricalModelRegister[make]).forEach(model => {
+                    const modelData = electricalModelRegister[make][model];
+                    const hasWorkbook = modelData.testRanges && modelData.testRanges.length > 0;
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${make}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${model}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${modelData.description || 'No description'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${hasWorkbook ? modelData.testRanges.length + ' ranges' : 'No ranges'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${hasWorkbook ? 
+                                `<button class="viewWorkbookBtn text-blue-600 hover:text-blue-800 font-medium" data-make="${make}" data-model="${model}">View Workbook</button>` :
+                                `<button class="uploadWorkbookBtn text-green-600 hover:text-green-800 font-medium" data-make="${make}" data-model="${model}">Upload Workbook</button>`
+                            }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="editMakeModel('${make}', '${model}')" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+                            <button onclick="deleteMakeModel('${make}', '${model}')" class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        function selectMakeModel(make, model) {
+            const details = document.getElementById('selectedModelDetails');
+            const workbookSections = document.getElementById('workbookSections');
+            
+            const modelData = electricalModelRegister[make][model];
+            
+            details.innerHTML = `
+                <div class="space-y-3">
+                    <div>
+                        <h5 class="font-medium text-gray-900">${make} ${model}</h5>
+                        <p class="text-sm text-gray-600">${modelData.description || 'No description available'}</p>
+                    </div>
+                    
+                    <div>
+                        <h6 class="font-medium text-gray-800 mb-2">Test Ranges</h6>
+                        <div class="text-sm text-gray-600">
+                            ${modelData.testRanges ? modelData.testRanges.length : 0} test ranges configured
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="loadWorkbook('${make}', '${model}')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                            Load Workbook
+                        </button>
+                        <button onclick="editMakeModel('${make}', '${model}')" class="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                            Edit
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            workbookSections.classList.remove('hidden');
+        }
+
+        function loadWorkbook(make, model) {
+            const modelData = electricalModelRegister[make][model];
+            if (!modelData.testRanges) {
+                alert('No workbook data available for this model');
+                return;
+            }
+            
+            const asFoundWorkbook = document.getElementById('workbookAsFound');
+            asFoundWorkbook.innerHTML = generateWorkbookHTML(modelData.testRanges, 'workbook');
+        }
+
+        function generateWorkbookHTML(testRanges, type) {
+            let html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-1 text-left">Range</th>
+                                <th class="px-2 py-1 text-left">Unit</th>
+                                <th class="px-2 py-1 text-left">Resolution</th>
+                                <th class="px-2 py-1 text-left">Meas1</th>
+                                <th class="px-2 py-1 text-left">Meas2</th>
+                                <th class="px-2 py-1 text-left">Meas3</th>
+                                <th class="px-2 py-1 text-left">Meas4</th>
+                                <th class="px-2 py-1 text-left w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            testRanges.forEach((range) => {
+                html += `
+                    <tr class="border-b">
+                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.range || ''}" placeholder="Range"></td>
+                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.unit || ''}" placeholder="Unit"></td>
+                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.resolution || ''}" placeholder="Resolution"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas1 || ''}" placeholder="0.000000"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas2 || ''}" placeholder="0.000000"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas3 || ''}" placeholder="0.000000"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas4 || ''}" placeholder="0.000000"></td>
+                        <td class="px-2 py-1 text-right"><button class="delRowBtn text-red-600 hover:text-red-800 text-sm" title="Remove">×</button></td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            return html;
+        }
+
+        // Add line button in unified workbook modal
+        document.addEventListener('click', function(e){
+            if (e.target && e.target.id === 'addWorkbookRow') {
+                const table = document.querySelector('#workbookAsFound table tbody');
+                if (table) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b';
+                    tr.innerHTML = `
+                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="Range"></td>
+                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="Unit"></td>
+                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="Resolution"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
+                        <td class="px-2 py-1 text-right"><button class="delRowBtn text-red-600 hover:text-red-800 text-sm" title="Remove">×</button></td>
+                    `;
+                    table.appendChild(tr);
+                }
+            }
+            // Handle row delete
+            if (e.target && e.target.classList.contains('delRowBtn')) {
+                const tr = e.target.closest('tr');
+                if (tr) tr.remove();
+            }
+        });
+
+        function showAddMakeModelModal() {
+            document.getElementById('addMakeModelModal').classList.remove('hidden');
+        }
+
+        function hideAddMakeModelModal() {
+            document.getElementById('addMakeModelModal').classList.add('hidden');
+            document.getElementById('addMakeModelForm').reset();
+        }
+
+        function addNewMakeModel(event) {
+            event.preventDefault();
+            
+            const make = document.getElementById('newMake').value.trim();
+            const model = document.getElementById('newModel').value.trim();
+            const description = document.getElementById('newDescription').value.trim();
+            
+            if (!make || !model) {
+                alert('Please fill in both Make and Model fields');
+                return;
+            }
+            
+            if (!electricalModelRegister[make]) {
+                electricalModelRegister[make] = {};
+            }
+            
+            if (electricalModelRegister[make][model]) {
+                alert('This Make/Model combination already exists');
+                return;
+            }
+            
+            electricalModelRegister[make][model] = {
+                description: description,
+                testRanges: []
+            };
+            
+            localStorage.setItem('electricalModelRegister', JSON.stringify(electricalModelRegister));
+            populateLibraryTable();
+            hideAddMakeModelModal();
+            
+            alert('Make/Model added successfully!');
+        }
+
+        function showExcelUploadModal() {
+            const dropdown = document.getElementById('uploadMakeModel');
+            dropdown.innerHTML = '<option value="">Select Make/Model</option>';
+            
+            Object.keys(electricalModelRegister).forEach(make => {
+                Object.keys(electricalModelRegister[make]).forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = `${make}|${model}`;
+                    option.textContent = `${make} ${model}`;
+                    dropdown.appendChild(option);
+                });
+            });
+            
+            document.getElementById('excelUploadModal').classList.remove('hidden');
+        }
+
+        function hideExcelUploadModal() {
+            document.getElementById('excelUploadModal').classList.add('hidden');
+            document.getElementById('excelFile').value = '';
+            document.getElementById('uploadMakeModel').value = '';
+        }
+
+        function processExcelUpload() {
+            const fileInput = document.getElementById('excelFile');
+            const makeModelSelect = document.getElementById('uploadMakeModel');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select an Excel file');
+                return;
+            }
+            
+            if (!makeModelSelect.value) {
+                alert('Please select a Make/Model');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const [make, model] = makeModelSelect.value.split('|');
+            
+            alert(`Excel upload functionality will be implemented. Selected: ${make} ${model}, File: ${file.name}`);
+            hideExcelUploadModal();
+        }
+
+        // New functions for workbook functionality
+        function downloadTemplate() {
+            // Create a simple CSV template
+            const csvContent = `Range,Unit,Resolution,Meas1,Meas2,Meas3,Meas4
+330,mV DC,0.0001,0.000000,0.000000,0.000000,0.000000
+3.3,V DC,0.000001,0.000000,0.000000,0.000000,0.000000
+33,V DC,0.00001,0.000000,0.000000,0.000000,0.000000
+330,V DC,0.0001,0.000000,0.000000,0.000000,0.000000
+1000,V DC,0.001,0.000000,0.000000,0.000000,0.000000`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'electrical_workbook_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function showWorkbook(make, model) {
+            const modelData = electricalModelRegister[make][model];
+            if (!modelData.testRanges) {
+                alert('No workbook data available for this model');
+                return;
+            }
+            
+            const modal = document.getElementById('workbookModal');
+            const title = document.getElementById('workbookModalTitle');
+            const asFoundDiv = document.getElementById('workbookAsFound');
+            const asLeftDiv = document.getElementById('workbookAsLeft');
+            
+            title.textContent = `${make} ${model} - Workbook`;
+            asFoundDiv.innerHTML = generateWorkbookHTML(modelData.testRanges, 'asFound');
+            asLeftDiv.innerHTML = generateWorkbookHTML(modelData.testRanges, 'asLeft');
+            
+            modal.classList.remove('hidden');
+        }
+
+        function hideWorkbookModal() {
+            document.getElementById('workbookModal').classList.add('hidden');
+        }
+
+        function uploadWorkbookForModel(make, model) {
+            // Pre-select the make/model in the upload modal
+            const dropdown = document.getElementById('uploadMakeModel');
+            dropdown.innerHTML = '<option value="">Select Make/Model</option>';
+            
+            const option = document.createElement('option');
+            option.value = `${make}|${model}`;
+            option.textContent = `${make} ${model}`;
+            option.selected = true;
+            dropdown.appendChild(option);
+            
+            document.getElementById('excelUploadModal').classList.remove('hidden');
+        }
+
+        function editMakeModel(make, model) {
+            // Pre-fill the edit form
+            document.getElementById('newMake').value = make;
+            document.getElementById('newModel').value = model;
+            document.getElementById('newDescription').value = electricalModelRegister[make][model].description || '';
+            
+            // Change the form to edit mode
+            const form = document.getElementById('addMakeModelForm');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.textContent = 'Update Make/Model';
+            submitBtn.onclick = (e) => updateMakeModel(e, make, model);
+            
+            document.getElementById('addMakeModelModal').classList.remove('hidden');
+        }
+
+        function updateMakeModel(event, oldMake, oldModel) {
+            event.preventDefault();
+            
+            const make = document.getElementById('newMake').value.trim();
+            const model = document.getElementById('newModel').value.trim();
+            const description = document.getElementById('newDescription').value.trim();
+            
+            if (!make || !model) {
+                alert('Please fill in both Make and Model fields');
+                return;
+            }
+            
+            // Update the model data
+            electricalModelRegister[make][model] = {
+                description: description,
+                testRanges: electricalModelRegister[oldMake][oldModel].testRanges || []
+            };
+            
+            // Remove old entry if make/model changed
+            if (make !== oldMake || model !== oldModel) {
+                delete electricalModelRegister[oldMake][oldModel];
+            }
+            
+            localStorage.setItem('electricalModelRegister', JSON.stringify(electricalModelRegister));
+            populateLibraryTable();
+            hideAddMakeModelModal();
+            
+            alert('Make/Model updated successfully!');
+        }
+
+        function deleteMakeModel(make, model) {
+            if (confirm(`Are you sure you want to delete ${make} ${model}?`)) {
+                delete electricalModelRegister[make][model];
+                localStorage.setItem('electricalModelRegister', JSON.stringify(electricalModelRegister));
+                populateLibraryTable();
+                alert('Make/Model deleted successfully!');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Calibration System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <img src="wika-logo.png" alt="WIKA Logo" class="h-8 w-auto">
+                        <h1 class="ml-3 text-2xl font-bold text-gray-900">Electrical Calibration System</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="library.html" class="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                            Library
+                        </a>
+                        <a href="reference-equipment.html" class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            Reference Equipment
+                        </a>
+                        <span id="userName" class="text-sm text-gray-600">Admin</span>
+                        <a href="dashboard.html" class="text-indigo-600 hover:text-indigo-500">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Tabs -->
+            <div class="border-b mb-6">
+                <nav class="flex -mb-px space-x-6" aria-label="Tabs">
+                    <button id="tabSetup" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600">Setup</button>
+                    <button id="tabCalibrate" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">Calibrate</button>
+                    <button id="tabCertificate" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">Certificate</button>
+                </nav>
+            </div>
+
+            <!-- Setup Panel -->
+            <section id="panelSetup" class="space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-6">Calibration Setup</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Left Column - Main Details -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Instrument Details</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Technician</label>
+                                    <input id="technician" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Travis Crotty">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Report on</label>
+                                    <input id="reportOn" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="Benchtop Multimeter">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Certificate No</label>
+                                    <input id="certificateNo" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="123456">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">S/N</label>
+                                    <input id="serialNumber" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Trial">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Test Standard</label>
+                                    <div class="flex gap-2">
+                                        <input id="testStandard" type="text" class="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="PWI-58" readonly>
+                                        <a href="PWI-101-TRACE-Calibration-Procedures.pdf" target="_blank" class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">View Standard</a>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
+                                    <div class="relative">
+                                        <input id="make" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Fluke" autocomplete="off" oninput="showMakeSuggestions()" onblur="hideMakeSuggestions()">
+                                        <div id="makeSuggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-40 overflow-y-auto"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                                    <div class="relative">
+                                        <input id="model" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="8846A" autocomplete="off" oninput="showModelSuggestions()" onblur="hideModelSuggestions()">
+                                        <div id="modelSuggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-40 overflow-y-auto"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ITEM No</label>
+                                    <input id="itemNo" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="NATA-31">
+                                </div>
+                            </div>
+
+                            <h3 class="text-lg font-medium text-gray-900 mt-6">Customer Details</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                                    <input id="customer" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="WIKA Australia Pty Ltd">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Street</label>
+                                    <input id="street" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Unit 1, 6-8 Harvard Way">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Suburb, State, Post Code</label>
+                                    <input id="address" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Canning Vale WA 6155">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Location of Test</label>
+                                    <input id="testLocation" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="In Lab">
+                                </div>
+                            </div>
+
+                            <h3 class="text-lg font-medium text-gray-900 mt-6">Test Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">DATE TESTED</label>
+                                    <input id="dateTested" type="date" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">DATE ISSUED</label>
+                                    <input id="dateIssued" type="date" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">S/O No</label>
+                                    <input id="soNumber" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Internal">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">W/O No</label>
+                                    <input id="woNumber" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="W00001234">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">PO Number</label>
+                                    <input id="poNumber" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Annual Cal">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column - Reference Equipment -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Reference Equipment</h3>
+                            
+                            <div id="referenceEquipmentContainer">
+                                <!-- Primary Reference -->
+                                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-medium text-gray-900">Primary Reference</h4>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
+                                            <select id="refMake1" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="updateRefSerialOptions(1)">
+                                                <option value="">Select Equipment</option>
+                                                <option value="Fluke Multi-Product Calibrator 5500A">Fluke Multi-Product Calibrator 5500A</option>
+                                                <option value="Fluke Multimeter (Digit Precision) 8846A">Fluke Multimeter (Digit Precision) 8846A</option>
+                                                <option value="Fluke Multimeter 87V">Fluke Multimeter 87V</option>
+                                                <option value="Fluke Multimeter 73III">Fluke Multimeter 73III</option>
+                                                <option value="Fluke Multimeter 8840A">Fluke Multimeter 8840A</option>
+                                                <option value="Fluke High Voltage Probe 80k-40kV">Fluke High Voltage Probe 80k-40kV</option>
+                                                <option value="Metrohm Insulation tester 16D">Metrohm Insulation tester 16D</option>
+                                                <option value="Universal Avo Meter">Universal Avo Meter</option>
+                                                <option value="GW Instek Oscilloscope GDS-1022">GW Instek Oscilloscope GDS-1022</option>
+                                                <option value="Appliance Tester Resistance Board">Appliance Tester Resistance Board</option>
+                                                <option value="Capacitance Box">Capacitance Box</option>
+                                                <option value="Current Shunt Resistor (100µΩ)">Current Shunt Resistor (100µΩ)</option>
+                                                <option value="Current Shunt Resistor (1mΩ)">Current Shunt Resistor (1mΩ)</option>
+                                                <option value="Palec Current Shunt Resistor (1mΩ)">Palec Current Shunt Resistor (1mΩ)</option>
+                                                <option value="Current Shunt Resistor (500mΩ)">Current Shunt Resistor (500mΩ)</option>
+                                                <option value="Current Shunt Resistor (50mΩ)">Current Shunt Resistor (50mΩ)</option>
+                                                <option value="Current Shunt Resistor (5mΩ)">Current Shunt Resistor (5mΩ)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Serial No</label>
+                                            <select id="refSerial1" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                                <option value="">Select Serial</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Add Reference Button -->
+                            <button id="addReferenceBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Add Secondary Reference
+                            </button>
+
+                            <div class="flex gap-3">
+                                <button id="calibrateBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Calibrate</button>
+                                <button id="resetSetupBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calibrate Panel -->
+            <section id="panelCalibrate" class="hidden space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-6">Calibration Measurements</h2>
+                    
+                    <!-- As Found Section -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">As Found Measurements</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Instrument Range</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Unit</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Resolution</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 1</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 2</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 3</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 4</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Average</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Correction from Range</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="asFoundTable">
+                                    <!-- Dynamic rows will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- As Left Section -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">As Left Measurements</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Instrument Range</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Unit</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Resolution</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 1</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 2</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 3</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 4</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Average</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Correction from Range</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="asLeftTable">
+                                    <!-- Dynamic rows will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button id="saveCalibrationBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Save Calibration</button>
+                        <button id="generateCertificateBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Generate Certificate</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Certificate Panel -->
+            <section id="panelCertificate" class="hidden space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-6">Calibration Certificate</h2>
+                    <div id="certificateContent" class="space-y-4">
+                        <!-- Certificate content will be generated here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = { name: 'Admin' };
+        let calibrationData = {
+            setup: {},
+            asFound: [],
+            asLeft: [],
+            certificate: {}
+        };
+
+        // Electrical Model Register
+        let electricalModelRegister = {
+            'Fluke': {
+                '8846A': {
+                    workbook: 'Electrical Workbook Draft 20.11.24.xlsm',
+                    testRanges: [
+                        { range: '100', unit: 'mV DC', resolution: '0.0001' },
+                        { range: '1', unit: 'V DC', resolution: '1e-06' },
+                        { range: '10', unit: 'V DC', resolution: '1e-05' },
+                        { range: '100', unit: 'V DC', resolution: '0.0001' },
+                        { range: '1000', unit: 'V DC', resolution: '0.001' },
+                        { range: '1', unit: 'VDC Diode', resolution: '1e-06' },
+                        { range: '100', unit: 'mV @ 50Hz AC', resolution: '0.0001' },
+                        { range: '100', unit: 'mV @ 10kHz AC', resolution: '0.0001' },
+                        { range: '1', unit: 'V @ 50Hz AC', resolution: '1e-06' },
+                        { range: '1', unit: 'V @10kHz AC', resolution: '1e-06' },
+                        { range: '10', unit: 'V @ 50Hz AC', resolution: '1e-05' },
+                        { range: '10', unit: 'V @10kHz AC', resolution: '1e-05' },
+                        { range: '100', unit: 'V @ 50Hz AC', resolution: '0.0001' },
+                        { range: '100', unit: 'V @10kHz AC', resolution: '0.0001' },
+                        { range: '1000', unit: 'V @ 50Hz AC', resolution: '0.001' }
+                    ]
+                }
+            }
+        };
+
+        // Reference Equipment Register (loaded from spreadsheet)
+        let referenceEquipmentRegister = {
+            'Fluke Multi-Product Calibrator 5500A': {
+                serialNumbers: ['6325009'],
+                calibrationCycle: 18, // months
+                uncertainty: {
+                    'DC Voltage': {
+                        '330 mV DC': '0.0053',
+                        '3.3 VDC': '3.5e-05',
+                        '33 VDC': '0.00034',
+                        '330 VDC': '0.0034',
+                        '1000 VDC': '0.016'
+                    },
+                    'AC Voltage': {
+                        '300 mVAC @ 50Hz': '0.025',
+                        '300 mVAC @ 10kHz': '0.025',
+                        '3 VAC @ 50Hz': '0.00016',
+                        '3 VAC @ 10kHz': '0.00016',
+                        '30 VAC @ 50Hz': '0.0015',
+                        '30 VAC @ 10kHz': '0.0015',
+                        '300 VAC @ 50Hz': '0.015',
+                        '300 VAC @ 10kHz': '0.015',
+                        '1000 VAC @ 50Hz': '0.07',
+                        '1000 VAC @ 5kHz': '0.07'
+                    },
+                    'Frequency': {
+                        '120 Hz @ 3V': '0.001',
+                        '1000 Hz @ 3V': '0.011',
+                        '100 kHz @ 3V': '0.0002'
+                    },
+                    'Capacitance': {
+                        '1 nF': '0.0014',
+                        '1.09 µF': '0.0014',
+                        '10.9 µF': '0.014',
+                        '109 µF': '0.14',
+                        '1.1 mF': '0.0014'
+                    },
+                    'Resistance': {
+                        '10.9 Ω': '0.001',
+                        '109 Ω': '0.004',
+                        '1.09 kΩ': '4e-05',
+                        '10.9 kΩ': '0.0004',
+                        '109 kΩ': '0.004',
+                        '1.09 MΩ': '4e-05',
+                        '10.9 MΩ': '0.0012',
+                        '109 MΩ': '0.022'
+                    },
+                    'Temperature': {
+                        '-1000 °C': '0.0011',
+                        '-100 °C': '0.001',
+                        '0 °C': '0.001',
+                        '100 °C': '0.001',
+                        '1000 °C': '0.0011'
+                    },
+                    'DC Current': {
+                        '190 µA DC': '0.02',
+                        '1.9 mA DC': '8e-05',
+                        '19 mA DC': '0.0008',
+                        '190 mA DC': '0.008',
+                        '329 mA DC': '0.013',
+                        '2.19 A DC': '0.00015',
+                        '11 A DC': '0.002'
+                    },
+                    'AC Current': {
+                        '190 µA @ 50Hz AC': '0.048',
+                        '190 µA @ 10kHz AC': '0.493',
+                        '1.9 mA @ 50Hz AC': '0.00039',
+                        '1.9 mA @ 10kHz AC': '0.00178',
+                        '19 mA @ 50Hz AC': '0.0038',
+                        '19 mA @ 10kHz AC': '0.0146',
+                        '190 mA @ 50Hz AC': '0.038',
+                        '190 mA @ 10kHz AC': '0.143',
+                        '329 mA @ 50Hz AC': '0.066',
+                        '329 mA @ 10kHz AC': '0.247',
+                        '2.19 A @ 50Hz AC': '0.00044',
+                        '2.19 A @ 5kHz AC': '0.00164',
+                        '11 A @ 50Hz AC': '0.0033',
+                        '11 A @ 1kHz AC': '0.0033'
+                    }
+                }
+            },
+            'Fluke Multimeter (Digit Precision) 8846A': {
+                serialNumbers: ['3695008'],
+                calibrationCycle: 60 // months
+            },
+            'Fluke Multimeter 87V': {
+                serialNumbers: ['91050088'],
+                calibrationCycle: 12 // months
+            },
+            'Fluke Multimeter 73III': {
+                serialNumbers: ['708603387X'],
+                calibrationCycle: 12 // months
+            },
+            'Fluke Multimeter 8840A': {
+                serialNumbers: ['5076066'],
+                calibrationCycle: 12 // months
+            },
+            'Fluke High Voltage Probe 80k-40kV': {
+                serialNumbers: ['39010009'],
+                calibrationCycle: 12 // months
+            },
+            'Metrohm Insulation tester 16D': {
+                serialNumbers: ['6006698'],
+                calibrationCycle: 12 // months
+            },
+            'Universal Avo Meter': {
+                serialNumbers: ['9015-870'],
+                calibrationCycle: 12 // months
+            },
+            'GW Instek Oscilloscope GDS-1022': {
+                serialNumbers: ['EI161113'],
+                calibrationCycle: 12 // months
+            },
+            'Appliance Tester Resistance Board': {
+                serialNumbers: ['APTB1'],
+                calibrationCycle: 12 // months
+            },
+            'Capacitance Box': {
+                serialNumbers: ['EM4'],
+                calibrationCycle: 12 // months
+            },
+            'Current Shunt Resistor (100µΩ)': {
+                serialNumbers: ['CSR1'],
+                calibrationCycle: 12 // months
+            },
+            'Current Shunt Resistor (1mΩ)': {
+                serialNumbers: ['CSR2'],
+                calibrationCycle: 12 // months
+            },
+            'Palec Current Shunt Resistor (1mΩ)': {
+                serialNumbers: ['CSR3'],
+                calibrationCycle: 12 // months
+            },
+            'Current Shunt Resistor (500mΩ)': {
+                serialNumbers: ['CSR4'],
+                calibrationCycle: 12 // months
+            },
+            'Current Shunt Resistor (50mΩ)': {
+                serialNumbers: ['CSR5'],
+                calibrationCycle: 12 // months
+            },
+            'Current Shunt Resistor (5mΩ)': {
+                serialNumbers: ['CSR6'],
+                calibrationCycle: 12 // months
+            }
+        };
+
+        // Current test ranges (will be updated based on selected model)
+        let testRanges = [];
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedReferenceEquipment();
+            loadSavedElectricalModelRegister();
+            initializeTabs();
+            initializeSetup();
+            initializeCalibration();
+            loadSavedData();
+            setDefaultDates();
+            setDefaultTechnician();
+            checkForWorkOrderData();
+        });
+
+        // Autocomplete functions
+        function showMakeSuggestions() {
+            const input = document.getElementById('make');
+            const suggestions = document.getElementById('makeSuggestions');
+            const query = input.value.toLowerCase();
+            
+            if (query.length < 1) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+            
+            const makes = Object.keys(electricalModelRegister);
+            const filtered = makes.filter(make => make.toLowerCase().includes(query));
+            
+            if (filtered.length > 0) {
+                suggestions.innerHTML = filtered.map(make => 
+                    `<div class="px-3 py-2 hover:bg-gray-100 cursor-pointer" onclick="selectMake('${make}')">${make}</div>`
+                ).join('');
+                suggestions.classList.remove('hidden');
+            } else {
+                suggestions.classList.add('hidden');
+            }
+        }
+
+        function hideMakeSuggestions() {
+            setTimeout(() => {
+                document.getElementById('makeSuggestions').classList.add('hidden');
+            }, 200);
+        }
+
+        function selectMake(make) {
+            document.getElementById('make').value = make;
+            document.getElementById('makeSuggestions').classList.add('hidden');
+            document.getElementById('model').value = '';
+            showModelSuggestions();
+        }
+
+        function showModelSuggestions() {
+            const makeInput = document.getElementById('make');
+            const modelInput = document.getElementById('model');
+            const suggestions = document.getElementById('modelSuggestions');
+            const query = modelInput.value.toLowerCase();
+            const selectedMake = makeInput.value;
+            
+            if (!selectedMake || !electricalModelRegister[selectedMake]) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+            
+            if (query.length < 1) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+            
+            const models = Object.keys(electricalModelRegister[selectedMake]);
+            const filtered = models.filter(model => model.toLowerCase().includes(query));
+            
+            if (filtered.length > 0) {
+                suggestions.innerHTML = filtered.map(model => 
+                    `<div class="px-3 py-2 hover:bg-gray-100 cursor-pointer" onclick="selectModel('${model}')">${model}</div>`
+                ).join('');
+                suggestions.classList.remove('hidden');
+            } else {
+                suggestions.classList.add('hidden');
+            }
+        }
+
+        function hideModelSuggestions() {
+            setTimeout(() => {
+                document.getElementById('modelSuggestions').classList.add('hidden');
+            }, 200);
+        }
+
+        function selectModel(model) {
+            document.getElementById('model').value = model;
+            document.getElementById('modelSuggestions').classList.add('hidden');
+            loadModelTestRanges();
+        }
+
+        function loadModelTestRanges() {
+            const make = document.getElementById('make').value;
+            const model = document.getElementById('model').value;
+            
+            if (make && model && electricalModelRegister[make] && electricalModelRegister[make][model]) {
+                testRanges = electricalModelRegister[make][model].testRanges;
+                // If we're on the calibrate tab, regenerate the tables
+                if (!document.getElementById('panelCalibrate').classList.contains('hidden')) {
+                    generateCalibrationTables();
+                }
+            }
+        }
+
+        // Reference Equipment Dropdown Functions
+        function updateRefSerialOptions(refNum) {
+            const makeSelect = document.getElementById(`refMake${refNum}`);
+            const serialSelect = document.getElementById(`refSerial${refNum}`);
+            
+            // Clear serial options
+            serialSelect.innerHTML = '<option value="">Select Serial</option>';
+            
+            const selectedMake = makeSelect.value;
+            if (selectedMake && referenceEquipmentRegister[selectedMake]) {
+                const serials = referenceEquipmentRegister[selectedMake].serialNumbers;
+                serials.forEach(serial => {
+                    const option = document.createElement('option');
+                    option.value = serial;
+                    option.textContent = serial;
+                    serialSelect.appendChild(option);
+                });
+                
+                // Preselect the first (and usually only) serial number
+                if (serials.length === 1) {
+                    serialSelect.value = serials[0];
+                }
+            }
+        }
+
+        let referenceCount = 1;
+
+        function addReferenceEquipment() {
+            referenceCount++;
+            const container = document.getElementById('referenceEquipmentContainer');
+            
+            const referenceDiv = document.createElement('div');
+            referenceDiv.className = 'bg-gray-50 rounded-lg p-4 mb-4';
+            referenceDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-medium text-gray-900">Reference ${referenceCount}</h4>
+                    <button onclick="removeReference(${referenceCount})" class="text-red-600 hover:text-red-800 text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
+                        <select id="refMake${referenceCount}" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="updateRefSerialOptions(${referenceCount})">
+                            <option value="">Select Equipment</option>
+                            <option value="Fluke Multi-Product Calibrator 5500A">Fluke Multi-Product Calibrator 5500A</option>
+                            <option value="Fluke Multimeter (Digit Precision) 8846A">Fluke Multimeter (Digit Precision) 8846A</option>
+                            <option value="Fluke Multimeter 87V">Fluke Multimeter 87V</option>
+                            <option value="Fluke Multimeter 73III">Fluke Multimeter 73III</option>
+                            <option value="Fluke Multimeter 8840A">Fluke Multimeter 8840A</option>
+                            <option value="Fluke High Voltage Probe 80k-40kV">Fluke High Voltage Probe 80k-40kV</option>
+                            <option value="Metrohm Insulation tester 16D">Metrohm Insulation tester 16D</option>
+                            <option value="Universal Avo Meter">Universal Avo Meter</option>
+                            <option value="GW Instek Oscilloscope GDS-1022">GW Instek Oscilloscope GDS-1022</option>
+                            <option value="Appliance Tester Resistance Board">Appliance Tester Resistance Board</option>
+                            <option value="Capacitance Box">Capacitance Box</option>
+                            <option value="Current Shunt Resistor (100µΩ)">Current Shunt Resistor (100µΩ)</option>
+                            <option value="Current Shunt Resistor (1mΩ)">Current Shunt Resistor (1mΩ)</option>
+                            <option value="Palec Current Shunt Resistor (1mΩ)">Palec Current Shunt Resistor (1mΩ)</option>
+                            <option value="Current Shunt Resistor (500mΩ)">Current Shunt Resistor (500mΩ)</option>
+                            <option value="Current Shunt Resistor (50mΩ)">Current Shunt Resistor (50mΩ)</option>
+                            <option value="Current Shunt Resistor (5mΩ)">Current Shunt Resistor (5mΩ)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial No</label>
+                        <select id="refSerial${referenceCount}" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Select Serial</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(referenceDiv);
+        }
+
+        function removeReference(refNum) {
+            const element = document.querySelector(`#refMake${refNum}`).closest('.bg-gray-50');
+            element.remove();
+        }
+
+        // Reference Equipment Modal Functions
+        function showReferenceEquipmentModal() {
+            const modal = document.getElementById('referenceEquipmentModal');
+            const grid = document.getElementById('refEquipmentGrid');
+            
+            // Clear existing content
+            grid.innerHTML = '';
+            
+            // Generate equipment cards
+            Object.keys(referenceEquipmentRegister).forEach(equipmentName => {
+                const equipment = referenceEquipmentRegister[equipmentName];
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-gray-300 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer';
+                card.onclick = () => showEquipmentDetails(equipmentName);
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-medium text-gray-900 text-sm">${equipmentName}</h4>
+                        <span class="text-xs text-gray-500">${equipment.calibrationCycle}mo</span>
+                    </div>
+                    <div class="text-xs text-gray-600 mb-2">
+                        <div><strong>Serial:</strong> ${equipment.serialNumbers.join(', ')}</div>
+                    </div>
+                    <div class="text-xs text-blue-600 hover:text-blue-800">
+                        Click to view uncertainty details →
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+
+        function hideReferenceEquipmentModal() {
+            document.getElementById('referenceEquipmentModal').classList.add('hidden');
+        }
+
+        function showEquipmentDetails(equipmentName) {
+            const equipment = referenceEquipmentRegister[equipmentName];
+            const modal = document.getElementById('equipmentDetailsModal');
+            const title = document.getElementById('equipmentDetailsTitle');
+            const content = document.getElementById('equipmentDetailsContent');
+            
+            title.textContent = equipmentName;
+            
+            let html = `
+                <div class="space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-2">Equipment Information</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div><strong>Serial Numbers:</strong> ${equipment.serialNumbers.join(', ')}</div>
+                            <div><strong>Calibration Cycle:</strong> ${equipment.calibrationCycle} months</div>
+                        </div>
+                    </div>
+            `;
+            
+            if (equipment.uncertainty) {
+                html += `
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-3">Uncertainty Specifications</h4>
+                `;
+                
+                Object.keys(equipment.uncertainty).forEach(category => {
+                    html += `
+                        <div class="mb-4">
+                            <h5 class="font-medium text-gray-800 mb-2">${category}</h5>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left">Range</th>
+                                            <th class="px-3 py-2 text-left">Uncertainty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    Object.keys(equipment.uncertainty[category]).forEach(range => {
+                        html += `
+                            <tr class="border-b">
+                                <td class="px-3 py-2">${range}</td>
+                                <td class="px-3 py-2">
+                                    <input type="text" 
+                                           value="${equipment.uncertainty[category][range]}" 
+                                           class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                           onchange="updateUncertaintyValue('${equipmentName}', '${category}', '${range}', this.value)">
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            } else {
+                html += `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p class="text-yellow-800 text-sm">Uncertainty specifications not available for this equipment.</p>
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            content.innerHTML = html;
+            
+            // Hide reference equipment modal and show details modal
+            hideReferenceEquipmentModal();
+            modal.classList.remove('hidden');
+        }
+
+        function hideEquipmentDetailsModal() {
+            document.getElementById('equipmentDetailsModal').classList.add('hidden');
+        }
+
+        function updateUncertaintyValue(equipmentName, category, range, newValue) {
+            if (referenceEquipmentRegister[equipmentName] && 
+                referenceEquipmentRegister[equipmentName].uncertainty && 
+                referenceEquipmentRegister[equipmentName].uncertainty[category]) {
+                referenceEquipmentRegister[equipmentName].uncertainty[category][range] = newValue;
+                
+                // Save to localStorage
+                localStorage.setItem('referenceEquipmentRegister', JSON.stringify(referenceEquipmentRegister));
+                
+                // Show save confirmation
+                showSaveConfirmation();
+            }
+        }
+
+        function saveAllUncertaintyChanges() {
+            // Save the current state to localStorage
+            localStorage.setItem('referenceEquipmentRegister', JSON.stringify(referenceEquipmentRegister));
+            
+            // Show confirmation
+            showSaveConfirmation();
+            
+            // Close the modal
+            hideEquipmentDetailsModal();
+        }
+
+        function loadSavedElectricalModelRegister() {
+            const saved = localStorage.getItem('electricalModelRegister');
+            if (saved) {
+                try {
+                    const savedData = JSON.parse(saved);
+                    // Merge saved data with default data
+                    Object.keys(savedData).forEach(make => {
+                        if (electricalModelRegister[make]) {
+                            Object.keys(savedData[make]).forEach(model => {
+                                electricalModelRegister[make][model] = {
+                                    ...electricalModelRegister[make][model],
+                                    ...savedData[make][model]
+                                };
+                            });
+                        } else {
+                            electricalModelRegister[make] = savedData[make];
+                        }
+                    });
+                } catch (e) {
+                    console.log('Could not load saved electrical model register data');
+                }
+            }
+        }
+
+        function setDefaultTechnician() {
+            document.getElementById('technician').value = currentUser.name;
+        }
+
+        // Library Functions
+        function showLibraryModal() {
+            const modal = document.getElementById('libraryModal');
+            populateMakeModelList();
+            modal.classList.remove('hidden');
+        }
+
+        function hideLibraryModal() {
+            document.getElementById('libraryModal').classList.add('hidden');
+        }
+
+        function populateMakeModelList() {
+            const list = document.getElementById('makeModelList');
+            list.innerHTML = '';
+            
+            Object.keys(electricalModelRegister).forEach(make => {
+                Object.keys(electricalModelRegister[make]).forEach(model => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-white border border-gray-300 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer';
+                    item.onclick = () => selectMakeModel(make, model);
+                    
+                    item.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h5 class="font-medium text-gray-900">${make}</h5>
+                                <p class="text-sm text-gray-600">${model}</p>
+                                <p class="text-xs text-gray-500 mt-1">${electricalModelRegister[make][model].description || 'No description'}</p>
+                            </div>
+                            <div class="text-xs text-gray-400">
+                                ${electricalModelRegister[make][model].testRanges ? electricalModelRegister[make][model].testRanges.length : 0} ranges
+                            </div>
+                        </div>
+                    `;
+                    
+                    list.appendChild(item);
+                });
+            });
+        }
+
+        function selectMakeModel(make, model) {
+            const details = document.getElementById('selectedModelDetails');
+            const workbookSections = document.getElementById('workbookSections');
+            
+            const modelData = electricalModelRegister[make][model];
+            
+            details.innerHTML = `
+                <div class="space-y-3">
+                    <div>
+                        <h5 class="font-medium text-gray-900">${make} ${model}</h5>
+                        <p class="text-sm text-gray-600">${modelData.description || 'No description available'}</p>
+                    </div>
+                    
+                    <div>
+                        <h6 class="font-medium text-gray-800 mb-2">Test Ranges</h6>
+                        <div class="text-sm text-gray-600">
+                            ${modelData.testRanges ? modelData.testRanges.length : 0} test ranges configured
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="loadWorkbook('${make}', '${model}')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                            Load Workbook
+                        </button>
+                        <button onclick="editMakeModel('${make}', '${model}')" class="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                            Edit
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            workbookSections.classList.remove('hidden');
+        }
+
+        function loadWorkbook(make, model) {
+            const modelData = electricalModelRegister[make][model];
+            if (!modelData.testRanges) {
+                alert('No workbook data available for this model');
+                return;
+            }
+            
+            // Load As Found workbook
+            const asFoundWorkbook = document.getElementById('asFoundWorkbook');
+            asFoundWorkbook.innerHTML = generateWorkbookHTML(modelData.testRanges, 'asFound');
+            
+            // Load As Left workbook
+            const asLeftWorkbook = document.getElementById('asLeftWorkbook');
+            asLeftWorkbook.innerHTML = generateWorkbookHTML(modelData.testRanges, 'asLeft');
+        }
+
+        function generateWorkbookHTML(testRanges, type) {
+            let html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-1 text-left">Range</th>
+                                <th class="px-2 py-1 text-left">Unit</th>
+                                <th class="px-2 py-1 text-left">Resolution</th>
+                                <th class="px-2 py-1 text-left">Meas1</th>
+                                <th class="px-2 py-1 text-left">Meas2</th>
+                                <th class="px-2 py-1 text-left">Meas3</th>
+                                <th class="px-2 py-1 text-left">Meas4</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            testRanges.forEach((range, index) => {
+                html += `
+                    <tr class="border-b">
+                        <td class="px-2 py-1">${range.range}</td>
+                        <td class="px-2 py-1">${range.unit}</td>
+                        <td class="px-2 py-1">${range.resolution}</td>
+                        <td class="px-2 py-1">
+                            <input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" 
+                                   value="${range.meas1 || ''}" placeholder="0.000000">
+                        </td>
+                        <td class="px-2 py-1">
+                            <input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" 
+                                   value="${range.meas2 || ''}" placeholder="0.000000">
+                        </td>
+                        <td class="px-2 py-1">
+                            <input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" 
+                                   value="${range.meas3 || ''}" placeholder="0.000000">
+                        </td>
+                        <td class="px-2 py-1">
+                            <input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" 
+                                   value="${range.meas4 || ''}" placeholder="0.000000">
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            return html;
+        }
+
+        function showAddMakeModelModal() {
+            document.getElementById('addMakeModelModal').classList.remove('hidden');
+        }
+
+        function hideAddMakeModelModal() {
+            document.getElementById('addMakeModelModal').classList.add('hidden');
+            document.getElementById('addMakeModelForm').reset();
+        }
+
+        function addNewMakeModel(event) {
+            event.preventDefault();
+            
+            const make = document.getElementById('newMake').value.trim();
+            const model = document.getElementById('newModel').value.trim();
+            const description = document.getElementById('newDescription').value.trim();
+            
+            if (!make || !model) {
+                alert('Please fill in both Make and Model fields');
+                return;
+            }
+            
+            // Check if make exists
+            if (!electricalModelRegister[make]) {
+                electricalModelRegister[make] = {};
+            }
+            
+            // Check if model already exists
+            if (electricalModelRegister[make][model]) {
+                alert('This Make/Model combination already exists');
+                return;
+            }
+            
+            // Add new model
+            electricalModelRegister[make][model] = {
+                description: description,
+                testRanges: []
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('electricalModelRegister', JSON.stringify(electricalModelRegister));
+            
+            // Refresh the list
+            populateMakeModelList();
+            
+            // Close modal
+            hideAddMakeModelModal();
+            
+            // Show success message
+            showSaveConfirmation();
+        }
+
+        function showExcelUploadModal() {
+            // Populate make/model dropdown
+            const dropdown = document.getElementById('uploadMakeModel');
+            dropdown.innerHTML = '<option value="">Select Make/Model</option>';
+            
+            Object.keys(electricalModelRegister).forEach(make => {
+                Object.keys(electricalModelRegister[make]).forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = `${make}|${model}`;
+                    option.textContent = `${make} ${model}`;
+                    dropdown.appendChild(option);
+                });
+            });
+            
+            document.getElementById('excelUploadModal').classList.remove('hidden');
+        }
+
+        function hideExcelUploadModal() {
+            document.getElementById('excelUploadModal').classList.add('hidden');
+            document.getElementById('excelFile').value = '';
+            document.getElementById('uploadMakeModel').value = '';
+        }
+
+        function processExcelUpload() {
+            const fileInput = document.getElementById('excelFile');
+            const makeModelSelect = document.getElementById('uploadMakeModel');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select an Excel file');
+                return;
+            }
+            
+            if (!makeModelSelect.value) {
+                alert('Please select a Make/Model');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const [make, model] = makeModelSelect.value.split('|');
+            
+            // For now, show a placeholder message
+            alert(`Excel upload functionality will be implemented. Selected: ${make} ${model}, File: ${file.name}`);
+            
+            // TODO: Implement actual Excel parsing
+            // This would involve using a library like SheetJS to parse the Excel file
+            // and extract the As Found/As Left data
+            
+            hideExcelUploadModal();
+        }
+
+        function checkForWorkOrderData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('fromWorkOrder') === 'true') {
+                preFillFromWorkOrder(urlParams);
+            }
+        }
+
+        function preFillFromWorkOrder(urlParams) {
+            if (urlParams.get('woNumber')) {
+                let woNum = urlParams.get('woNumber');
+                document.getElementById('woNumber').value = woNum;
+                // Auto-fill Certificate No from WO Number (remove leading 'W')
+                if (!document.getElementById('certificateNo').value) {
+                    document.getElementById('certificateNo').value = woNum.startsWith('W') || woNum.startsWith('w') ? woNum.substring(1) : woNum;
+                }
+            }
+            
+            if (urlParams.get('partNumber')) {
+                let partNum = urlParams.get('partNumber');
+                // Auto-fill Item No from Part Number
+                if (!document.getElementById('itemNo').value) {
+                    document.getElementById('itemNo').value = partNum;
+                }
+            }
+            
+            if (urlParams.get('serialNumber')) {
+                document.getElementById('serialNumber').value = urlParams.get('serialNumber');
+            }
+            
+            if (urlParams.get('customerName')) {
+                document.getElementById('customer').value = urlParams.get('customerName');
+            }
+            
+            if (urlParams.get('customerStreet')) {
+                document.getElementById('street').value = urlParams.get('customerStreet');
+            }
+            
+            if (urlParams.get('customerCity')) {
+                document.getElementById('address').value = urlParams.get('customerCity');
+            }
+        }
+
+        function initializeTabs() {
+            document.getElementById('tabSetup').addEventListener('click', () => showPanel('setup'));
+            document.getElementById('tabCalibrate').addEventListener('click', () => showPanel('calibrate'));
+            document.getElementById('tabCertificate').addEventListener('click', () => showPanel('certificate'));
+        }
+
+        function showPanel(panel) {
+            // Hide all panels
+            document.getElementById('panelSetup').classList.add('hidden');
+            document.getElementById('panelCalibrate').classList.add('hidden');
+            document.getElementById('panelCertificate').classList.add('hidden');
+
+            // Remove active class from all tabs
+            document.getElementById('tabSetup').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
+            document.getElementById('tabCalibrate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
+            document.getElementById('tabCertificate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
+
+            // Show selected panel and activate tab
+            if (panel === 'setup') {
+                document.getElementById('panelSetup').classList.remove('hidden');
+                document.getElementById('tabSetup').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
+            } else if (panel === 'calibrate') {
+                document.getElementById('panelCalibrate').classList.remove('hidden');
+                document.getElementById('tabCalibrate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
+                generateCalibrationTables();
+            } else if (panel === 'certificate') {
+                document.getElementById('panelCertificate').classList.remove('hidden');
+                document.getElementById('tabCertificate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
+                generateCertificate();
+            }
+        }
+
+        function initializeSetup() {
+            // Setup button handlers
+            const calibrateBtn = document.getElementById('calibrateBtn');
+            if (calibrateBtn) {
+                calibrateBtn.onclick = null;
+                calibrateBtn.addEventListener('click', goToCalibrate);
+            }
+            const resetBtn = document.getElementById('resetSetupBtn');
+            if (resetBtn) {
+                resetBtn.onclick = null;
+                resetBtn.addEventListener('click', resetSetup);
+            }
+            const addRefBtn = document.getElementById('addReferenceBtn');
+            if (addRefBtn) {
+                addRefBtn.onclick = null;
+                addRefBtn.addEventListener('click', addReferenceEquipment);
+            }
+        }
+
+        function goToCalibrate() {
+            // Save current setup so calibrate page can use it
+            saveSetup();
+            const make = encodeURIComponent(document.getElementById('make').value || '');
+            const model = encodeURIComponent(document.getElementById('model').value || '');
+            const wo = encodeURIComponent(document.getElementById('woNumber').value || '');
+            window.location.href = `calibrate.html?make=${make}&model=${model}&wo=${wo}`;
+        }
+
+        function initializeCalibration() {
+            document.getElementById('saveCalibrationBtn').addEventListener('click', saveCalibration);
+            document.getElementById('generateCertificateBtn').addEventListener('click', generateCertificate);
+        }
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('dateTested').value = today;
+            document.getElementById('dateIssued').value = tomorrowStr;
+        }
+
+        function generateCalibrationTables() {
+            // Load test ranges based on selected make/model
+            loadModelTestRanges();
+            
+            // If no test ranges loaded, use default Fluke 8846A ranges
+            if (testRanges.length === 0) {
+                const make = document.getElementById('make').value;
+                const model = document.getElementById('model').value;
+                if (make === 'Fluke' && model === '8846A') {
+                    testRanges = electricalModelRegister['Fluke']['8846A'].testRanges;
+                }
+            }
+            
+            generateTable('asFoundTable', 'asFound');
+            generateTable('asLeftTable', 'asLeft');
+        }
+
+        function generateTable(tableId, type) {
+            const tbody = document.getElementById(tableId);
+            tbody.innerHTML = '';
+
+            testRanges.forEach((range, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border border-gray-300 px-4 py-2">${range.range}</td>
+                    <td class="border border-gray-300 px-4 py-2">${range.unit}</td>
+                    <td class="border border-gray-300 px-4 py-2">${range.resolution}</td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        <input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" 
+                               id="${type}Meas1_${index}" oninput="calculateRow('${type}', ${index})">
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        <input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" 
+                               id="${type}Meas2_${index}" oninput="calculateRow('${type}', ${index})">
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        <input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" 
+                               id="${type}Meas3_${index}" oninput="calculateRow('${type}', ${index})">
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        <input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" 
+                               id="${type}Meas4_${index}" oninput="calculateRow('${type}', ${index})">
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2 text-center font-medium" id="${type}Avg_${index}">0.000000</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center font-medium" id="${type}Corr_${index}">0.000000</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function calculateRow(type, index) {
+            const meas1 = parseFloat(document.getElementById(`${type}Meas1_${index}`).value) || 0;
+            const meas2 = parseFloat(document.getElementById(`${type}Meas2_${index}`).value) || 0;
+            const meas3 = parseFloat(document.getElementById(`${type}Meas3_${index}`).value) || 0;
+            const meas4 = parseFloat(document.getElementById(`${type}Meas4_${index}`).value) || 0;
+
+            // Calculate average (only if at least one measurement is entered)
+            const measurements = [meas1, meas2, meas3, meas4].filter(m => m !== 0);
+            const average = measurements.length > 0 ? measurements.reduce((a, b) => a + b, 0) / measurements.length : 0;
+            
+            // Calculate correction (range - average)
+            const range = parseFloat(testRanges[index].range);
+            const correction = range - average;
+
+            document.getElementById(`${type}Avg_${index}`).textContent = average.toFixed(6);
+            document.getElementById(`${type}Corr_${index}`).textContent = correction.toFixed(6);
+        }
+
+        function saveSetup() {
+            const setupData = {
+                technician: document.getElementById('technician').value,
+                reportOn: document.getElementById('reportOn').value,
+                certificateNo: document.getElementById('certificateNo').value,
+                serialNumber: document.getElementById('serialNumber').value,
+                testStandard: document.getElementById('testStandard').value,
+                make: document.getElementById('make').value,
+                model: document.getElementById('model').value,
+                itemNo: document.getElementById('itemNo').value,
+                customer: document.getElementById('customer').value,
+                street: document.getElementById('street').value,
+                address: document.getElementById('address').value,
+                testLocation: document.getElementById('testLocation').value,
+                dateTested: document.getElementById('dateTested').value,
+                dateIssued: document.getElementById('dateIssued').value,
+                soNumber: document.getElementById('soNumber').value,
+                woNumber: document.getElementById('woNumber').value,
+                poNumber: document.getElementById('poNumber').value,
+                refMake1: document.getElementById('refMake1').value,
+                refSerial1: document.getElementById('refSerial1').value
+            };
+
+            calibrationData.setup = setupData;
+            localStorage.setItem('electricalCalibrationData', JSON.stringify(calibrationData));
+            alert('Setup saved successfully!');
+        }
+
+
+        function resetSetup() {
+            if (confirm('Are you sure you want to reset all setup data?')) {
+                localStorage.removeItem('electricalCalibrationData');
+                location.reload();
+            }
+        }
+
+        function saveCalibration() {
+            // Collect measurement data
+            const asFoundData = [];
+            const asLeftData = [];
+
+            testRanges.forEach((range, index) => {
+                const asFoundRow = {
+                    range: range.range,
+                    unit: range.unit,
+                    resolution: range.resolution,
+                    meas1: parseFloat(document.getElementById(`asFoundMeas1_${index}`).value) || 0,
+                    meas2: parseFloat(document.getElementById(`asFoundMeas2_${index}`).value) || 0,
+                    meas3: parseFloat(document.getElementById(`asFoundMeas3_${index}`).value) || 0,
+                    meas4: parseFloat(document.getElementById(`asFoundMeas4_${index}`).value) || 0,
+                    average: parseFloat(document.getElementById(`asFoundAvg_${index}`).textContent) || 0,
+                    correction: parseFloat(document.getElementById(`asFoundCorr_${index}`).textContent) || 0
+                };
+
+                const asLeftRow = {
+                    range: range.range,
+                    unit: range.unit,
+                    resolution: range.resolution,
+                    meas1: parseFloat(document.getElementById(`asLeftMeas1_${index}`).value) || 0,
+                    meas2: parseFloat(document.getElementById(`asLeftMeas2_${index}`).value) || 0,
+                    meas3: parseFloat(document.getElementById(`asLeftMeas3_${index}`).value) || 0,
+                    meas4: parseFloat(document.getElementById(`asLeftMeas4_${index}`).value) || 0,
+                    average: parseFloat(document.getElementById(`asLeftAvg_${index}`).textContent) || 0,
+                    correction: parseFloat(document.getElementById(`asLeftCorr_${index}`).textContent) || 0
+                };
+
+                asFoundData.push(asFoundRow);
+                asLeftData.push(asLeftRow);
+            });
+
+            calibrationData.asFound = asFoundData;
+            calibrationData.asLeft = asLeftData;
+            localStorage.setItem('electricalCalibrationData', JSON.stringify(calibrationData));
+            alert('Calibration data saved successfully!');
+        }
+
+        function generateCertificate() {
+            const certificateContent = document.getElementById('certificateContent');
+            certificateContent.innerHTML = `
+                <div class="border border-gray-300 p-6">
+                    <div class="text-center mb-6">
+                        <h1 class="text-2xl font-bold">CALIBRATION CERTIFICATE</h1>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <p><strong>Report on:</strong> ${calibrationData.setup.reportOn || ''}</p>
+                            <p><strong>Customer:</strong> ${calibrationData.setup.customer || ''}</p>
+                            <p>${calibrationData.setup.street || ''}</p>
+                            <p>${calibrationData.setup.address || ''}</p>
+                        </div>
+                        <div>
+                            <p><strong>Certificate No:</strong> ${calibrationData.setup.certificateNo || ''}</p>
+                            <p><strong>Date Tested:</strong> ${calibrationData.setup.dateTested || ''}</p>
+                            <p><strong>Date Issued:</strong> ${calibrationData.setup.dateIssued || ''}</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">Instrument Details</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <p><strong>Make:</strong> ${calibrationData.setup.make || ''}</p>
+                            <p><strong>Model:</strong> ${calibrationData.setup.model || ''}</p>
+                            <p><strong>Serial No:</strong> ${calibrationData.setup.serialNumber || ''}</p>
+                            <p><strong>Item No:</strong> ${calibrationData.setup.itemNo || ''}</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">Reference Equipment</h3>
+                        <p><strong>Primary:</strong> ${calibrationData.setup.refMake1 || ''} (S/N: ${calibrationData.setup.refSerial1 || ''})</p>
+                        <p><strong>Secondary:</strong> ${calibrationData.setup.refMake2 || ''} (S/N: ${calibrationData.setup.refSerial2 || ''})</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">Calibration Results</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">Range</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">Unit</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">As Found</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">As Left</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">Tolerance</th>
+                                        <th class="border border-gray-300 px-4 py-2 text-left">Pass/Fail</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${testRanges.map((range, index) => {
+                                        const asFound = calibrationData.asFound[index] || {};
+                                        const asLeft = calibrationData.asLeft[index] || {};
+                                        const tolerance = '±0.05%'; // Default tolerance
+                                        const passFail = 'Pass'; // Simplified for now
+                                        
+                                        return `
+                                            <tr>
+                                                <td class="border border-gray-300 px-4 py-2">${range.range}</td>
+                                                <td class="border border-gray-300 px-4 py-2">${range.unit}</td>
+                                                <td class="border border-gray-300 px-4 py-2">${asFound.average ? asFound.average.toFixed(6) : ''}</td>
+                                                <td class="border border-gray-300 px-4 py-2">${asLeft.average ? asLeft.average.toFixed(6) : ''}</td>
+                                                <td class="border border-gray-300 px-4 py-2">${tolerance}</td>
+                                                <td class="border border-gray-300 px-4 py-2">${passFail}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-8">
+                        <p class="text-sm text-gray-600">
+                            The results of the tests, calibrations and/or measurements included in this document are traceable to Australian/National Standards.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadSavedData() {
+            const saved = localStorage.getItem('electricalCalibrationData');
+            if (saved) {
+                calibrationData = JSON.parse(saved);
+                
+                // Populate setup fields
+                Object.keys(calibrationData.setup).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.value = calibrationData.setup[key];
+                    }
+                });
+                
+                // Load test ranges if make/model are set
+                const make = document.getElementById('make').value;
+                const model = document.getElementById('model').value;
+                if (make && model) {
+                    loadModelTestRanges();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

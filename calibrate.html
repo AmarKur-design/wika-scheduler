@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibrate - WIKA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <img src="wika-logo.png" alt="WIKA Logo" class="h-8 w-auto">
+                    <h1 class="ml-3 text-2xl font-bold text-gray-900">Calibration - <span id="titleMakeModel"></span></h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="electrical-new.html" class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">Back to Setup</a>
+                    <a href="library.html" class="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">Library</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <div class="text-sm text-gray-500">Work Order</div>
+                        <div id="workOrder" class="text-gray-900 font-medium"></div>
+                    </div>
+                    <div class="text-sm text-gray-600">Loaded from model workbook</div>
+                </div>
+
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold">As Found Measurements</h2>
+                        <button id="addAsFoundRowBtn" type="button" class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">+ Add line</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full border border-gray-300">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Instrument Range</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Unit</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Resolution</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 1</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 2</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 3</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 4</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700">Average</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700">Correction</th>
+                                </tr>
+                            </thead>
+                            <tbody id="asFoundBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold">As Left Measurements</h2>
+                        <button id="addAsLeftRowBtn" type="button" class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm">+ Add line</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full border border-gray-300">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Instrument Range</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Unit</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Resolution</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 1</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 2</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 3</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left text-sm font-medium text-gray-700">Meas 4</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700">Average</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700">Correction</th>
+                                </tr>
+                            </thead>
+                            <tbody id="asLeftBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-6">
+                    <button id="saveCalibrationBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Save Calibration</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Load model test ranges from localStorage (written by setup/library)
+        function getModelTestRanges(make, model) {
+            const saved = localStorage.getItem('electricalModelRegister');
+            if (!saved) return [];
+            try {
+                const data = JSON.parse(saved);
+                return data[make] && data[make][model] && data[make][model].testRanges ? data[make][model].testRanges : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function byId(id){ return document.getElementById(id); }
+
+        function renderTable(bodyId, ranges, type){
+            const tbody = byId(bodyId);
+            tbody.innerHTML = '';
+            ranges.forEach((range, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border border-gray-300 px-4 py-2">${range.range}</td>
+                    <td class="border border-gray-300 px-4 py-2">${range.unit}</td>
+                    <td class="border border-gray-300 px-4 py-2">${range.resolution}</td>
+                    <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas1_${index}" oninput="calcRow('${type}', ${index})"></td>
+                    <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas2_${index}" oninput="calcRow('${type}', ${index})"></td>
+                    <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas3_${index}" oninput="calcRow('${type}', ${index})"></td>
+                    <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas4_${index}" oninput="calcRow('${type}', ${index})"></td>
+                    <td class="border border-gray-300 px-4 py-2 text-center font-medium" id="${type}Avg_${index}">0.000000</td>
+                    <td class="border border-gray-300 px-4 py-2 text-center font-medium" id="${type}Corr_${index}">0.000000</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Allow manual row insertion under each table
+        function appendManualRow(type){
+            const bodyId = type === 'asFound' ? 'asFoundBody' : 'asLeftBody';
+            const tbody = byId(bodyId);
+            const idx = tbody.children.length; // next visual index
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="border border-gray-300 px-4 py-2"><input type="text" class="w-full border-0 px-2 py-1 text-sm" id="${type}Range_${idx}" placeholder="Range"></td>
+                <td class="border border-gray-300 px-4 py-2"><input type="text" class="w-full border-0 px-2 py-1 text-sm" id="${type}Unit_${idx}" placeholder="Unit"></td>
+                <td class="border border-gray-300 px-4 py-2"><input type="text" class="w-full border-0 px-2 py-1 text-sm" id="${type}Res_${idx}" placeholder="Resolution"></td>
+                <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas1_${idx}" oninput="calcRow('${type}', ${idx})"></td>
+                <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas2_${idx}" oninput="calcRow('${type}', ${idx})"></td>
+                <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas3_${idx}" oninput="calcRow('${type}', ${idx})"></td>
+                <td class="border border-gray-300 px-4 py-2"><input type="number" step="0.000001" class="w-full border-0 px-2 py-1 text-sm" id="${type}Meas4_${idx}" oninput="calcRow('${type}', ${idx})"></td>
+                <td class="border border-gray-300 px-4 py-2 text-center font-medium" id="${type}Avg_${idx}">0.000000</td>
+                <td class="border border-gray-300 px-4 py-2 text-center font-medium" id="${type}Corr_${idx}">0.000000</td>
+            `;
+            tbody.appendChild(row);
+            const rangeInput = document.getElementById(`${type}Range_${idx}`);
+            rangeInput.addEventListener('input', () => calcRow(type, idx));
+        }
+
+        function calcRow(type, index){
+            const v = n => parseFloat(document.getElementById(`${type}Meas${n}_${index}`).value) || 0;
+            const values = [1,2,3,4].map(v);
+            const used = values.filter(x => x !== 0);
+            const avg = used.length ? used.reduce((a,b)=>a+b,0)/used.length : 0;
+            // Determine range for correction: prefer manual input if present
+            let rangeVal = NaN;
+            const manualRange = document.getElementById(`${type}Range_${index}`);
+            if (manualRange && manualRange.value !== '') {
+                rangeVal = parseFloat(manualRange.value);
+            } else if (window.currentRanges && window.currentRanges[index]) {
+                rangeVal = parseFloat(window.currentRanges[index].range);
+            }
+            const corr = isNaN(rangeVal) ? 0 : (rangeVal - avg);
+            document.getElementById(`${type}Avg_${index}`).textContent = avg.toFixed(6);
+            document.getElementById(`${type}Corr_${index}`).textContent = corr.toFixed(6);
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            const params = new URLSearchParams(window.location.search);
+            const make = params.get('make') || '';
+            const model = params.get('model') || '';
+            const wo = params.get('wo') || '';
+            byId('titleMakeModel').textContent = `${make} ${model}`.trim();
+            byId('workOrder').textContent = wo;
+
+            const ranges = getModelTestRanges(make, model);
+            window.currentRanges = ranges;
+            renderTable('asFoundBody', ranges, 'asFound');
+            renderTable('asLeftBody', ranges, 'asLeft');
+
+            byId('addAsFoundRowBtn').addEventListener('click', function(){ appendManualRow('asFound'); });
+            byId('addAsLeftRowBtn').addEventListener('click', function(){ appendManualRow('asLeft'); });
+            byId('saveCalibrationBtn').addEventListener('click', function(){
+                alert('Calibration data saved locally.');
+            });
+        });
+    </script>
+</body>
+</html>
+
+
