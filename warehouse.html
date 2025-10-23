@@ -51,6 +51,9 @@
                         <button onclick="expandInbound()" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded" title="Expand Full View">
                             <i class="fas fa-expand"></i>
                         </button>
+                        <button onclick="showCustomerForm()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-users mr-2"></i>Customer Form
+                        </button>
                         <button onclick="showAddInboundModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
                             <i class="fas fa-plus mr-2"></i>Add Item
                         </button>
@@ -193,6 +196,30 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">PO/Quote Number</label>
                     <input id="poNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2">
                 </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <input type="file" id="inboundItemImage" accept="image/*" class="hidden" onchange="handleInboundImageUpload(event)">
+                        <div id="inboundImagePreview" class="hidden mb-2">
+                            <img id="inboundPreviewImg" class="max-w-full max-h-48 mx-auto rounded" alt="Item preview">
+                            <button type="button" onclick="removeInboundImage()" class="mt-2 text-red-500 hover:text-red-700 text-sm">
+                                <i class="fas fa-trash mr-1"></i>Remove Image
+                            </button>
+                        </div>
+                        <div id="inboundImageUploadArea" class="space-y-2">
+                            <div class="cursor-pointer" onclick="document.getElementById('inboundItemImage').click()">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600">Click to upload image</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-2">
+                                <button type="button" onclick="openInboundCameraModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                                    <i class="fas fa-camera mr-2"></i>Take Photo
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex justify-end space-x-4">
                     <button type="button" onclick="closeInboundModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
                         Cancel
@@ -258,6 +285,30 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Connote Number</label>
                     <input id="outboundConnoteNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="For courier tracking">
                 </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                        <input type="file" id="outboundItemImage" accept="image/*" class="hidden" onchange="handleOutboundImageUpload(event)">
+                        <div id="outboundImagePreview" class="hidden mb-2">
+                            <img id="outboundPreviewImg" class="max-w-full max-h-48 mx-auto rounded" alt="Item preview">
+                            <button type="button" onclick="removeOutboundImage()" class="mt-2 text-red-500 hover:text-red-700 text-sm">
+                                <i class="fas fa-trash mr-1"></i>Remove Image
+                            </button>
+                        </div>
+                        <div id="outboundImageUploadArea" class="space-y-2">
+                            <div class="cursor-pointer" onclick="document.getElementById('outboundItemImage').click()">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600">Click to upload image</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-2">
+                                <button type="button" onclick="openOutboundCameraModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+                                    <i class="fas fa-camera mr-2"></i>Take Photo
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex justify-end space-x-4">
                     <button type="button" onclick="closeOutboundModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
                         Cancel
@@ -271,8 +322,8 @@
     </div>
 
     <!-- Barcode Scanner Modal -->
-    <div id="scannerModal" class="modal">
-        <div class="modal-content">
+    <div id="scannerModal" class="modal" onclick="closeScannerModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
             <h2 class="text-2xl font-bold mb-4">Scan Barcode</h2>
             <div id="reader" style="width: 100%;"></div>
             <div class="mt-4">
@@ -378,6 +429,203 @@
         </div>
     </div>
 
+    <!-- Customer Form Modal -->
+    <div id="customerFormModal" class="modal">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: 1200px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Customer Form - Multiple Items</h2>
+                <button onclick="closeCustomerForm()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="customerForm" onsubmit="saveCustomerForm(event)">
+                <!-- Customer Information Section -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold text-blue-900 mb-4">Customer Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                            <input id="customerCompanyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Company Name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Quote Request</label>
+                            <select id="customerQuoteRequest" class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option value="">Select Option</option>
+                                <option value="Yes">Yes - Please provide quote</option>
+                                <option value="No">No - Proceed with calibration</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                            <textarea id="customerAddress" required class="w-full border border-gray-300 rounded px-3 py-2" rows="2" placeholder="Full Address"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Name *</label>
+                            <input id="customerContactName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contact Person">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                            <input id="customerPhoneNumber" type="tel" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Phone Number">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <input id="customerEmail" type="email" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Email Address">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">PO/Quote Number</label>
+                            <input id="customerPoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="PO/Quote Number">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Work Required *</label>
+                            <select id="customerWorkRequired" required class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option value="">Select Work Type</option>
+                                <option value="Calibration">Calibration</option>
+                                <option value="Repair">Repair</option>
+                                <option value="Testing">Testing</option>
+                                <option value="Inspection">Inspection</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Certification Type *</label>
+                            <select id="customerCertType" required class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option value="">Select Certification</option>
+                                <option value="TRACE">TRACE</option>
+                                <option value="NATA">NATA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Number of Calibration Points</label>
+                            <input id="customerCalPoints" type="number" min="1" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Number of points">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Items to be Calibrated</h3>
+                        <button type="button" onclick="addCustomerItem()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add Another Item
+                        </button>
+                    </div>
+                    <div id="customerItemsList" class="space-y-4">
+                        <!-- Items will be added here dynamically -->
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeCustomerForm()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-save mr-2"></i>Submit All Items
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Camera Modal for Inbound -->
+    <div id="inboundCameraModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Take Photo - Inbound Item</h2>
+                <button onclick="closeInboundCameraModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <video id="inboundCameraVideo" autoplay playsinline class="w-full max-w-md mx-auto rounded mb-4" style="display: none;"></video>
+                <canvas id="inboundCameraCanvas" class="hidden"></canvas>
+                <div id="inboundCameraControls" class="space-y-4">
+                    <button onclick="startInboundCamera()" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-video mr-2"></i>Start Camera
+                    </button>
+                    <div id="inboundCaptureControls" class="hidden space-y-2">
+                        <button onclick="captureInboundPhoto()" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-camera mr-2"></i>Capture Photo
+                        </button>
+                        <button onclick="stopInboundCamera()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-stop mr-2"></i>Stop Camera
+                        </button>
+                    </div>
+                </div>
+                <div id="inboundCameraError" class="hidden text-red-600 mt-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="inboundCameraErrorMessage">Camera access denied or not available</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal for Outbound -->
+    <div id="outboundCameraModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Take Photo - Outbound Item</h2>
+                <button onclick="closeOutboundCameraModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <video id="outboundCameraVideo" autoplay playsinline class="w-full max-w-md mx-auto rounded mb-4" style="display: none;"></video>
+                <canvas id="outboundCameraCanvas" class="hidden"></canvas>
+                <div id="outboundCameraControls" class="space-y-4">
+                    <button onclick="startOutboundCamera()" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-video mr-2"></i>Start Camera
+                    </button>
+                    <div id="outboundCaptureControls" class="hidden space-y-2">
+                        <button onclick="captureOutboundPhoto()" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-camera mr-2"></i>Capture Photo
+                        </button>
+                        <button onclick="stopOutboundCamera()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-stop mr-2"></i>Stop Camera
+                        </button>
+                    </div>
+                </div>
+                <div id="outboundCameraError" class="hidden text-red-600 mt-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="outboundCameraErrorMessage">Camera access denied or not available</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal for Customer Form Items -->
+    <div id="customerItemCameraModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Take Photo - Customer Item</h2>
+                <button onclick="closeCustomerItemCameraModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <video id="customerItemCameraVideo" autoplay playsinline class="w-full max-w-md mx-auto rounded mb-4" style="display: none;"></video>
+                <canvas id="customerItemCameraCanvas" class="hidden"></canvas>
+                <div id="customerItemCameraControls" class="space-y-4">
+                    <button onclick="startCustomerItemCamera()" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-video mr-2"></i>Start Camera
+                    </button>
+                    <div id="customerItemCaptureControls" class="hidden space-y-2">
+                        <button onclick="captureCustomerItemPhoto()" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-camera mr-2"></i>Capture Photo
+                        </button>
+                        <button onclick="stopCustomerItemCamera()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-stop mr-2"></i>Stop Camera
+                        </button>
+                    </div>
+                </div>
+                <div id="customerItemCameraError" class="hidden text-red-600 mt-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="customerItemCameraErrorMessage">Camera access denied or not available</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 <script>
 const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name: 'Test User', role: 'admin' };
@@ -389,6 +637,14 @@ let quotationItems = [];
 let labItems = [];
 let collectionHistory = [];
 let html5QrCode = null;
+let inboundImageData = null;
+let outboundImageData = null;
+let inboundCameraStream = null;
+let outboundCameraStream = null;
+let customerItemCameraStream = null;
+let currentCustomerItemCounter = null;
+let customerItems = [];
+let customerItemCounter = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
     setupUserInfo();
@@ -398,6 +654,16 @@ document.addEventListener('DOMContentLoaded', function() {
     renderLabList();
     renderInboundList();
     renderOutboundList();
+    
+    // Add escape key handler to close scanner modal
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const scannerModal = document.getElementById('scannerModal');
+            if (scannerModal && scannerModal.classList.contains('show')) {
+                closeScannerModal();
+            }
+        }
+    });
 });
 
 function setupUserInfo() {
@@ -650,7 +916,7 @@ function renderInboundList() {
             <thead class="bg-gray-50 sticky top-0">
                 <tr class="border-b border-gray-200">
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">WO #</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Quote Request</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
@@ -665,7 +931,12 @@ function renderInboundList() {
                 ${inboundItems.map((item, index) => `
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-4 py-3 text-sm text-gray-900">${item.companyName}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">${item.woNumber || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            ${item.quoteRequest ? 
+                                `<span class="px-2 py-1 rounded text-xs ${item.quoteRequest === 'Yes' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${item.quoteRequest}</span>` : 
+                                '-'
+                            }
+                        </td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
@@ -814,6 +1085,7 @@ function showAddInboundModal() {
 function closeInboundModal() {
     document.getElementById('inboundModal').classList.remove('show');
     document.getElementById('inboundForm').reset();
+    resetInboundImageUpload();
 }
 
 function showAddOutboundModal() {
@@ -823,6 +1095,606 @@ function showAddOutboundModal() {
 function closeOutboundModal() {
     document.getElementById('outboundModal').classList.remove('show');
     document.getElementById('outboundForm').reset();
+    resetOutboundImageUpload();
+}
+
+// Warehouse Image handling functions
+function handleInboundImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image file is too large. Please choose a file smaller than 5MB.');
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        inboundImageData = e.target.result;
+        showInboundImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+}
+
+function showInboundImagePreview(imageData) {
+    const preview = document.getElementById('inboundImagePreview');
+    const uploadArea = document.getElementById('inboundImageUploadArea');
+    const previewImg = document.getElementById('inboundPreviewImg');
+    
+    previewImg.src = imageData;
+    preview.classList.remove('hidden');
+    uploadArea.classList.add('hidden');
+}
+
+function removeInboundImage() {
+    inboundImageData = null;
+    const preview = document.getElementById('inboundImagePreview');
+    const uploadArea = document.getElementById('inboundImageUploadArea');
+    const fileInput = document.getElementById('inboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+function resetInboundImageUpload() {
+    inboundImageData = null;
+    const preview = document.getElementById('inboundImagePreview');
+    const uploadArea = document.getElementById('inboundImageUploadArea');
+    const fileInput = document.getElementById('inboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+function handleOutboundImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image file is too large. Please choose a file smaller than 5MB.');
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        outboundImageData = e.target.result;
+        showOutboundImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+}
+
+function showOutboundImagePreview(imageData) {
+    const preview = document.getElementById('outboundImagePreview');
+    const uploadArea = document.getElementById('outboundImageUploadArea');
+    const previewImg = document.getElementById('outboundPreviewImg');
+    
+    previewImg.src = imageData;
+    preview.classList.remove('hidden');
+    uploadArea.classList.add('hidden');
+}
+
+function removeOutboundImage() {
+    outboundImageData = null;
+    const preview = document.getElementById('outboundImagePreview');
+    const uploadArea = document.getElementById('outboundImageUploadArea');
+    const fileInput = document.getElementById('outboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+function resetOutboundImageUpload() {
+    outboundImageData = null;
+    const preview = document.getElementById('outboundImagePreview');
+    const uploadArea = document.getElementById('outboundImageUploadArea');
+    const fileInput = document.getElementById('outboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+// Camera functions for warehouse
+function openInboundCameraModal() {
+    document.getElementById('inboundCameraModal').classList.add('show');
+    resetInboundCameraModal();
+}
+
+function closeInboundCameraModal() {
+    stopInboundCamera();
+    document.getElementById('inboundCameraModal').classList.remove('show');
+}
+
+function resetInboundCameraModal() {
+    const video = document.getElementById('inboundCameraVideo');
+    const canvas = document.getElementById('inboundCameraCanvas');
+    const controls = document.getElementById('inboundCameraControls');
+    const captureControls = document.getElementById('inboundCaptureControls');
+    const error = document.getElementById('inboundCameraError');
+    
+    video.style.display = 'none';
+    canvas.classList.add('hidden');
+    controls.style.display = 'block';
+    captureControls.classList.add('hidden');
+    error.classList.add('hidden');
+}
+
+async function startInboundCamera() {
+    try {
+        const video = document.getElementById('inboundCameraVideo');
+        const controls = document.getElementById('inboundCameraControls');
+        const captureControls = document.getElementById('inboundCaptureControls');
+        const error = document.getElementById('inboundCameraError');
+        
+        inboundCameraStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
+        });
+        
+        video.srcObject = inboundCameraStream;
+        video.style.display = 'block';
+        controls.style.display = 'none';
+        captureControls.classList.remove('hidden');
+        error.classList.add('hidden');
+        
+    } catch (err) {
+        console.error('Camera access error:', err);
+        const error = document.getElementById('inboundCameraError');
+        const errorMessage = document.getElementById('inboundCameraErrorMessage');
+        
+        if (err.name === 'NotAllowedError') {
+            errorMessage.textContent = 'Camera access denied. Please allow camera access and try again.';
+        } else if (err.name === 'NotFoundError') {
+            errorMessage.textContent = 'No camera found on this device.';
+        } else {
+            errorMessage.textContent = 'Camera access failed. Please try again.';
+        }
+        
+        error.classList.remove('hidden');
+    }
+}
+
+function captureInboundPhoto() {
+    const video = document.getElementById('inboundCameraVideo');
+    const canvas = document.getElementById('inboundCameraCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    inboundImageData = imageData;
+    showInboundImagePreview(imageData);
+    
+    closeInboundCameraModal();
+    alert('Photo captured successfully!');
+}
+
+function stopInboundCamera() {
+    if (inboundCameraStream) {
+        inboundCameraStream.getTracks().forEach(track => track.stop());
+        inboundCameraStream = null;
+    }
+    
+    const video = document.getElementById('inboundCameraVideo');
+    video.srcObject = null;
+    resetInboundCameraModal();
+}
+
+function openOutboundCameraModal() {
+    document.getElementById('outboundCameraModal').classList.add('show');
+    resetOutboundCameraModal();
+}
+
+function closeOutboundCameraModal() {
+    stopOutboundCamera();
+    document.getElementById('outboundCameraModal').classList.remove('show');
+}
+
+function resetOutboundCameraModal() {
+    const video = document.getElementById('outboundCameraVideo');
+    const canvas = document.getElementById('outboundCameraCanvas');
+    const controls = document.getElementById('outboundCameraControls');
+    const captureControls = document.getElementById('outboundCaptureControls');
+    const error = document.getElementById('outboundCameraError');
+    
+    video.style.display = 'none';
+    canvas.classList.add('hidden');
+    controls.style.display = 'block';
+    captureControls.classList.add('hidden');
+    error.classList.add('hidden');
+}
+
+async function startOutboundCamera() {
+    try {
+        const video = document.getElementById('outboundCameraVideo');
+        const controls = document.getElementById('outboundCameraControls');
+        const captureControls = document.getElementById('outboundCaptureControls');
+        const error = document.getElementById('outboundCameraError');
+        
+        outboundCameraStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
+        });
+        
+        video.srcObject = outboundCameraStream;
+        video.style.display = 'block';
+        controls.style.display = 'none';
+        captureControls.classList.remove('hidden');
+        error.classList.add('hidden');
+        
+    } catch (err) {
+        console.error('Camera access error:', err);
+        const error = document.getElementById('outboundCameraError');
+        const errorMessage = document.getElementById('outboundCameraErrorMessage');
+        
+        if (err.name === 'NotAllowedError') {
+            errorMessage.textContent = 'Camera access denied. Please allow camera access and try again.';
+        } else if (err.name === 'NotFoundError') {
+            errorMessage.textContent = 'No camera found on this device.';
+        } else {
+            errorMessage.textContent = 'Camera access failed. Please try again.';
+        }
+        
+        error.classList.remove('hidden');
+    }
+}
+
+function captureOutboundPhoto() {
+    const video = document.getElementById('outboundCameraVideo');
+    const canvas = document.getElementById('outboundCameraCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    outboundImageData = imageData;
+    showOutboundImagePreview(imageData);
+    
+    closeOutboundCameraModal();
+    alert('Photo captured successfully!');
+}
+
+function stopOutboundCamera() {
+    if (outboundCameraStream) {
+        outboundCameraStream.getTracks().forEach(track => track.stop());
+        outboundCameraStream = null;
+    }
+    
+    const video = document.getElementById('outboundCameraVideo');
+    video.srcObject = null;
+    resetOutboundCameraModal();
+}
+
+// Customer Item Camera functions
+function openCustomerItemCameraModal(counter) {
+    currentCustomerItemCounter = counter;
+    document.getElementById('customerItemCameraModal').classList.add('show');
+    resetCustomerItemCameraModal();
+}
+
+function closeCustomerItemCameraModal() {
+    stopCustomerItemCamera();
+    document.getElementById('customerItemCameraModal').classList.remove('show');
+    resetCustomerItemCameraModal();
+}
+
+function resetCustomerItemCameraModal() {
+    const video = document.getElementById('customerItemCameraVideo');
+    const canvas = document.getElementById('customerItemCameraCanvas');
+    const controls = document.getElementById('customerItemCameraControls');
+    const captureControls = document.getElementById('customerItemCaptureControls');
+    const error = document.getElementById('customerItemCameraError');
+    
+    video.style.display = 'none';
+    canvas.classList.add('hidden');
+    controls.classList.remove('hidden');
+    captureControls.classList.add('hidden');
+    error.classList.add('hidden');
+}
+
+function startCustomerItemCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            customerItemCameraStream = stream;
+            const video = document.getElementById('customerItemCameraVideo');
+            video.srcObject = stream;
+            video.style.display = 'block';
+            
+            document.getElementById('customerItemCameraControls').classList.add('hidden');
+            document.getElementById('customerItemCaptureControls').classList.remove('hidden');
+        })
+        .catch(err => {
+            console.error('Error accessing camera:', err);
+            document.getElementById('customerItemCameraError').classList.remove('hidden');
+            document.getElementById('customerItemCameraErrorMessage').textContent = 
+                'Camera access denied or not available. Please check your camera permissions.';
+        });
+}
+
+function captureCustomerItemPhoto() {
+    const video = document.getElementById('customerItemCameraVideo');
+    const canvas = document.getElementById('customerItemCameraCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Store the image data for the current customer item
+    const item = customerItems.find(i => i.counter == currentCustomerItemCounter);
+    if (item) {
+        item.imageData = imageData;
+    }
+    
+    showCustomerItemImagePreview(imageData, currentCustomerItemCounter);
+    
+    closeCustomerItemCameraModal();
+    alert('Photo captured successfully!');
+}
+
+function stopCustomerItemCamera() {
+    if (customerItemCameraStream) {
+        customerItemCameraStream.getTracks().forEach(track => track.stop());
+        customerItemCameraStream = null;
+    }
+    
+    const video = document.getElementById('customerItemCameraVideo');
+    video.srcObject = null;
+    resetCustomerItemCameraModal();
+}
+
+// Customer Form functions
+function showCustomerForm() {
+    document.getElementById('customerFormModal').classList.add('show');
+    resetCustomerForm();
+    addCustomerItem(); // Add first item automatically
+}
+
+function closeCustomerForm() {
+    document.getElementById('customerFormModal').classList.remove('show');
+    resetCustomerForm();
+}
+
+function resetCustomerForm() {
+    document.getElementById('customerForm').reset();
+    customerItems = [];
+    customerItemCounter = 0;
+    document.getElementById('customerItemsList').innerHTML = '';
+}
+
+function addCustomerItem() {
+    customerItemCounter++;
+    const itemId = `customerItem_${customerItemCounter}`;
+    
+    const itemHtml = `
+        <div id="${itemId}" class="bg-white p-4 rounded-lg border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-md font-semibold text-gray-800">Item ${customerItemCounter}</h4>
+                <button type="button" onclick="removeCustomerItem('${itemId}')" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Make *</label>
+                    <input type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Manufacturer" name="make_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                    <input type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Model Number" name="model_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number *</label>
+                    <input type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Serial Number" name="serial_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                    <input type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Barcode" name="barcode_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center">
+                        <input type="file" accept="image/*" class="hidden" onchange="handleCustomerItemImageUpload(event, '${itemId}')" id="customerItemImage_${customerItemCounter}">
+                        <div id="customerItemImagePreview_${customerItemCounter}" class="hidden mb-2">
+                            <img id="customerItemPreviewImg_${customerItemCounter}" class="max-w-full max-h-32 mx-auto rounded" alt="Item preview">
+                            <button type="button" onclick="removeCustomerItemImage('${customerItemCounter}')" class="mt-1 text-red-500 hover:text-red-700 text-xs">
+                                <i class="fas fa-trash mr-1"></i>Remove
+                            </button>
+                        </div>
+                        <div id="customerItemImageUploadArea_${customerItemCounter}" class="space-y-2">
+                            <div class="cursor-pointer" onclick="document.getElementById('customerItemImage_${customerItemCounter}').click()">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-1"></i>
+                                <p class="text-gray-600 text-sm">Upload Image</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-2">
+                                <button type="button" onclick="openCustomerItemCameraModal('${customerItemCounter}')" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">
+                                    <i class="fas fa-camera mr-1"></i>Take Photo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+                    <textarea class="w-full border border-gray-300 rounded px-3 py-2" rows="2" placeholder="Any special requirements" name="instructions_${customerItemCounter}"></textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('customerItemsList').insertAdjacentHTML('beforeend', itemHtml);
+    customerItems.push({
+        id: itemId,
+        counter: customerItemCounter,
+        imageData: null
+    });
+}
+
+function removeCustomerItem(itemId) {
+    const itemElement = document.getElementById(itemId);
+    if (itemElement) {
+        itemElement.remove();
+        customerItems = customerItems.filter(item => item.id !== itemId);
+    }
+}
+
+function handleCustomerItemImageUpload(event, itemId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image file is too large. Please choose a file smaller than 5MB.');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const counter = itemId.split('_')[1];
+        const item = customerItems.find(i => i.id === itemId);
+        if (item) {
+            item.imageData = e.target.result;
+        }
+        showCustomerItemImagePreview(e.target.result, counter);
+    };
+    reader.readAsDataURL(file);
+}
+
+function showCustomerItemImagePreview(imageData, counter) {
+    const preview = document.getElementById(`customerItemImagePreview_${counter}`);
+    const uploadArea = document.getElementById(`customerItemImageUploadArea_${counter}`);
+    const previewImg = document.getElementById(`customerItemPreviewImg_${counter}`);
+    
+    previewImg.src = imageData;
+    preview.classList.remove('hidden');
+    uploadArea.classList.add('hidden');
+}
+
+function removeCustomerItemImage(counter) {
+    const item = customerItems.find(i => i.counter == counter);
+    if (item) {
+        item.imageData = null;
+    }
+    
+    const preview = document.getElementById(`customerItemImagePreview_${counter}`);
+    const uploadArea = document.getElementById(`customerItemImageUploadArea_${counter}`);
+    const fileInput = document.getElementById(`customerItemImage_${counter}`);
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+function saveCustomerForm(event) {
+    event.preventDefault();
+    
+    if (customerItems.length === 0) {
+        alert('Please add at least one item.');
+        return;
+    }
+    
+    // Get customer information
+    const customerInfo = {
+        companyName: document.getElementById('customerCompanyName').value,
+        quoteRequest: document.getElementById('customerQuoteRequest').value,
+        address: document.getElementById('customerAddress').value,
+        contactName: document.getElementById('customerContactName').value,
+        phoneNumber: document.getElementById('customerPhoneNumber').value,
+        email: document.getElementById('customerEmail').value,
+        poNumber: document.getElementById('customerPoNumber').value,
+        workRequired: document.getElementById('customerWorkRequired').value,
+        certType: document.getElementById('customerCertType').value,
+        calPoints: document.getElementById('customerCalPoints').value
+    };
+    
+    // Process each item
+    customerItems.forEach(item => {
+        const counter = item.counter;
+        const make = document.querySelector(`input[name="make_${counter}"]`).value;
+        const model = document.querySelector(`input[name="model_${counter}"]`).value;
+        const serialNumber = document.querySelector(`input[name="serial_${counter}"]`).value;
+        const barcode = document.querySelector(`input[name="barcode_${counter}"]`).value;
+        const instructions = document.querySelector(`textarea[name="instructions_${counter}"]`).value;
+        
+        // Create inbound item
+        const inboundItem = {
+            id: Date.now() + Math.random(),
+            companyName: customerInfo.companyName,
+            quoteRequest: customerInfo.quoteRequest,
+            make: make,
+            model: model,
+            serialNumber: serialNumber,
+            barcode: barcode,
+            contactPerson: customerInfo.contactName,
+            phoneNumber: customerInfo.phoneNumber,
+            email: customerInfo.email,
+            poNumber: customerInfo.poNumber,
+            address: customerInfo.address,
+            workRequired: customerInfo.workRequired,
+            certType: customerInfo.certType,
+            calPoints: customerInfo.calPoints,
+            instructions: instructions,
+            image: item.imageData || null,
+            receivedDate: new Date().toISOString(),
+            status: 'inbound'
+        };
+        
+        inboundItems.push(inboundItem);
+        
+        // Add to items database if it doesn't exist
+        const items = JSON.parse(localStorage.getItem('items') || '[]');
+        const existingItem = items.find(i => i.serialNumber === serialNumber);
+        
+        if (!existingItem) {
+            const itemForDb = {
+                barcode: barcode || `WIKA${Date.now()}${Math.floor(Math.random() * 1000)}`,
+                make: make,
+                model: model,
+                serialNumber: serialNumber,
+                image: item.imageData || null
+            };
+            items.push(itemForDb);
+            localStorage.setItem('items', JSON.stringify(items));
+        }
+    });
+    
+    saveWarehouseData();
+    renderInboundList();
+    closeCustomerForm();
+    alert(`Successfully added ${customerItems.length} item(s) to Inbound!`);
 }
 
 function saveOutboundItem(event) {
@@ -930,7 +1802,8 @@ function saveInboundItem(event) {
             contactPerson: document.getElementById('contactPerson').value,
             phoneNumber: document.getElementById('phoneNumber').value,
             email: document.getElementById('email').value,
-            poNumber: document.getElementById('poNumber').value
+            poNumber: document.getElementById('poNumber').value,
+            image: inboundImageData || null
         };
         
         saveWarehouseData();
@@ -1026,6 +1899,7 @@ function saveInboundItem(event) {
         phoneNumber: document.getElementById('phoneNumber').value,
         email: document.getElementById('email').value,
         poNumber: document.getElementById('poNumber').value,
+        image: inboundImageData || null,
         receivedDate: new Date().toISOString(),
         status: 'inbound'
     };
@@ -1039,7 +1913,8 @@ function saveInboundItem(event) {
             barcode: barcode || `WIKA${Date.now()}${Math.floor(Math.random() * 1000)}`,
             make: make,
             model: model,
-            serialNumber: serialNumber
+            serialNumber: serialNumber,
+            image: inboundImageData || null
         };
         items.push(itemForDb);
         localStorage.setItem('items', JSON.stringify(items));
@@ -1338,10 +2213,29 @@ function showScannerModal() {
 }
 
 function closeScannerModal() {
-    if (html5QrCode) {
-        html5QrCode.stop().catch(err => console.log(err));
+    try {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                console.log('Scanner stopped successfully');
+            }).catch(err => {
+                console.log('Error stopping scanner:', err);
+            });
+        }
+    } catch (error) {
+        console.log('Error in closeScannerModal:', error);
     }
-    document.getElementById('scannerModal').classList.remove('show');
+    
+    // Always hide the modal regardless of scanner stop success
+    const modal = document.getElementById('scannerModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+    
+    // Clear the manual input
+    const manualInput = document.getElementById('manualBarcodeInput');
+    if (manualInput) {
+        manualInput.value = '';
+    }
 }
 
 function startScanner() {
