@@ -38,8 +38,6 @@
             <div class="border-b mb-6">
                 <nav class="flex -mb-px space-x-6" aria-label="Tabs">
                     <button id="tabSetup" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600">Setup</button>
-                    <button id="tabCalibrate" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">Calibrate</button>
-                    <button id="tabCertificate" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">Certificate</button>
                 </nav>
             </div>
 
@@ -186,7 +184,7 @@
                             </div>
 
                             <!-- Add Reference Button -->
-                            <button id="addReferenceBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center gap-2">
+                            <button id="addReferenceBtn" type="button" onclick="addReferenceEquipment()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                 </svg>
@@ -194,8 +192,8 @@
                             </button>
 
                             <div class="flex gap-3">
-                                <button id="calibrateBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Calibrate</button>
-                                <button id="resetSetupBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">Reset</button>
+                                <button id="calibrateBtn" type="button" onclick="goToCalibrate()" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Calibrate</button>
+                                <button id="resetSetupBtn" type="button" onclick="resetSetup()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">Reset</button>
                             </div>
                         </div>
                     </div>
@@ -1110,34 +1108,43 @@
         }
 
         function initializeTabs() {
-            document.getElementById('tabSetup').addEventListener('click', () => showPanel('setup'));
-            document.getElementById('tabCalibrate').addEventListener('click', () => showPanel('calibrate'));
-            document.getElementById('tabCertificate').addEventListener('click', () => showPanel('certificate'));
+            const tabSetup = document.getElementById('tabSetup');
+            if (tabSetup) tabSetup.addEventListener('click', () => showPanel('setup'));
         }
 
         function showPanel(panel) {
-            // Hide all panels
-            document.getElementById('panelSetup').classList.add('hidden');
-            document.getElementById('panelCalibrate').classList.add('hidden');
-            document.getElementById('panelCertificate').classList.add('hidden');
+            // Hide panels if they exist
+            const panelSetup = document.getElementById('panelSetup');
+            const panelCal = document.getElementById('panelCalibrate');
+            const panelCert = document.getElementById('panelCertificate');
+            if (panelSetup) panelSetup.classList.add('hidden');
+            if (panelCal) panelCal.classList.add('hidden');
+            if (panelCert) panelCert.classList.add('hidden');
 
-            // Remove active class from all tabs
-            document.getElementById('tabSetup').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
-            document.getElementById('tabCalibrate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
-            document.getElementById('tabCertificate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
+            // Reset tab classes if they exist
+            const tabSetupEl = document.getElementById('tabSetup');
+            const tabCalEl = document.getElementById('tabCalibrate');
+            const tabCertEl = document.getElementById('tabCertificate');
+            if (tabSetupEl) tabSetupEl.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
+            if (tabCalEl) tabCalEl.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
+            if (tabCertEl) tabCertEl.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700';
 
-            // Show selected panel and activate tab
+            // Show selected
             if (panel === 'setup') {
-                document.getElementById('panelSetup').classList.remove('hidden');
-                document.getElementById('tabSetup').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
+                if (panelSetup) panelSetup.classList.remove('hidden');
+                if (tabSetupEl) tabSetupEl.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
             } else if (panel === 'calibrate') {
-                document.getElementById('panelCalibrate').classList.remove('hidden');
-                document.getElementById('tabCalibrate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
-                generateCalibrationTables();
+                if (panelCal) {
+                    panelCal.classList.remove('hidden');
+                    generateCalibrationTables();
+                }
+                if (tabCalEl) tabCalEl.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
             } else if (panel === 'certificate') {
-                document.getElementById('panelCertificate').classList.remove('hidden');
-                document.getElementById('tabCertificate').className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
-                generateCertificate();
+                if (panelCert) {
+                    panelCert.classList.remove('hidden');
+                    generateCertificate();
+                }
+                if (tabCertEl) tabCertEl.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-600 text-indigo-600';
             }
         }
 
@@ -1160,13 +1167,57 @@
             }
         }
 
+        function normalizeStr(s){ return (s||'').toString().toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,''); }
+
         function goToCalibrate() {
-            // Save current setup so calibrate page can use it
-            saveSetup();
-            const make = encodeURIComponent(document.getElementById('make').value || '');
-            const model = encodeURIComponent(document.getElementById('model').value || '');
+            const makeVal = (document.getElementById('make').value || '').trim();
+            const modelVal = (document.getElementById('model').value || '').trim();
+            if (!makeVal || !modelVal) {
+                alert('Please select Make and Model before calibrating.');
+                return;
+            }
+            // Save current setup so calibrate page can use it (without alert)
+            saveSetup(true);
+            // Pre-resolve workbook lines from the Library and pass via sessionStorage as a fallback
+            try {
+                const saved = localStorage.getItem('electricalModelRegister');
+                if (saved) {
+                    const data = JSON.parse(saved) || {};
+                    const mLower = makeVal.toLowerCase();
+                    const modelLower = modelVal.toLowerCase();
+                    let ranges = [];
+                    if (data[makeVal] && data[makeVal][modelVal] && Array.isArray(data[makeVal][modelVal].testRanges)) {
+                        ranges = data[makeVal][modelVal].testRanges;
+                    } else {
+                        // broaden matching
+                        let makeKey = Object.keys(data).find(k => k.toLowerCase() === mLower) ||
+                                       Object.keys(data).find(k => normalizeStr(k) === normalizeStr(makeVal));
+                        if (!makeKey) {
+                            makeKey = Object.keys(data).find(k => normalizeStr(k).includes(normalizeStr(makeVal)));
+                        }
+                        if (makeKey) {
+                            const models = data[makeKey] || {};
+                            let modelKey = Object.keys(models).find(k => k.toLowerCase() === modelLower) ||
+                                           Object.keys(models).find(k => normalizeStr(k) === normalizeStr(modelVal));
+                            if (!modelKey) {
+                                modelKey = Object.keys(models).find(k => normalizeStr(k).includes(normalizeStr(modelVal)) || normalizeStr(modelVal).includes(normalizeStr(k)));
+                            }
+                            if (modelKey && Array.isArray(models[modelKey].testRanges)) {
+                                ranges = models[modelKey].testRanges;
+                            }
+                        }
+                    }
+                    sessionStorage.setItem('calMake', makeVal);
+                    sessionStorage.setItem('calModel', modelVal);
+                    sessionStorage.setItem('calRanges', JSON.stringify(ranges || []));
+                }
+            } catch (e) {
+                // ignore
+            }
+            const make = encodeURIComponent(makeVal);
+            const model = encodeURIComponent(modelVal);
             const wo = encodeURIComponent(document.getElementById('woNumber').value || '');
-            window.location.href = `calibrate.html?make=${make}&model=${model}&wo=${wo}`;
+            window.location.href = `calibrate.html?make=${make}&model=${model}&wo=${wo}#workbook`;
         }
 
         function initializeCalibration() {
@@ -1252,7 +1303,7 @@
             document.getElementById(`${type}Corr_${index}`).textContent = correction.toFixed(6);
         }
 
-        function saveSetup() {
+        function saveSetup(suppressAlert) {
             const setupData = {
                 technician: document.getElementById('technician').value,
                 reportOn: document.getElementById('reportOn').value,
@@ -1277,7 +1328,9 @@
 
             calibrationData.setup = setupData;
             localStorage.setItem('electricalCalibrationData', JSON.stringify(calibrationData));
-            alert('Setup saved successfully!');
+            if (!suppressAlert) {
+                alert('Setup saved successfully!');
+            }
         }
 
 

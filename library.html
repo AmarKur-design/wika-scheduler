@@ -213,7 +213,10 @@
                     </div>
                 </div>
                 
-                <div class="flex justify-end mt-6">
+                <div class="flex justify-end gap-3 mt-6">
+                    <button id="saveWorkbookBtn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Save Workbook
+                    </button>
                     <button id="closeWorkbookModalBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
                         Close
                     </button>
@@ -291,6 +294,7 @@
             document.getElementById('processExcelUpload').addEventListener('click', processExcelUpload);
             document.getElementById('closeWorkbookModal').addEventListener('click', hideWorkbookModal);
             document.getElementById('closeWorkbookModalBtn').addEventListener('click', hideWorkbookModal);
+            document.getElementById('saveWorkbookBtn').addEventListener('click', saveWorkbookChanges);
             // Delegate table buttons
             document.addEventListener('click', (e) => {
                 const viewBtn = e.target && e.target.closest && e.target.closest('.viewWorkbookBtn');
@@ -308,6 +312,55 @@
                     return;
                 }
             });
+        }
+
+        function saveWorkbookChanges() {
+            // Determine which make/model is currently open by reading the title
+            const title = document.getElementById('workbookModalTitle').textContent || '';
+            const parts = title.replace(' - Workbook','').split(' ');
+            const model = parts.pop();
+            const make = parts.join(' ').trim();
+            if (!make || !model) {
+                alert('Could not determine Make/Model to save.');
+                return;
+            }
+            const rows = [];
+            const tbody = document.querySelector('#workbookAsFound table tbody');
+            if (tbody) {
+                Array.from(tbody.children).forEach(tr => {
+                    const inputs = tr.querySelectorAll('input, select.unit-select');
+                    if (inputs.length >= 8) {
+                        const [rangeEl, unitEl, resEl, m1, m2, m3, m4, m5] = inputs;
+                        const unitVal = unitEl.tagName.toLowerCase() === 'select' ? unitEl.value : unitEl.value;
+                        const entry = {
+                            range: rangeEl.value.trim(),
+                            unit: unitVal.trim(),
+                            resolution: resEl.value.trim(),
+                            meas1: m1.value,
+                            meas2: m2.value,
+                            meas3: m3.value,
+                            meas4: m4.value,
+                            meas5: m5.value
+                        };
+                        if (entry.range || entry.unit || entry.resolution) rows.push(entry);
+                    }
+                });
+            }
+            if (!electricalModelRegister[make]) electricalModelRegister[make] = {};
+            if (!electricalModelRegister[make][model]) electricalModelRegister[make][model] = { description: '', testRanges: [] };
+            electricalModelRegister[make][model].testRanges = rows;
+            localStorage.setItem('electricalModelRegister', JSON.stringify(electricalModelRegister));
+            populateLibraryTable();
+            // Toast
+            let toast = document.getElementById('saveConfirmation');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'saveConfirmation';
+                toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow z-50';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = 'Workbook saved!';
+            setTimeout(() => { if (toast && toast.parentNode) toast.parentNode.removeChild(toast); }, 1500);
         }
 
         function populateLibraryTable() {
@@ -331,8 +384,8 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             ${hasWorkbook ? 
-                                `<button class="viewWorkbookBtn text-blue-600 hover:text-blue-800 font-medium" data-make="${make}" data-model="${model}">View Workbook</button>` :
-                                `<button class="uploadWorkbookBtn text-green-600 hover:text-green-800 font-medium" data-make="${make}" data-model="${model}">Upload Workbook</button>`
+                                `<button class="viewWorkbookBtn text-blue-600 hover:text-blue-800 font-medium" data-make="${make}" data-model="${model}" onclick="showWorkbook('${make}','${model}');return false;">View Workbook</button>` :
+                                `<button class="uploadWorkbookBtn text-green-600 hover:text-green-800 font-medium" data-make="${make}" data-model="${model}" onclick="uploadWorkbookForModel('${make}','${model}');return false;">Upload Workbook</button>`
                             }
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -391,6 +444,27 @@
             asFoundWorkbook.innerHTML = generateWorkbookHTML(modelData.testRanges, 'workbook');
         }
 
+        // Common unit options for electrical workbook lines
+        const UNIT_OPTIONS = [
+            'mV DC','V DC','VDC Diode',
+            'mV @ 50Hz AC','mV @ 10kHz AC','V @ 50Hz AC','V @10kHz AC',
+            'Ω','kΩ','MΩ',
+            'µA DC','mA DC','A DC',
+            'µA @ 50Hz AC','µA @ 10kHz AC','mA @ 50Hz AC','mA @ 10kHz AC','A @ 50Hz AC','A @ 5kHz AC','A @ 1kHz AC',
+            'Hz @ 3V','kHz @ 3V',
+            'nF','µF','mF',
+            '°C'
+        ];
+
+        function unitSelectHTML(currentValue) {
+            const opts = UNIT_OPTIONS.map(u => `<option value="${u}"${currentValue===u? ' selected':''}>${u}</option>`).join('');
+            const customSelected = currentValue && !UNIT_OPTIONS.includes(currentValue) ? 'selected' : '';
+            return `<select class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded unit-select">
+                        ${opts}
+                        ${currentValue && !UNIT_OPTIONS.includes(currentValue) ? `<option value="${currentValue}" ${customSelected}>${currentValue}</option>`: ''}
+                    </select>`;
+        }
+
         function generateWorkbookHTML(testRanges, type) {
             let html = `
                 <div class="overflow-x-auto">
@@ -404,6 +478,7 @@
                                 <th class="px-2 py-1 text-left">Meas2</th>
                                 <th class="px-2 py-1 text-left">Meas3</th>
                                 <th class="px-2 py-1 text-left">Meas4</th>
+                                <th class="px-2 py-1 text-left">Meas5</th>
                                 <th class="px-2 py-1 text-left w-10"></th>
                             </tr>
                         </thead>
@@ -414,12 +489,13 @@
                 html += `
                     <tr class="border-b">
                         <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.range || ''}" placeholder="Range"></td>
-                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.unit || ''}" placeholder="Unit"></td>
+                        <td class="px-2 py-1">${unitSelectHTML(range.unit || '')}</td>
                         <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.resolution || ''}" placeholder="Resolution"></td>
                         <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas1 || ''}" placeholder="0.000000"></td>
                         <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas2 || ''}" placeholder="0.000000"></td>
                         <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas3 || ''}" placeholder="0.000000"></td>
                         <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas4 || ''}" placeholder="0.000000"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" value="${range.meas5 || ''}" placeholder="0.000000"></td>
                         <td class="px-2 py-1 text-right"><button class="delRowBtn text-red-600 hover:text-red-800 text-sm" title="Remove">×</button></td>
                     </tr>
                 `;
@@ -443,8 +519,9 @@
                     tr.className = 'border-b';
                     tr.innerHTML = `
                         <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="Range"></td>
-                        <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="Unit"></td>
+                        <td class="px-2 py-1">${unitSelectHTML('')}</td>
                         <td class="px-2 py-1"><input type="text" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="Resolution"></td>
+                        <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
                         <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
                         <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
                         <td class="px-2 py-1"><input type="number" step="0.000001" class="w-full px-1 py-0.5 text-xs border border-gray-300 rounded" placeholder="0.000000"></td>
@@ -568,22 +645,19 @@
         }
 
         function showWorkbook(make, model) {
-            const modelData = electricalModelRegister[make][model];
-            if (!modelData.testRanges) {
-                alert('No workbook data available for this model');
-                return;
+            try {
+                const modelData = (electricalModelRegister[make] && electricalModelRegister[make][model]) ? electricalModelRegister[make][model] : { testRanges: [] };
+                const modal = document.getElementById('workbookModal');
+                const title = document.getElementById('workbookModalTitle');
+                const asFoundDiv = document.getElementById('workbookAsFound');
+                title.textContent = `${make} ${model} - Workbook`;
+                const rows = Array.isArray(modelData.testRanges) ? modelData.testRanges : [];
+                asFoundDiv.innerHTML = generateWorkbookHTML(rows, 'workbook');
+                modal.classList.remove('hidden');
+            } catch (err) {
+                console.error('showWorkbook error:', err);
+                alert('Unable to open workbook.');
             }
-            
-            const modal = document.getElementById('workbookModal');
-            const title = document.getElementById('workbookModalTitle');
-            const asFoundDiv = document.getElementById('workbookAsFound');
-            const asLeftDiv = document.getElementById('workbookAsLeft');
-            
-            title.textContent = `${make} ${model} - Workbook`;
-            asFoundDiv.innerHTML = generateWorkbookHTML(modelData.testRanges, 'asFound');
-            asLeftDiv.innerHTML = generateWorkbookHTML(modelData.testRanges, 'asLeft');
-            
-            modal.classList.remove('hidden');
         }
 
         function hideWorkbookModal() {

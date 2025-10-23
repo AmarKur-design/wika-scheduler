@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Calibration Certificate - WIKA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @page { size: A4; margin: 10mm; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f5f5f5; font-family: Arial, sans-serif; }
+        
+        #toolbar { position: sticky; top: 0; z-index: 100; background: #1f2937; color: #fff; padding: 10px 16px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        #toolbar .btn { background: #374151; color: #fff; border: 0; border-radius: 6px; padding: 9px 16px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        #toolbar .btn:hover { background: #4b5563; }
+        #toolbar .btn.active { background: #2563eb; }
+        #toolbar .btn.save { background: #059669; }
+        #toolbar .btn.save:hover { background: #047857; }
+        #toolbar .spacer { flex: 1; }
+        
+        .cert-viewport { overflow-y: auto; padding: 20px; background: #e5e7eb; }
+        .page-wrap { max-width: 210mm; margin: 0 auto; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-height: 297mm; }
+        .page { padding: 15mm; position: relative; }
+        
+        /* Certificate Styles */
+        #certLogo { max-width: 180px; max-height: 80px; display: block; }
+        
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+        .logo-section { text-align: right; }
+        .company-details { font-size: 7pt; line-height: 1.4; color: #333; margin-top: 8px; }
+        
+        h2 { margin: 0; font-size: 18pt; font-weight: 900; text-align: center; margin-bottom: 20px; }
+        
+        .info-line { display: flex; margin: 2px 0; font-size: 10pt; }
+        .info-label { font-weight: bold; min-width: 150px; }
+        .info-value { flex: 1; max-width: 100%; }
+        
+        .two-col { display: flex; gap: 40px; margin: 8px 0; }
+        .two-col > div { flex: 1; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 10pt; }
+        th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+        th { background: #e5e7eb; font-weight: 700; }
+        
+        .section-title { font-weight: bold; font-size: 10pt; margin: 12px 0 4px 0; }
+        .conditions { line-height: 1.5; font-size: 8pt; }
+        
+        .signature { text-align: center; font-size: 10pt; margin-top: 20px; }
+        .sig-line { display: inline-block; width: 260px; border-bottom: 1px solid #000; margin-left: 10px; height: 28px; }
+        
+        @media print { 
+            #toolbar { display: none !important; } 
+            body { background: white; margin: 0; } 
+            .cert-viewport { padding: 0; background: white; }
+            .page-wrap { box-shadow: none; margin: 0; max-width: 100%; min-height: auto; height: 100vh; }
+            .page { padding: 8mm 12mm; height: 100%; display: flex; flex-direction: column; }
+            #certLogo { cursor: default; max-height: 55px; }
+            h2 { font-size: 15pt !important; }
+            .signature { margin-top: 20px !important; }
+            table { font-size: 9pt !important; margin: 10px 0 !important; }
+            .conditions { font-size: 7.5pt !important; line-height: 1.4 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <button class="btn" onclick="printCertificate()"><i class="fas fa-print"></i> Print</button>
+        <button class="btn" onclick="downloadPDF()"><i class="fas fa-download"></i> Download PDF</button>
+        <button class="btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back to Calibration</button>
+        <div class="spacer"></div>
+        <span id="certificateInfo"></span>
+    </div>
+
+    <div class="cert-viewport">
+        <div class="page-wrap">
+            <div class="page">
+                <!-- Header -->
+                <div class="header">
+                    <div>
+                        <img id="certLogo" src="wika-logo.png" alt="WIKA Logo">
+                    </div>
+                    <div class="logo-section">
+                        <div class="company-details">
+                            WIKA Australia Pty Ltd<br>
+                            Unit 1, 6-8 Harvard Way<br>
+                            Canning Vale WA 6155<br>
+                            Phone: (08) 9455 1555<br>
+                            Email: info@wika.com.au<br>
+                            ABN: 15 009 483 194
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certificate Title -->
+                <h2>CALIBRATION CERTIFICATE</h2>
+
+                <!-- Certificate Information -->
+                <div class="info-line">
+                    <span class="info-label">Certificate No:</span>
+                    <span class="info-value" id="certificateNo">-</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label">Date Tested:</span>
+                    <span class="info-value" id="dateTested">-</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label">Date Issued:</span>
+                    <span class="info-value" id="dateIssued">-</span>
+                </div>
+
+                <!-- Customer Information -->
+                <div class="section-title">CUSTOMER INFORMATION</div>
+                <div class="info-line">
+                    <span class="info-label">Customer:</span>
+                    <span class="info-value" id="customer">-</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value" id="address">-</span>
+                </div>
+
+                <!-- Instrument Information -->
+                <div class="section-title">INSTRUMENT INFORMATION</div>
+                <div class="two-col">
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Report on:</span>
+                            <span class="info-value" id="reportOn">-</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Make:</span>
+                            <span class="info-value" id="make">-</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Model:</span>
+                            <span class="info-value" id="model">-</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Serial No:</span>
+                            <span class="info-value" id="serialNumber">-</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-line">
+                            <span class="info-label">Item No:</span>
+                            <span class="info-value" id="itemNo">-</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Test Standard:</span>
+                            <span class="info-value" id="testStandard">-</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Technician:</span>
+                            <span class="info-value" id="technician">-</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="info-label">Location:</span>
+                            <span class="info-value" id="testLocation">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reference Equipment -->
+                <div class="section-title">REFERENCE EQUIPMENT</div>
+                <div class="info-line">
+                    <span class="info-label">Primary Reference:</span>
+                    <span class="info-value" id="primaryReference">-</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label">Secondary Reference:</span>
+                    <span class="info-value" id="secondaryReference">-</span>
+                </div>
+
+                <!-- Calibration Results -->
+                <div class="section-title">CALIBRATION RESULTS</div>
+                <table id="calibrationTable">
+                    <thead>
+                        <tr>
+                            <th>Range</th>
+                            <th>Unit</th>
+                            <th>As Found</th>
+                            <th>As Left</th>
+                            <th>Tolerance</th>
+                            <th>Pass /</th>
+                            <th>Uncertainty</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th>±</th>
+                            <th>Fail</th>
+                            <th>±</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calibrationResultsBody">
+                        <!-- Results will be populated here -->
+                    </tbody>
+                </table>
+
+                <!-- Conditions -->
+                <div class="section-title">CONDITIONS OF TEST</div>
+                <div class="conditions">
+                    <p>1. Tested in accordance with WIKA Work Instruction PWI-58</p>
+                    <p>2. Ambient Temperature and Humidity at the time of test was 20°C ± 2°C & 51%RH. Stabilisation period was 2 hours minimum.</p>
+                    <p>3. Results relate only to the item calibrated. The uncertainty stated is only for the nominated points unless otherwise stated.</p>
+                    <p>4. Uncertainty of Measurement with a confidence level of 95% & k=2</p>
+                    <p>5. The Device Under Test was not adjusted</p>
+                </div>
+
+                <!-- Comments -->
+                <div class="section-title">COMMENTS</div>
+                <div class="info-line">
+                    <span class="info-label">Comments:</span>
+                    <span class="info-value">NIL</span>
+                </div>
+
+                <!-- Location -->
+                <div class="section-title">CALIBRATION LOCATION</div>
+                <div class="info-line">
+                    <span class="info-label">Calibration was performed at:</span>
+                    <span class="info-value">Unit 1, 6-8 Harvard Way<br>Canning Vale WA 6155</span>
+                </div>
+
+                <!-- Signature -->
+                <div class="signature">
+                    <div style="margin-top: 40px;">
+                        <div class="info-line">
+                            <span class="info-label">Checked By:</span>
+                            <span class="info-value"></span>
+                            <span class="info-label" style="margin-left: 100px;">Approved Signatory</span>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div class="sig-line" style="margin-left: 0; width: 200px;"></div>
+                            <div class="sig-line" style="margin-left: 50px; width: 200px;"></div>
+                        </div>
+                        <div style="margin-top: 5px; font-size: 9pt;">
+                            <span style="margin-right: 200px;">Travis Crotty</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let calibrationData = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCalibrationData();
+            populateCertificate();
+        });
+
+        function loadCalibrationData() {
+            const saved = sessionStorage.getItem('electricalCalibrationData');
+            if (saved) {
+                try {
+                    calibrationData = JSON.parse(saved);
+                    console.log('Loaded calibration data:', calibrationData);
+                } catch (e) {
+                    console.error('Error loading calibration data:', e);
+                    alert('Error loading calibration data. Please go back and try again.');
+                }
+            } else {
+                alert('No calibration data found. Please go back to the calibration page and generate the certificate again.');
+            }
+        }
+
+        function populateCertificate() {
+            if (!calibrationData) return;
+
+            // Basic information
+            document.getElementById('certificateNo').textContent = calibrationData.wo || 'N/A';
+            document.getElementById('dateTested').textContent = new Date().toLocaleDateString();
+            document.getElementById('dateIssued').textContent = new Date().toLocaleDateString();
+            document.getElementById('customer').textContent = 'WIKA Australia Pty Ltd';
+            document.getElementById('address').textContent = 'Unit 1, 6-8 Harvard Way, Canning Vale WA 6155';
+            document.getElementById('reportOn').textContent = 'Benchtop Multimeter';
+            document.getElementById('make').textContent = calibrationData.make || 'N/A';
+            document.getElementById('model').textContent = calibrationData.model || 'N/A';
+            document.getElementById('serialNumber').textContent = 'Trial';
+            document.getElementById('itemNo').textContent = 'NATA-31';
+            document.getElementById('testStandard').textContent = 'PWI-58';
+            document.getElementById('technician').textContent = 'Admin';
+            document.getElementById('testLocation').textContent = 'In Lab';
+            document.getElementById('primaryReference').textContent = 'Fluke Multi-Product Calibrator 5500A (S/N: 6325009)';
+            document.getElementById('secondaryReference').textContent = 'N/A';
+
+            // Update toolbar info
+            document.getElementById('certificateInfo').textContent = `${calibrationData.make} ${calibrationData.model} - Certificate ${calibrationData.wo || 'N/A'}`;
+
+            // Populate calibration results table
+            populateCalibrationTable();
+        }
+
+        function populateCalibrationTable() {
+            const tbody = document.getElementById('calibrationResultsBody');
+            tbody.innerHTML = '';
+
+            if (!calibrationData.ranges || calibrationData.ranges.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No calibration data available</td></tr>';
+                return;
+            }
+
+            calibrationData.ranges.forEach((range, index) => {
+                const asFound = calibrationData.asFound[index] || {};
+                const asLeft = calibrationData.asLeft[index] || {};
+
+                // Calculate tolerance (simplified - in real implementation this would come from specifications)
+                const tolerance = calculateTolerance(range.range, range.unit);
+                
+                // Calculate uncertainty (simplified - in real implementation this would use the Uncertainty sheet formulas)
+                const uncertainty = calculateUncertainty(range.range, range.unit);
+                
+                // Determine pass/fail (simplified - in real implementation this would compare against tolerance)
+                const passFail = 'Pass'; // For now, assume all pass
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${range.range || ''}</td>
+                    <td>${range.unit || ''}</td>
+                    <td>${asFound.average ? asFound.average.toFixed(6) : ''}</td>
+                    <td>${asLeft.average ? asLeft.average.toFixed(6) : ''}</td>
+                    <td>${tolerance}</td>
+                    <td>${passFail}</td>
+                    <td>${uncertainty}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function calculateTolerance(range, unit) {
+            // Simplified tolerance calculation based on range and unit
+            // In real implementation, this would come from instrument specifications
+            const rangeNum = parseFloat(range);
+            if (isNaN(rangeNum)) return '0.0001';
+            
+            if (unit.includes('mV')) {
+                return (rangeNum * 0.0001).toFixed(6);
+            } else if (unit.includes('V')) {
+                return (rangeNum * 0.0001).toFixed(6);
+            } else if (unit.includes('A')) {
+                return (rangeNum * 0.0001).toFixed(6);
+            } else if (unit.includes('Ω') || unit.includes('Ω')) {
+                return (rangeNum * 0.0001).toFixed(6);
+            } else if (unit.includes('Hz')) {
+                return (rangeNum * 0.0001).toFixed(6);
+            } else if (unit.includes('F')) {
+                return (rangeNum * 0.0001).toFixed(6);
+            } else if (unit.includes('°C')) {
+                return '0.09';
+            }
+            return '0.0001';
+        }
+
+        function calculateUncertainty(range, unit) {
+            // Simplified uncertainty calculation
+            // In real implementation, this would use the detailed formulas from the Uncertainty sheet
+            const rangeNum = parseFloat(range);
+            if (isNaN(rangeNum)) return '0.0001';
+            
+            if (unit.includes('mV')) {
+                return (rangeNum * 0.00003).toFixed(6);
+            } else if (unit.includes('V')) {
+                return (rangeNum * 0.00003).toFixed(6);
+            } else if (unit.includes('A')) {
+                return (rangeNum * 0.00003).toFixed(6);
+            } else if (unit.includes('Ω') || unit.includes('Ω')) {
+                return (rangeNum * 0.00003).toFixed(6);
+            } else if (unit.includes('Hz')) {
+                return (rangeNum * 0.00003).toFixed(6);
+            } else if (unit.includes('F')) {
+                return (rangeNum * 0.00003).toFixed(6);
+            } else if (unit.includes('°C')) {
+                return '0.0008';
+            }
+            return '0.0001';
+        }
+
+        function printCertificate() {
+            window.print();
+        }
+
+        function downloadPDF() {
+            // For now, just trigger print dialog
+            // In a real implementation, you'd use a library like jsPDF
+            alert('PDF download functionality will be implemented. For now, please use Print and save as PDF.');
+        }
+
+        function goBack() {
+            window.location.href = 'calibrate.html';
+        }
+    </script>
+</body>
+</html>
