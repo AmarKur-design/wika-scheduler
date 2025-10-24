@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbound Items - WIKA Calibration Scheduler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <img src="wika-logo.png" alt="WIKA Logo" class="h-8 w-auto mr-4">
+                    <h1 class="text-2xl font-bold text-gray-900">Inbound Items</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600">Welcome, <span id="userName">User</span></span>
+                    <button onclick="goBack()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Warehouse
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Actions Bar -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-blue-900">Inbound Items</h2>
+                        <p class="text-sm text-blue-700">Items received - route to Pending, Quotation, or Lab</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="showCustomerForm()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-users mr-2"></i>Customer Form
+                        </button>
+                        <button onclick="showAddInboundModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="inboundList" class="p-6">
+                <!-- Inbound items will be rendered here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Inbound Modal -->
+    <div id="addInboundModal" class="modal">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: 1200px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Add Inbound Item</h2>
+                <button onclick="closeAddInboundModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="inboundForm" onsubmit="saveInboundItem(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                        <input id="inboundCompanyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Company Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Order Number</label>
+                        <input id="inboundWoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="WO Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Make *</label>
+                        <input id="inboundMake" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Manufacturer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                        <input id="inboundModel" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Model Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number *</label>
+                        <input id="inboundSerialNumber" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Serial Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                        <div class="flex space-x-2">
+                            <input id="inboundBarcode" type="text" class="flex-1 border border-gray-300 rounded px-3 py-2" placeholder="Barcode">
+                            <button type="button" onclick="showScannerModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded">
+                                <i class="fas fa-qrcode"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                        <input id="inboundContactPerson" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contact Person">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input id="inboundPhoneNumber" type="tel" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Phone Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input id="inboundEmail" type="email" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Email">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">PO/Quote Number</label>
+                        <input id="inboundPoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="PO/Quote Number">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <textarea id="inboundAddress" class="w-full border border-gray-300 rounded px-3 py-2" rows="2" placeholder="Address"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Required</label>
+                        <select id="inboundWorkRequired" class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="">Select Work Type</option>
+                            <option value="Calibration">Calibration</option>
+                            <option value="Repair">Repair</option>
+                            <option value="Testing">Testing</option>
+                            <option value="Inspection">Inspection</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Certification Type</label>
+                        <select id="inboundCertType" class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="">Select Certification</option>
+                            <option value="TRACE">TRACE</option>
+                            <option value="NATA">NATA</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of Calibration Points</label>
+                        <input id="inboundCalPoints" type="number" min="1" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Number of points">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+                        <textarea id="inboundInstructions" class="w-full border border-gray-300 rounded px-3 py-2" rows="3" placeholder="Any special requirements"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            <input type="file" accept="image/*" class="hidden" onchange="handleInboundImageUpload(event)" id="inboundItemImage">
+                            <div id="inboundImagePreview" class="hidden mb-4">
+                                <img id="inboundPreviewImg" class="max-w-full max-h-48 mx-auto rounded" alt="Item preview">
+                                <button type="button" onclick="removeInboundImage()" class="mt-2 text-red-500 hover:text-red-700">
+                                    <i class="fas fa-trash mr-1"></i>Remove Image
+                                </button>
+                            </div>
+                            <div id="inboundImageUploadArea" class="space-y-3">
+                                <div class="cursor-pointer" onclick="document.getElementById('inboundItemImage').click()">
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-gray-600">Upload Image</p>
+                                </div>
+                                <div class="border-t border-gray-200 pt-3">
+                                    <button type="button" onclick="openInboundCameraModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                                        <i class="fas fa-camera mr-2"></i>Take Photo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" onclick="closeAddInboundModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-save mr-2"></i>Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customer Form Modal -->
+    <div id="customerFormModal" class="modal">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: 1200px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Customer Form - Multiple Items</h2>
+                <button onclick="closeCustomerForm()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="customerForm" onsubmit="saveCustomerForm(event)">
+                <!-- Customer Information Section -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold text-blue-900 mb-4">Customer Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                            <input id="customerCompanyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Company Name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Quote Request</label>
+                            <select id="customerQuoteRequest" class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option value="">Select Option</option>
+                                <option value="Yes">Yes - Please provide quote</option>
+                                <option value="No">No - Proceed with calibration</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                            <textarea id="customerAddress" required class="w-full border border-gray-300 rounded px-3 py-2" rows="2" placeholder="Full Address"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Name *</label>
+                            <input id="customerContactName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contact Person">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                            <input id="customerPhoneNumber" type="tel" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Phone Number">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            <input id="customerEmail" type="email" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Email Address">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">PO/Quote Number</label>
+                            <input id="customerPoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="PO/Quote Number">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Work Required *</label>
+                            <select id="customerWorkRequired" required class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option value="">Select Work Type</option>
+                                <option value="Calibration">Calibration</option>
+                                <option value="Repair">Repair</option>
+                                <option value="Testing">Testing</option>
+                                <option value="Inspection">Inspection</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Certification Type *</label>
+                            <select id="customerCertType" required class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option value="">Select Certification</option>
+                                <option value="TRACE">TRACE</option>
+                                <option value="NATA">NATA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Number of Calibration Points</label>
+                            <input id="customerCalPoints" type="number" min="1" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Number of points">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Items to be Calibrated</h3>
+                        <button type="button" onclick="addCustomerItem()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add Another Item
+                        </button>
+                    </div>
+                    <div id="customerItemsList" class="space-y-4">
+                        <!-- Items will be added here dynamically -->
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeCustomerForm()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-save mr-2"></i>Submit All Items
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scanner Modal -->
+    <div id="scannerModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Scan Barcode</h2>
+                <button onclick="closeScannerModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <div id="scanner" class="mb-4"></div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Or enter manually:</label>
+                    <input id="manualBarcodeInput" type="text" class="border border-gray-300 rounded px-3 py-2" placeholder="Enter barcode">
+                    <button onclick="useManualBarcode()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded ml-2">
+                        Use
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal for Inbound -->
+    <div id="inboundCameraModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Take Photo - Inbound Item</h2>
+                <button onclick="closeInboundCameraModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <video id="inboundCameraVideo" autoplay playsinline class="w-full max-w-md mx-auto rounded mb-4" style="display: none;"></video>
+                <canvas id="inboundCameraCanvas" class="hidden"></canvas>
+                <div id="inboundCameraControls" class="space-y-4">
+                    <button onclick="startInboundCamera()" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-video mr-2"></i>Start Camera
+                    </button>
+                    <div id="inboundCaptureControls" class="hidden space-y-2">
+                        <button onclick="captureInboundPhoto()" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-camera mr-2"></i>Capture Photo
+                        </button>
+                        <button onclick="stopInboundCamera()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-stop mr-2"></i>Stop Camera
+                        </button>
+                    </div>
+                </div>
+                <div id="inboundCameraError" class="hidden text-red-600 mt-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="inboundCameraErrorMessage">Camera access denied or not available</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal for Customer Form Items -->
+    <div id="customerItemCameraModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Take Photo - Customer Item</h2>
+                <button onclick="closeCustomerItemCameraModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <video id="customerItemCameraVideo" autoplay playsinline class="w-full max-w-md mx-auto rounded mb-4" style="display: none;"></video>
+                <canvas id="customerItemCameraCanvas" class="hidden"></canvas>
+                <div id="customerItemCameraControls" class="space-y-4">
+                    <button onclick="startCustomerItemCamera()" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-video mr-2"></i>Start Camera
+                    </button>
+                    <div id="customerItemCaptureControls" class="hidden space-y-2">
+                        <button onclick="captureCustomerItemPhoto()" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-camera mr-2"></i>Capture Photo
+                        </button>
+                        <button onclick="stopCustomerItemCamera()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-stop mr-2"></i>Stop Camera
+                        </button>
+                    </div>
+                </div>
+                <div id="customerItemCameraError" class="hidden text-red-600 mt-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="customerItemCameraErrorMessage">Camera access denied or not available</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name: 'Test User', role: 'admin' };
+
+let inboundItems = [];
+let html5QrCode = null;
+let inboundImageData = null;
+let inboundCameraStream = null;
+let customerItemCameraStream = null;
+let currentCustomerItemCounter = null;
+let customerItems = [];
+let customerItemCounter = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupUserInfo();
+    loadWarehouseData();
+    renderInboundList();
+});
+
+// Refresh data when page becomes visible (when user switches back to this tab)
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        loadWarehouseData();
+        renderInboundList();
+    }
+});
+
+// Also refresh when window gains focus
+window.addEventListener('focus', function() {
+    loadWarehouseData();
+    renderInboundList();
+});
+
+function setupUserInfo() {
+    document.getElementById('userName').textContent = currentUser.name;
+}
+
+function goBack() {
+    window.location.href = 'warehouse.html';
+}
+
+function loadWarehouseData() {
+    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+    inboundItems = data.inboundItems || [];
+    
+    console.log('Inbound page data loaded:', {
+        inbound: inboundItems.length,
+        totalData: Object.keys(data).length
+    });
+}
+
+function saveWarehouseData() {
+    const data = {
+        inboundItems: inboundItems,
+        outboundItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').outboundItems || [],
+        pendingItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').pendingItems || [],
+        quotationItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').quotationItems || [],
+        labItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').labItems || [],
+        collectionHistory: JSON.parse(localStorage.getItem('warehouseData') || '{}').collectionHistory || []
+    };
+    localStorage.setItem('warehouseData', JSON.stringify(data));
+}
+
+function renderInboundList() {
+    const container = document.getElementById('inboundList');
+    
+    if (inboundItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-12">
+                <i class="fas fa-inbox text-6xl mb-4"></i>
+                <p class="text-lg">No inbound items</p>
+                <p class="text-sm">Add items or use customer form to get started</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+                <tr class="border-b border-gray-200">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Quote Request</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Barcode</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">PO/Quote</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Received</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                ${inboundItems.map((item, index) => `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 text-sm text-gray-900">${item.companyName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            ${item.quoteRequest ? 
+                                `<span class="px-2 py-1 rounded text-xs ${item.quoteRequest === 'Yes' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${item.quoteRequest}</span>` : 
+                                '-'
+                            }
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.barcode || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            ${item.contactPerson ? `<div>${item.contactPerson}</div>` : ''}
+                            ${item.phoneNumber ? `<div class="text-xs">${item.phoneNumber}</div>` : ''}
+                            ${item.email ? `<div class="text-xs">${item.email}</div>` : ''}
+                            ${!item.contactPerson && !item.phoneNumber && !item.email ? '-' : ''}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.poNumber || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.receivedDate).toLocaleDateString()}<br>${new Date(item.receivedDate).toLocaleTimeString()}</td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex justify-end space-x-1">
+                                <button onclick="editInboundItem(${index})" title="Edit Item" class="bg-gray-500 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="routeToPending(${index})" title="Route to Pending" class="bg-yellow-500 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-clock"></i>
+                                </button>
+                                <button onclick="routeToQuotation(${index})" title="Route to Quotation" class="bg-blue-500 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-calculator"></i>
+                                </button>
+                                <button onclick="routeToLab(${index})" title="Route to Lab" class="bg-green-500 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-flask"></i>
+                                </button>
+                                <button onclick="deleteInboundItem(${index})" title="Delete Item" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// Modal functions
+function showAddInboundModal() {
+    document.getElementById('addInboundModal').classList.add('show');
+    resetInboundForm();
+}
+
+function closeAddInboundModal() {
+    document.getElementById('addInboundModal').classList.remove('show');
+    resetInboundForm();
+}
+
+function resetInboundForm() {
+    document.getElementById('inboundForm').reset();
+    inboundImageData = null;
+    resetInboundImageUpload();
+}
+
+// Inbound form functions
+function saveInboundItem(event) {
+    event.preventDefault();
+    
+    const inboundItem = {
+        id: Date.now() + Math.random(),
+        companyName: document.getElementById('inboundCompanyName').value,
+        woNumber: document.getElementById('inboundWoNumber').value,
+        make: document.getElementById('inboundMake').value,
+        model: document.getElementById('inboundModel').value,
+        serialNumber: document.getElementById('inboundSerialNumber').value,
+        barcode: document.getElementById('inboundBarcode').value,
+        contactPerson: document.getElementById('inboundContactPerson').value,
+        phoneNumber: document.getElementById('inboundPhoneNumber').value,
+        email: document.getElementById('inboundEmail').value,
+        poNumber: document.getElementById('inboundPoNumber').value,
+        address: document.getElementById('inboundAddress').value,
+        workRequired: document.getElementById('inboundWorkRequired').value,
+        certType: document.getElementById('inboundCertType').value,
+        calPoints: document.getElementById('inboundCalPoints').value,
+        instructions: document.getElementById('inboundInstructions').value,
+        image: inboundImageData || null,
+        receivedDate: new Date().toISOString(),
+        status: 'inbound'
+    };
+    
+    inboundItems.push(inboundItem);
+    
+    // Add to items database if it doesn't exist
+    const items = JSON.parse(localStorage.getItem('items') || '[]');
+    const existingItem = items.find(i => i.serialNumber === inboundItem.serialNumber);
+    
+    if (!existingItem) {
+        const itemForDb = {
+            barcode: inboundItem.barcode || `WIKA${Date.now()}${Math.floor(Math.random() * 1000)}`,
+            make: inboundItem.make,
+            model: inboundItem.model,
+            serialNumber: inboundItem.serialNumber,
+            image: inboundImageData || null
+        };
+        items.push(itemForDb);
+        localStorage.setItem('items', JSON.stringify(items));
+    }
+    
+    saveWarehouseData();
+    renderInboundList();
+    closeAddInboundModal();
+    alert('Inbound item saved successfully!');
+}
+
+// Image handling functions
+function handleInboundImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image file is too large. Please choose a file smaller than 5MB.');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        inboundImageData = e.target.result;
+        showInboundImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+}
+
+function showInboundImagePreview(imageData) {
+    const preview = document.getElementById('inboundImagePreview');
+    const uploadArea = document.getElementById('inboundImageUploadArea');
+    const previewImg = document.getElementById('inboundPreviewImg');
+    
+    previewImg.src = imageData;
+    preview.classList.remove('hidden');
+    uploadArea.classList.add('hidden');
+}
+
+function removeInboundImage() {
+    inboundImageData = null;
+    const preview = document.getElementById('inboundImagePreview');
+    const uploadArea = document.getElementById('inboundImageUploadArea');
+    const fileInput = document.getElementById('inboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+function resetInboundImageUpload() {
+    inboundImageData = null;
+    const preview = document.getElementById('inboundImagePreview');
+    const uploadArea = document.getElementById('inboundImageUploadArea');
+    const fileInput = document.getElementById('inboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+// Camera functions
+function openInboundCameraModal() {
+    document.getElementById('inboundCameraModal').classList.add('show');
+    resetInboundCameraModal();
+}
+
+function closeInboundCameraModal() {
+    stopInboundCamera();
+    document.getElementById('inboundCameraModal').classList.remove('show');
+    resetInboundCameraModal();
+}
+
+function resetInboundCameraModal() {
+    const video = document.getElementById('inboundCameraVideo');
+    const canvas = document.getElementById('inboundCameraCanvas');
+    const controls = document.getElementById('inboundCameraControls');
+    const captureControls = document.getElementById('inboundCaptureControls');
+    const error = document.getElementById('inboundCameraError');
+    
+    video.style.display = 'none';
+    canvas.classList.add('hidden');
+    controls.classList.remove('hidden');
+    captureControls.classList.add('hidden');
+    error.classList.add('hidden');
+}
+
+function startInboundCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            inboundCameraStream = stream;
+            const video = document.getElementById('inboundCameraVideo');
+            video.srcObject = stream;
+            video.style.display = 'block';
+            
+            document.getElementById('inboundCameraControls').classList.add('hidden');
+            document.getElementById('inboundCaptureControls').classList.remove('hidden');
+        })
+        .catch(err => {
+            console.error('Error accessing camera:', err);
+            document.getElementById('inboundCameraError').classList.remove('hidden');
+            document.getElementById('inboundCameraErrorMessage').textContent = 
+                'Camera access denied or not available. Please check your camera permissions.';
+        });
+}
+
+function captureInboundPhoto() {
+    const video = document.getElementById('inboundCameraVideo');
+    const canvas = document.getElementById('inboundCameraCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    inboundImageData = imageData;
+    
+    showInboundImagePreview(imageData);
+    
+    closeInboundCameraModal();
+    alert('Photo captured successfully!');
+}
+
+function stopInboundCamera() {
+    if (inboundCameraStream) {
+        inboundCameraStream.getTracks().forEach(track => track.stop());
+        inboundCameraStream = null;
+    }
+    
+    const video = document.getElementById('inboundCameraVideo');
+    video.srcObject = null;
+    resetInboundCameraModal();
+}
+
+// Customer Form functions
+function showCustomerForm() {
+    document.getElementById('customerFormModal').classList.add('show');
+    resetCustomerForm();
+    addCustomerItem(); // Add first item automatically
+}
+
+function closeCustomerForm() {
+    document.getElementById('customerFormModal').classList.remove('show');
+    resetCustomerForm();
+}
+
+function resetCustomerForm() {
+    document.getElementById('customerForm').reset();
+    customerItems = [];
+    customerItemCounter = 0;
+    document.getElementById('customerItemsList').innerHTML = '';
+}
+
+function addCustomerItem() {
+    customerItemCounter++;
+    const itemId = `customerItem_${customerItemCounter}`;
+    
+    const itemHtml = `
+        <div id="${itemId}" class="bg-white p-4 rounded-lg border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-md font-semibold text-gray-800">Item ${customerItemCounter}</h4>
+                <button type="button" onclick="removeCustomerItem('${itemId}')" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Make *</label>
+                    <input type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Manufacturer" name="make_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                    <input type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Model Number" name="model_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number *</label>
+                    <input type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Serial Number" name="serial_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                    <input type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Barcode" name="barcode_${customerItemCounter}">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-2 text-center">
+                        <input type="file" accept="image/*" class="hidden" onchange="handleCustomerItemImageUpload(event, '${itemId}')" id="customerItemImage_${customerItemCounter}">
+                        <div id="customerItemImagePreview_${customerItemCounter}" class="hidden mb-2">
+                            <img id="customerItemPreviewImg_${customerItemCounter}" class="max-w-full max-h-32 mx-auto rounded" alt="Item preview">
+                            <button type="button" onclick="removeCustomerItemImage('${customerItemCounter}')" class="mt-1 text-red-500 hover:text-red-700 text-xs">
+                                <i class="fas fa-trash mr-1"></i>Remove
+                            </button>
+                        </div>
+                        <div id="customerItemImageUploadArea_${customerItemCounter}" class="space-y-2">
+                            <div class="cursor-pointer" onclick="document.getElementById('customerItemImage_${customerItemCounter}').click()">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-1"></i>
+                                <p class="text-gray-600 text-sm">Upload Image</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-2">
+                                <button type="button" onclick="openCustomerItemCameraModal('${customerItemCounter}')" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs">
+                                    <i class="fas fa-camera mr-1"></i>Take Photo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+                    <textarea class="w-full border border-gray-300 rounded px-3 py-2" rows="2" placeholder="Any special requirements" name="instructions_${customerItemCounter}"></textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('customerItemsList').insertAdjacentHTML('beforeend', itemHtml);
+    customerItems.push({
+        id: itemId,
+        counter: customerItemCounter,
+        imageData: null
+    });
+}
+
+function removeCustomerItem(itemId) {
+    const itemElement = document.getElementById(itemId);
+    if (itemElement) {
+        itemElement.remove();
+        customerItems = customerItems.filter(item => item.id !== itemId);
+    }
+}
+
+function handleCustomerItemImageUpload(event, itemId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image file is too large. Please choose a file smaller than 5MB.');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const counter = itemId.split('_')[1];
+        const item = customerItems.find(i => i.id === itemId);
+        if (item) {
+            item.imageData = e.target.result;
+        }
+        showCustomerItemImagePreview(e.target.result, counter);
+    };
+    reader.readAsDataURL(file);
+}
+
+function showCustomerItemImagePreview(imageData, counter) {
+    const preview = document.getElementById(`customerItemImagePreview_${counter}`);
+    const uploadArea = document.getElementById(`customerItemImageUploadArea_${counter}`);
+    const previewImg = document.getElementById(`customerItemPreviewImg_${counter}`);
+    
+    previewImg.src = imageData;
+    preview.classList.remove('hidden');
+    uploadArea.classList.add('hidden');
+}
+
+function removeCustomerItemImage(counter) {
+    const item = customerItems.find(i => i.counter == counter);
+    if (item) {
+        item.imageData = null;
+    }
+    
+    const preview = document.getElementById(`customerItemImagePreview_${counter}`);
+    const uploadArea = document.getElementById(`customerItemImageUploadArea_${counter}`);
+    const fileInput = document.getElementById(`customerItemImage_${counter}`);
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+function saveCustomerForm(event) {
+    event.preventDefault();
+    
+    if (customerItems.length === 0) {
+        alert('Please add at least one item.');
+        return;
+    }
+    
+    // Get customer information
+    const customerInfo = {
+        companyName: document.getElementById('customerCompanyName').value,
+        quoteRequest: document.getElementById('customerQuoteRequest').value,
+        address: document.getElementById('customerAddress').value,
+        contactName: document.getElementById('customerContactName').value,
+        phoneNumber: document.getElementById('customerPhoneNumber').value,
+        email: document.getElementById('customerEmail').value,
+        poNumber: document.getElementById('customerPoNumber').value,
+        workRequired: document.getElementById('customerWorkRequired').value,
+        certType: document.getElementById('customerCertType').value,
+        calPoints: document.getElementById('customerCalPoints').value
+    };
+    
+    // Process each item
+    customerItems.forEach(item => {
+        const counter = item.counter;
+        const make = document.querySelector(`input[name="make_${counter}"]`).value;
+        const model = document.querySelector(`input[name="model_${counter}"]`).value;
+        const serialNumber = document.querySelector(`input[name="serial_${counter}"]`).value;
+        const barcode = document.querySelector(`input[name="barcode_${counter}"]`).value;
+        const instructions = document.querySelector(`textarea[name="instructions_${counter}"]`).value;
+        
+        // Create inbound item
+        const inboundItem = {
+            id: Date.now() + Math.random(),
+            companyName: customerInfo.companyName,
+            quoteRequest: customerInfo.quoteRequest,
+            make: make,
+            model: model,
+            serialNumber: serialNumber,
+            barcode: barcode,
+            contactPerson: customerInfo.contactName,
+            phoneNumber: customerInfo.phoneNumber,
+            email: customerInfo.email,
+            poNumber: customerInfo.poNumber,
+            address: customerInfo.address,
+            workRequired: customerInfo.workRequired,
+            certType: customerInfo.certType,
+            calPoints: customerInfo.calPoints,
+            instructions: instructions,
+            image: item.imageData || null,
+            receivedDate: new Date().toISOString(),
+            status: 'inbound'
+        };
+        
+        inboundItems.push(inboundItem);
+        
+        // Add to items database if it doesn't exist
+        const items = JSON.parse(localStorage.getItem('items') || '[]');
+        const existingItem = items.find(i => i.serialNumber === serialNumber);
+        
+        if (!existingItem) {
+            const itemForDb = {
+                barcode: barcode || `WIKA${Date.now()}${Math.floor(Math.random() * 1000)}`,
+                make: make,
+                model: model,
+                serialNumber: serialNumber,
+                image: item.imageData || null
+            };
+            items.push(itemForDb);
+            localStorage.setItem('items', JSON.stringify(items));
+        }
+    });
+    
+    saveWarehouseData();
+    renderInboundList();
+    closeCustomerForm();
+    alert(`Successfully added ${customerItems.length} item(s) to Inbound!`);
+}
+
+// Customer Item Camera functions
+function openCustomerItemCameraModal(counter) {
+    currentCustomerItemCounter = counter;
+    document.getElementById('customerItemCameraModal').classList.add('show');
+    resetCustomerItemCameraModal();
+}
+
+function closeCustomerItemCameraModal() {
+    stopCustomerItemCamera();
+    document.getElementById('customerItemCameraModal').classList.remove('show');
+    resetCustomerItemCameraModal();
+}
+
+function resetCustomerItemCameraModal() {
+    const video = document.getElementById('customerItemCameraVideo');
+    const canvas = document.getElementById('customerItemCameraCanvas');
+    const controls = document.getElementById('customerItemCameraControls');
+    const captureControls = document.getElementById('customerItemCaptureControls');
+    const error = document.getElementById('customerItemCameraError');
+    
+    video.style.display = 'none';
+    canvas.classList.add('hidden');
+    controls.classList.remove('hidden');
+    captureControls.classList.add('hidden');
+    error.classList.add('hidden');
+}
+
+function startCustomerItemCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            customerItemCameraStream = stream;
+            const video = document.getElementById('customerItemCameraVideo');
+            video.srcObject = stream;
+            video.style.display = 'block';
+            
+            document.getElementById('customerItemCameraControls').classList.add('hidden');
+            document.getElementById('customerItemCaptureControls').classList.remove('hidden');
+        })
+        .catch(err => {
+            console.error('Error accessing camera:', err);
+            document.getElementById('customerItemCameraError').classList.remove('hidden');
+            document.getElementById('customerItemCameraErrorMessage').textContent = 
+                'Camera access denied or not available. Please check your camera permissions.';
+        });
+}
+
+function captureCustomerItemPhoto() {
+    const video = document.getElementById('customerItemCameraVideo');
+    const canvas = document.getElementById('customerItemCameraCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Store the image data for the current customer item
+    const item = customerItems.find(i => i.counter == currentCustomerItemCounter);
+    if (item) {
+        item.imageData = imageData;
+    }
+    
+    showCustomerItemImagePreview(imageData, currentCustomerItemCounter);
+    
+    closeCustomerItemCameraModal();
+    alert('Photo captured successfully!');
+}
+
+function stopCustomerItemCamera() {
+    if (customerItemCameraStream) {
+        customerItemCameraStream.getTracks().forEach(track => track.stop());
+        customerItemCameraStream = null;
+    }
+    
+    const video = document.getElementById('customerItemCameraVideo');
+    video.srcObject = null;
+    resetCustomerItemCameraModal();
+}
+
+// Scanner functions
+function showScannerModal() {
+    document.getElementById('scannerModal').classList.add('show');
+    
+    if (typeof Html5QrcodeScanner !== 'undefined') {
+        html5QrCode = new Html5QrcodeScanner("scanner", { 
+            qrbox: { width: 250, height: 250 },
+            fps: 5 
+        }, false);
+        
+        html5QrCode.render(onScanSuccess, onScanFailure);
+    } else {
+        document.getElementById('scanner').innerHTML = '<p class="text-red-600">Barcode scanner not available. Please enter manually.</p>';
+    }
+}
+
+function closeScannerModal() {
+    try {
+        if (html5QrCode) {
+            html5QrCode.clear();
+            html5QrCode = null;
+        }
+    } catch (error) {
+        console.error('Error stopping scanner:', error);
+    }
+    
+    document.getElementById('scannerModal').classList.remove('show');
+    document.getElementById('manualBarcodeInput').value = '';
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    document.getElementById('inboundBarcode').value = decodedText;
+    closeScannerModal();
+    alert('Barcode scanned successfully!');
+}
+
+function onScanFailure(error) {
+    // Handle scan failure, usually this is too verbose in a real app.
+}
+
+function useManualBarcode() {
+    const manualBarcode = document.getElementById('manualBarcodeInput').value;
+    if (manualBarcode) {
+        document.getElementById('inboundBarcode').value = manualBarcode;
+        closeScannerModal();
+        alert('Barcode entered successfully!');
+    } else {
+        alert('Please enter a barcode.');
+    }
+}
+
+// Action functions
+function editInboundItem(index) {
+    const item = inboundItems[index];
+    // Pre-fill form with item data
+    document.getElementById('inboundCompanyName').value = item.companyName || '';
+    document.getElementById('inboundWoNumber').value = item.woNumber || '';
+    document.getElementById('inboundMake').value = item.make || '';
+    document.getElementById('inboundModel').value = item.model || '';
+    document.getElementById('inboundSerialNumber').value = item.serialNumber || '';
+    document.getElementById('inboundBarcode').value = item.barcode || '';
+    document.getElementById('inboundContactPerson').value = item.contactPerson || '';
+    document.getElementById('inboundPhoneNumber').value = item.phoneNumber || '';
+    document.getElementById('inboundEmail').value = item.email || '';
+    document.getElementById('inboundPoNumber').value = item.poNumber || '';
+    document.getElementById('inboundAddress').value = item.address || '';
+    document.getElementById('inboundWorkRequired').value = item.workRequired || '';
+    document.getElementById('inboundCertType').value = item.certType || '';
+    document.getElementById('inboundCalPoints').value = item.calPoints || '';
+    document.getElementById('inboundInstructions').value = item.instructions || '';
+    
+    // Handle image
+    if (item.image) {
+        inboundImageData = item.image;
+        showInboundImagePreview(item.image);
+    }
+    
+    // Remove the item from the list
+    inboundItems.splice(index, 1);
+    
+    showAddInboundModal();
+}
+
+function routeToPending(index) {
+    const item = inboundItems[index];
+    item.status = 'pending';
+    item.routedDate = new Date().toISOString();
+    
+    // Move to pending items
+    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+    const pendingItems = data.pendingItems || [];
+    pendingItems.push(item);
+    
+    // Remove from inbound
+    inboundItems.splice(index, 1);
+    
+    // Save data
+    data.pendingItems = pendingItems;
+    data.inboundItems = inboundItems;
+    localStorage.setItem('warehouseData', JSON.stringify(data));
+    
+    renderInboundList();
+    alert('Item routed to Pending successfully!');
+}
+
+function routeToQuotation(index) {
+    const item = inboundItems[index];
+    item.status = 'quotation';
+    item.routedDate = new Date().toISOString();
+    
+    // Move to quotation items
+    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+    const quotationItems = data.quotationItems || [];
+    quotationItems.push(item);
+    
+    // Remove from inbound
+    inboundItems.splice(index, 1);
+    
+    // Save data
+    data.quotationItems = quotationItems;
+    data.inboundItems = inboundItems;
+    localStorage.setItem('warehouseData', JSON.stringify(data));
+    
+    renderInboundList();
+    alert('Item routed to Quotation successfully!');
+}
+
+function routeToLab(index) {
+    const item = inboundItems[index];
+    item.status = 'lab';
+    item.routedDate = new Date().toISOString();
+    
+    // Move to lab items
+    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+    const labItems = data.labItems || [];
+    labItems.push(item);
+    
+    // Remove from inbound
+    inboundItems.splice(index, 1);
+    
+    // Save data
+    data.labItems = labItems;
+    data.inboundItems = inboundItems;
+    localStorage.setItem('warehouseData', JSON.stringify(data));
+    
+    renderInboundList();
+    alert('Item routed to Lab successfully!');
+}
+
+function deleteInboundItem(index) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        inboundItems.splice(index, 1);
+        saveWarehouseData();
+        renderInboundList();
+        alert('Item deleted successfully!');
+    }
+}
+</script>
+
+<!-- Include Html5QrcodeScanner -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</body>
+</html>

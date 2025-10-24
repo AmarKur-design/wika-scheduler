@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outbound Items - WIKA Calibration Scheduler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <img src="wika-logo.png" alt="WIKA Logo" class="h-8 w-auto mr-4">
+                    <h1 class="text-2xl font-bold text-gray-900">Outbound Items</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600">Welcome, <span id="userName">User</span></span>
+                    <button onclick="goBack()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Warehouse
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Actions Bar -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-green-900">Outbound Items</h2>
+                        <p class="text-sm text-green-700">Items ready for collection or delivery</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="showAddOutboundModal()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="outboundList" class="p-6">
+                <!-- Outbound items will be rendered here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Outbound Modal -->
+    <div id="addOutboundModal" class="modal">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: 1200px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Add Outbound Item</h2>
+                <button onclick="closeAddOutboundModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="outboundForm" onsubmit="saveOutboundItem(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                        <input id="outboundCompanyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Company Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Order Number</label>
+                        <input id="outboundWoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="WO Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Make *</label>
+                        <input id="outboundMake" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Manufacturer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Model *</label>
+                        <input id="outboundModel" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Model Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number *</label>
+                        <input id="outboundSerialNumber" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Serial Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                        <div class="flex space-x-2">
+                            <input id="outboundBarcode" type="text" class="flex-1 border border-gray-300 rounded px-3 py-2" placeholder="Barcode">
+                            <button type="button" onclick="showScannerModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded">
+                                <i class="fas fa-qrcode"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                        <input id="outboundContactPerson" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Contact Person">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input id="outboundPhoneNumber" type="tel" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Phone Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input id="outboundEmail" type="email" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Email">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">PO/Quote Number</label>
+                        <input id="outboundPoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="PO/Quote Number">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        <textarea id="outboundAddress" class="w-full border border-gray-300 rounded px-3 py-2" rows="2" placeholder="Address"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Work Completed</label>
+                        <select id="outboundWorkCompleted" class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="">Select Work Type</option>
+                            <option value="Calibration">Calibration</option>
+                            <option value="Repair">Repair</option>
+                            <option value="Testing">Testing</option>
+                            <option value="Inspection">Inspection</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Certification Type</label>
+                        <select id="outboundCertType" class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="">Select Certification</option>
+                            <option value="TRACE">TRACE</option>
+                            <option value="NATA">NATA</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Calibration Date</label>
+                        <input id="outboundCalDate" type="date" class="w-full border border-gray-300 rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Certificate Number</label>
+                        <input id="outboundCertNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Certificate Number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Collection Method</label>
+                        <select id="outboundCollectionMethod" class="w-full border border-gray-300 rounded px-3 py-2">
+                            <option value="">Select Collection Method</option>
+                            <option value="Customer Pickup">Customer Pickup</option>
+                            <option value="Delivery">Delivery</option>
+                            <option value="Courier">Courier</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+                        <textarea id="outboundInstructions" class="w-full border border-gray-300 rounded px-3 py-2" rows="3" placeholder="Any special requirements"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Item Image</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            <input type="file" accept="image/*" class="hidden" onchange="handleOutboundImageUpload(event)" id="outboundItemImage">
+                            <div id="outboundImagePreview" class="hidden mb-4">
+                                <img id="outboundPreviewImg" class="max-w-full max-h-48 mx-auto rounded" alt="Item preview">
+                                <button type="button" onclick="removeOutboundImage()" class="mt-2 text-red-500 hover:text-red-700">
+                                    <i class="fas fa-trash mr-1"></i>Remove Image
+                                </button>
+                            </div>
+                            <div id="outboundImageUploadArea" class="space-y-3">
+                                <div class="cursor-pointer" onclick="document.getElementById('outboundItemImage').click()">
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-gray-600">Upload Image</p>
+                                </div>
+                                <div class="border-t border-gray-200 pt-3">
+                                    <button type="button" onclick="openOutboundCameraModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                                        <i class="fas fa-camera mr-2"></i>Take Photo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" onclick="closeAddOutboundModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-save mr-2"></i>Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scanner Modal -->
+    <div id="scannerModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Scan Barcode</h2>
+                <button onclick="closeScannerModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <div id="scanner" class="mb-4"></div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Or enter manually:</label>
+                    <input id="manualBarcodeInput" type="text" class="border border-gray-300 rounded px-3 py-2" placeholder="Enter barcode">
+                    <button onclick="useManualBarcode()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded ml-2">
+                        Use
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal for Outbound -->
+    <div id="outboundCameraModal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Take Photo - Outbound Item</h2>
+                <button onclick="closeOutboundCameraModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <video id="outboundCameraVideo" autoplay playsinline class="w-full max-w-md mx-auto rounded mb-4" style="display: none;"></video>
+                <canvas id="outboundCameraCanvas" class="hidden"></canvas>
+                <div id="outboundCameraControls" class="space-y-4">
+                    <button onclick="startOutboundCamera()" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded">
+                        <i class="fas fa-video mr-2"></i>Start Camera
+                    </button>
+                    <div id="outboundCaptureControls" class="hidden space-y-2">
+                        <button onclick="captureOutboundPhoto()" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-camera mr-2"></i>Capture Photo
+                        </button>
+                        <button onclick="stopOutboundCamera()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-3 rounded">
+                            <i class="fas fa-stop mr-2"></i>Stop Camera
+                        </button>
+                    </div>
+                </div>
+                <div id="outboundCameraError" class="hidden text-red-600 mt-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="outboundCameraErrorMessage">Camera access denied or not available</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name: 'Test User', role: 'admin' };
+
+let outboundItems = [];
+let html5QrCode = null;
+let outboundImageData = null;
+let outboundCameraStream = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupUserInfo();
+    loadWarehouseData();
+    renderOutboundList();
+});
+
+// Refresh data when page becomes visible (when user switches back to this tab)
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        loadWarehouseData();
+        renderOutboundList();
+    }
+});
+
+// Also refresh when window gains focus
+window.addEventListener('focus', function() {
+    loadWarehouseData();
+    renderOutboundList();
+});
+
+function setupUserInfo() {
+    document.getElementById('userName').textContent = currentUser.name;
+}
+
+function goBack() {
+    window.location.href = 'warehouse.html';
+}
+
+function loadWarehouseData() {
+    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+    outboundItems = data.outboundItems || [];
+    
+    console.log('Outbound page data loaded:', {
+        outbound: outboundItems.length,
+        totalData: Object.keys(data).length
+    });
+}
+
+function saveWarehouseData() {
+    const data = {
+        inboundItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').inboundItems || [],
+        outboundItems: outboundItems,
+        pendingItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').pendingItems || [],
+        quotationItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').quotationItems || [],
+        labItems: JSON.parse(localStorage.getItem('warehouseData') || '{}').labItems || [],
+        collectionHistory: JSON.parse(localStorage.getItem('warehouseData') || '{}').collectionHistory || []
+    };
+    localStorage.setItem('warehouseData', JSON.stringify(data));
+}
+
+function renderOutboundList() {
+    const container = document.getElementById('outboundList');
+    
+    if (outboundItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-12">
+                <i class="fas fa-shipping-fast text-6xl mb-4"></i>
+                <p class="text-lg">No outbound items</p>
+                <p class="text-sm">Add items ready for collection or delivery</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+                <tr class="border-b border-gray-200">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">WO #</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Barcode</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">PO/Quote</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Collection</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Ready Date</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                ${outboundItems.map((item, index) => `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 text-sm text-gray-900">${item.companyName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.woNumber || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.barcode || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            ${item.contactPerson ? `<div>${item.contactPerson}</div>` : ''}
+                            ${item.phoneNumber ? `<div class="text-xs">${item.phoneNumber}</div>` : ''}
+                            ${item.email ? `<div class="text-xs">${item.email}</div>` : ''}
+                            ${!item.contactPerson && !item.phoneNumber && !item.email ? '-' : ''}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.poNumber || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            <span class="px-2 py-1 rounded text-xs ${item.collectionMethod === 'Customer Pickup' ? 'bg-blue-100 text-blue-800' : item.collectionMethod === 'Delivery' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${item.collectionMethod || '-'}</span>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.readyDate).toLocaleDateString()}<br>${new Date(item.readyDate).toLocaleTimeString()}</td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex justify-end space-x-1">
+                                <button onclick="editOutboundItem(${index})" title="Edit Item" class="bg-gray-500 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="markAsCollected(${index})" title="Mark as Collected" class="bg-green-500 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button onclick="deleteOutboundItem(${index})" title="Delete Item" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// Modal functions
+function showAddOutboundModal() {
+    document.getElementById('addOutboundModal').classList.add('show');
+    resetOutboundForm();
+}
+
+function closeAddOutboundModal() {
+    document.getElementById('addOutboundModal').classList.remove('show');
+    resetOutboundForm();
+}
+
+function resetOutboundForm() {
+    document.getElementById('outboundForm').reset();
+    outboundImageData = null;
+    resetOutboundImageUpload();
+}
+
+// Outbound form functions
+function saveOutboundItem(event) {
+    event.preventDefault();
+    
+    const outboundItem = {
+        id: Date.now() + Math.random(),
+        companyName: document.getElementById('outboundCompanyName').value,
+        woNumber: document.getElementById('outboundWoNumber').value,
+        make: document.getElementById('outboundMake').value,
+        model: document.getElementById('outboundModel').value,
+        serialNumber: document.getElementById('outboundSerialNumber').value,
+        barcode: document.getElementById('outboundBarcode').value,
+        contactPerson: document.getElementById('outboundContactPerson').value,
+        phoneNumber: document.getElementById('outboundPhoneNumber').value,
+        email: document.getElementById('outboundEmail').value,
+        poNumber: document.getElementById('outboundPoNumber').value,
+        address: document.getElementById('outboundAddress').value,
+        workCompleted: document.getElementById('outboundWorkCompleted').value,
+        certType: document.getElementById('outboundCertType').value,
+        calDate: document.getElementById('outboundCalDate').value,
+        certNumber: document.getElementById('outboundCertNumber').value,
+        collectionMethod: document.getElementById('outboundCollectionMethod').value,
+        instructions: document.getElementById('outboundInstructions').value,
+        image: outboundImageData || null,
+        readyDate: new Date().toISOString(),
+        status: 'outbound'
+    };
+    
+    outboundItems.push(outboundItem);
+    
+    // Add to items database if it doesn't exist
+    const items = JSON.parse(localStorage.getItem('items') || '[]');
+    const existingItem = items.find(i => i.serialNumber === outboundItem.serialNumber);
+    
+    if (!existingItem) {
+        const itemForDb = {
+            barcode: outboundItem.barcode || `WIKA${Date.now()}${Math.floor(Math.random() * 1000)}`,
+            make: outboundItem.make,
+            model: outboundItem.model,
+            serialNumber: outboundItem.serialNumber,
+            image: outboundImageData || null
+        };
+        items.push(itemForDb);
+        localStorage.setItem('items', JSON.stringify(items));
+    }
+    
+    saveWarehouseData();
+    renderOutboundList();
+    closeAddOutboundModal();
+    alert('Outbound item saved successfully!');
+}
+
+// Image handling functions
+function handleOutboundImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image file is too large. Please choose a file smaller than 5MB.');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        outboundImageData = e.target.result;
+        showOutboundImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+}
+
+function showOutboundImagePreview(imageData) {
+    const preview = document.getElementById('outboundImagePreview');
+    const uploadArea = document.getElementById('outboundImageUploadArea');
+    const previewImg = document.getElementById('outboundPreviewImg');
+    
+    previewImg.src = imageData;
+    preview.classList.remove('hidden');
+    uploadArea.classList.add('hidden');
+}
+
+function removeOutboundImage() {
+    outboundImageData = null;
+    const preview = document.getElementById('outboundImagePreview');
+    const uploadArea = document.getElementById('outboundImageUploadArea');
+    const fileInput = document.getElementById('outboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+function resetOutboundImageUpload() {
+    outboundImageData = null;
+    const preview = document.getElementById('outboundImagePreview');
+    const uploadArea = document.getElementById('outboundImageUploadArea');
+    const fileInput = document.getElementById('outboundItemImage');
+    
+    preview.classList.add('hidden');
+    uploadArea.classList.remove('hidden');
+    fileInput.value = '';
+}
+
+// Camera functions
+function openOutboundCameraModal() {
+    document.getElementById('outboundCameraModal').classList.add('show');
+    resetOutboundCameraModal();
+}
+
+function closeOutboundCameraModal() {
+    stopOutboundCamera();
+    document.getElementById('outboundCameraModal').classList.remove('show');
+    resetOutboundCameraModal();
+}
+
+function resetOutboundCameraModal() {
+    const video = document.getElementById('outboundCameraVideo');
+    const canvas = document.getElementById('outboundCameraCanvas');
+    const controls = document.getElementById('outboundCameraControls');
+    const captureControls = document.getElementById('outboundCaptureControls');
+    const error = document.getElementById('outboundCameraError');
+    
+    video.style.display = 'none';
+    canvas.classList.add('hidden');
+    controls.classList.remove('hidden');
+    captureControls.classList.add('hidden');
+    error.classList.add('hidden');
+}
+
+function startOutboundCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            outboundCameraStream = stream;
+            const video = document.getElementById('outboundCameraVideo');
+            video.srcObject = stream;
+            video.style.display = 'block';
+            
+            document.getElementById('outboundCameraControls').classList.add('hidden');
+            document.getElementById('outboundCaptureControls').classList.remove('hidden');
+        })
+        .catch(err => {
+            console.error('Error accessing camera:', err);
+            document.getElementById('outboundCameraError').classList.remove('hidden');
+            document.getElementById('outboundCameraErrorMessage').textContent = 
+                'Camera access denied or not available. Please check your camera permissions.';
+        });
+}
+
+function captureOutboundPhoto() {
+    const video = document.getElementById('outboundCameraVideo');
+    const canvas = document.getElementById('outboundCameraCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    outboundImageData = imageData;
+    
+    showOutboundImagePreview(imageData);
+    
+    closeOutboundCameraModal();
+    alert('Photo captured successfully!');
+}
+
+function stopOutboundCamera() {
+    if (outboundCameraStream) {
+        outboundCameraStream.getTracks().forEach(track => track.stop());
+        outboundCameraStream = null;
+    }
+    
+    const video = document.getElementById('outboundCameraVideo');
+    video.srcObject = null;
+    resetOutboundCameraModal();
+}
+
+// Scanner functions
+function showScannerModal() {
+    document.getElementById('scannerModal').classList.add('show');
+    
+    if (typeof Html5QrcodeScanner !== 'undefined') {
+        html5QrCode = new Html5QrcodeScanner("scanner", { 
+            qrbox: { width: 250, height: 250 },
+            fps: 5 
+        }, false);
+        
+        html5QrCode.render(onScanSuccess, onScanFailure);
+    } else {
+        document.getElementById('scanner').innerHTML = '<p class="text-red-600">Barcode scanner not available. Please enter manually.</p>';
+    }
+}
+
+function closeScannerModal() {
+    try {
+        if (html5QrCode) {
+            html5QrCode.clear();
+            html5QrCode = null;
+        }
+    } catch (error) {
+        console.error('Error stopping scanner:', error);
+    }
+    
+    document.getElementById('scannerModal').classList.remove('show');
+    document.getElementById('manualBarcodeInput').value = '';
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    document.getElementById('outboundBarcode').value = decodedText;
+    closeScannerModal();
+    alert('Barcode scanned successfully!');
+}
+
+function onScanFailure(error) {
+    // Handle scan failure, usually this is too verbose in a real app.
+}
+
+function useManualBarcode() {
+    const manualBarcode = document.getElementById('manualBarcodeInput').value;
+    if (manualBarcode) {
+        document.getElementById('outboundBarcode').value = manualBarcode;
+        closeScannerModal();
+        alert('Barcode entered successfully!');
+    } else {
+        alert('Please enter a barcode.');
+    }
+}
+
+// Action functions
+function editOutboundItem(index) {
+    const item = outboundItems[index];
+    // Pre-fill form with item data
+    document.getElementById('outboundCompanyName').value = item.companyName || '';
+    document.getElementById('outboundWoNumber').value = item.woNumber || '';
+    document.getElementById('outboundMake').value = item.make || '';
+    document.getElementById('outboundModel').value = item.model || '';
+    document.getElementById('outboundSerialNumber').value = item.serialNumber || '';
+    document.getElementById('outboundBarcode').value = item.barcode || '';
+    document.getElementById('outboundContactPerson').value = item.contactPerson || '';
+    document.getElementById('outboundPhoneNumber').value = item.phoneNumber || '';
+    document.getElementById('outboundEmail').value = item.email || '';
+    document.getElementById('outboundPoNumber').value = item.poNumber || '';
+    document.getElementById('outboundAddress').value = item.address || '';
+    document.getElementById('outboundWorkCompleted').value = item.workCompleted || '';
+    document.getElementById('outboundCertType').value = item.certType || '';
+    document.getElementById('outboundCalDate').value = item.calDate || '';
+    document.getElementById('outboundCertNumber').value = item.certNumber || '';
+    document.getElementById('outboundCollectionMethod').value = item.collectionMethod || '';
+    document.getElementById('outboundInstructions').value = item.instructions || '';
+    
+    // Handle image
+    if (item.image) {
+        outboundImageData = item.image;
+        showOutboundImagePreview(item.image);
+    }
+    
+    // Remove the item from the list
+    outboundItems.splice(index, 1);
+    
+    showAddOutboundModal();
+}
+
+function markAsCollected(index) {
+    const item = outboundItems[index];
+    item.status = 'collected';
+    item.collectedDate = new Date().toISOString();
+    
+    // Move to collection history
+    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+    const collectionHistory = data.collectionHistory || [];
+    collectionHistory.push(item);
+    
+    // Remove from outbound
+    outboundItems.splice(index, 1);
+    
+    // Save data
+    data.collectionHistory = collectionHistory;
+    data.outboundItems = outboundItems;
+    localStorage.setItem('warehouseData', JSON.stringify(data));
+    
+    renderOutboundList();
+    alert('Item marked as collected successfully!');
+}
+
+function deleteOutboundItem(index) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        outboundItems.splice(index, 1);
+        saveWarehouseData();
+        renderOutboundList();
+        alert('Item deleted successfully!');
+    }
+}
+</script>
+
+<!-- Include Html5QrcodeScanner -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</body>
+</html>

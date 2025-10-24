@@ -48,8 +48,8 @@
                         <p class="text-sm text-blue-700">Items received - route to Pending, Quotation, or Lab</p>
                     </div>
                     <div class="flex space-x-2">
-                        <button onclick="expandInbound()" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded" title="Expand Full View">
-                            <i class="fas fa-expand"></i>
+                        <button onclick="window.open('inbound.html', '_blank')" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded" title="Open Full Page">
+                            <i class="fas fa-external-link-alt"></i>
                         </button>
                         <button onclick="showCustomerForm()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded">
                             <i class="fas fa-users mr-2"></i>Customer Form
@@ -74,8 +74,8 @@
                         <p class="text-sm text-orange-700">Items ready for pickup</p>
                     </div>
                     <div class="flex space-x-2">
-                        <button onclick="expandOutbound()" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded" title="Expand Full View">
-                            <i class="fas fa-expand"></i>
+                        <button onclick="window.open('outbound.html', '_blank')" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-2 rounded" title="Open Full Page">
+                            <i class="fas fa-external-link-alt"></i>
                         </button>
                         <button onclick="showAddOutboundModal()" class="bg-orange-500 hover:bg-orange-700 text-white px-4 py-2 rounded">
                             <i class="fas fa-plus mr-2"></i>Add Item
@@ -666,6 +666,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Refresh data when window gains focus (when user switches back from dedicated pages)
+window.addEventListener('focus', function() {
+    loadWarehouseData();
+    renderPendingList();
+    renderQuotationList();
+    renderLabList();
+    renderInboundList();
+    renderOutboundList();
+});
+
 function setupUserInfo() {
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
@@ -685,40 +695,43 @@ function logout() {
 }
 
 function loadWarehouseData() {
-    const storedInbound = localStorage.getItem('inboundItems');
-    const storedOutbound = localStorage.getItem('outboundItems');
-    const storedPending = localStorage.getItem('pendingItems');
-    const storedQuotation = localStorage.getItem('quotationItems');
-    const storedLab = localStorage.getItem('labItems');
-    const storedHistory = localStorage.getItem('collectionHistory');
+    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+    inboundItems = data.inboundItems || [];
+    outboundItems = data.outboundItems || [];
+    pendingItems = data.pendingItems || [];
+    quotationItems = data.quotationItems || [];
+    labItems = data.labItems || [];
+    collectionHistory = data.collectionHistory || [];
     
-    if (storedInbound) {
-        inboundItems = JSON.parse(storedInbound);
-    }
-    if (storedOutbound) {
-        outboundItems = JSON.parse(storedOutbound);
-    }
-    if (storedPending) {
-        pendingItems = JSON.parse(storedPending);
-    }
-    if (storedQuotation) {
-        quotationItems = JSON.parse(storedQuotation);
-    }
-    if (storedLab) {
-        labItems = JSON.parse(storedLab);
-    }
-    if (storedHistory) {
-        collectionHistory = JSON.parse(storedHistory);
-    }
+    console.log('Warehouse data loaded:', {
+        inbound: inboundItems.length,
+        outbound: outboundItems.length,
+        pending: pendingItems.length,
+        quotation: quotationItems.length,
+        lab: labItems.length,
+        collection: collectionHistory.length
+    });
 }
 
 function saveWarehouseData() {
-    localStorage.setItem('inboundItems', JSON.stringify(inboundItems));
-    localStorage.setItem('outboundItems', JSON.stringify(outboundItems));
-    localStorage.setItem('pendingItems', JSON.stringify(pendingItems));
-    localStorage.setItem('quotationItems', JSON.stringify(quotationItems));
-    localStorage.setItem('labItems', JSON.stringify(labItems));
-    localStorage.setItem('collectionHistory', JSON.stringify(collectionHistory));
+    const data = {
+        inboundItems: inboundItems,
+        outboundItems: outboundItems,
+        pendingItems: pendingItems,
+        quotationItems: quotationItems,
+        labItems: labItems,
+        collectionHistory: collectionHistory
+    };
+    localStorage.setItem('warehouseData', JSON.stringify(data));
+    
+    console.log('Warehouse data saved:', {
+        inbound: inboundItems.length,
+        outbound: outboundItems.length,
+        pending: pendingItems.length,
+        quotation: quotationItems.length,
+        lab: labItems.length,
+        collection: collectionHistory.length
+    });
 }
 
 // Render Functions for New Sections
