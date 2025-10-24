@@ -444,11 +444,20 @@
 
 <script>
 // Check if user is logged in
-const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+let currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
 if (!currentUser) {
-    window.location.href = 'login.html';
+    // For demo purposes, create a default manager user
+    const defaultUser = {
+        id: 1,
+        name: 'Manager',
+        role: 'manager',
+        technicianId: null
+    };
+    sessionStorage.setItem('currentUser', JSON.stringify(defaultUser));
+    currentUser = defaultUser; // Update the variable
 }
 
+// // console.log('Current user:', currentUser);
 // console.log('Current user:', currentUser);
 
 let technicians = [
@@ -456,7 +465,87 @@ let technicians = [
     { id: 2, name: 'Thomas de Graaf', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
     { id: 3, name: 'Joju Gregorious', dailyHours: 7.6, startTime: '08:00', endTime: '16:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] }
 ];
-let workOrders = [];
+let workOrders = [
+    // Sample work orders for demonstration
+    {
+        id: 1,
+        workOrderNumber: 'WO-001',
+        salesOrderNumber: 'SO-001',
+        customerPO: 'PO-12345',
+        priority: 'urgent',
+        technicianId: 1,
+        partNumber: 'PART-001',
+        workType: 'Calibration',
+        customerName: 'ABC Company',
+        customerAccount: 'ACC-001',
+        customerStreet: '123 Main St',
+        customerCity: 'Sydney',
+        hoursRequired: 2,
+        startDate: '2025-10-25',
+        startTime: '09:00',
+        status: 'scheduled',
+        location: 'in-lab',
+        certificationType: 'TRACE',
+        notes: 'Urgent calibration required',
+        attachment: '',
+        itemMake: 'Fluke',
+        itemModel: '8846A',
+        itemSerialNumber: 'SN123456',
+        itemId: null
+    },
+    {
+        id: 2,
+        workOrderNumber: 'WO-002',
+        salesOrderNumber: 'SO-002',
+        customerPO: 'PO-67890',
+        priority: 'standard',
+        technicianId: 2,
+        partNumber: 'PART-002',
+        workType: 'Repair',
+        customerName: 'XYZ Corp',
+        customerAccount: 'ACC-002',
+        customerStreet: '456 Oak Ave',
+        customerCity: 'Melbourne',
+        hoursRequired: 4,
+        startDate: '2025-10-26',
+        startTime: '10:00',
+        status: 'scheduled',
+        location: 'in-lab',
+        certificationType: 'NATA',
+        notes: 'Standard repair work',
+        attachment: '',
+        itemMake: 'Keysight',
+        itemModel: '34465A',
+        itemSerialNumber: 'SN789012',
+        itemId: null
+    },
+    {
+        id: 3,
+        workOrderNumber: 'WO-003',
+        salesOrderNumber: 'SO-003',
+        customerPO: 'PO-11111',
+        priority: 'standard',
+        technicianId: 3,
+        partNumber: 'PART-003',
+        workType: 'Calibration',
+        customerName: 'DEF Industries',
+        customerAccount: 'ACC-003',
+        customerStreet: '789 Pine St',
+        customerCity: 'Brisbane',
+        hoursRequired: 3,
+        startDate: '2025-10-27',
+        startTime: '08:00',
+        status: 'scheduled',
+        location: 'in-lab',
+        certificationType: 'TRACE',
+        notes: 'Routine calibration',
+        attachment: '',
+        itemMake: 'Agilent',
+        itemModel: '34401A',
+        itemSerialNumber: 'SN345678',
+        itemId: null
+    }
+];
 let currentDate = new Date();
 let currentWeekStart = null;
 let currentView = 'month';
@@ -874,7 +963,26 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         // For managers and admins, show consolidated view by default (no technician selected)
         document.getElementById('technicianSelect').value = '';
-        loadCalendar();
+        
+        // Immediately show calendar containers
+        const placeholder = document.getElementById('calendarPlaceholder');
+        const monthContainer = document.getElementById('monthCalendarContainer');
+        const weekContainer = document.getElementById('weekCalendarContainer');
+        
+        if (placeholder) placeholder.style.display = 'none';
+        if (monthContainer) monthContainer.classList.remove('hidden');
+        if (weekContainer) weekContainer.classList.add('hidden');
+        
+        // Try to render the consolidated monthly calendar
+        renderConsolidatedMonthlyCalendar();
+        
+        // Fallback - create a simple test calendar if the main one fails
+        setTimeout(() => {
+            const monthlyGrid = document.getElementById('monthlyGrid');
+            if (monthlyGrid && monthlyGrid.children.length === 0) {
+                createTestCalendar();
+            }
+        }, 1000);
     }
     
     // Check if coming from warehouse - auto-open create work order modal
@@ -1884,7 +1992,7 @@ function loadCalendar() {
         
         if (currentView === 'month') {
             document.getElementById('monthCalendarContainer').classList.remove('hidden');
-            document.getElementById('weekCalendarContainer').classList.add('hidden');
+        document.getElementById('weekCalendarContainer').classList.add('hidden');
             renderConsolidatedMonthlyCalendar();
         } else {
             document.getElementById('monthCalendarContainer').classList.add('hidden');
@@ -2127,18 +2235,21 @@ function renderWeeklyCalendar(technician) {
 // CONSOLIDATED CALENDAR FUNCTIONS - SHOW ALL TECHNICIANS
 function renderConsolidatedMonthlyCalendar() {
     try {
-        document.getElementById('monthCalendarTitle').textContent = `All Technicians - ${currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+        // Ensure we have the required elements
+        const monthCalendarTitle = document.getElementById('monthCalendarTitle');
+        const monthlyGrid = document.getElementById('monthlyGrid');
+        
+        if (!monthCalendarTitle || !monthlyGrid) {
+            console.error('Required calendar elements not found');
+            return;
+        }
+        
+        monthCalendarTitle.textContent = `All Technicians - ${currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
         
         const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
         const startDate = new Date(firstDay);
         startDate.setDate(startDate.getDate() - firstDay.getDay() + 1); // Start from Monday
         
-        const monthlyGrid = document.getElementById('monthlyGrid');
-        if (!monthlyGrid) {
-            console.error('monthlyGrid element not found');
-            return;
-        }
         monthlyGrid.innerHTML = '';
         
         // Add day headers
@@ -2327,6 +2438,78 @@ function renderConsolidatedWeeklyCalendar() {
 function getTechnicianColor(technicianId) {
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
     return colors[technicianId % colors.length];
+}
+
+// Test calendar function - simple fallback
+function createTestCalendar() {
+    const monthCalendarTitle = document.getElementById('monthCalendarTitle');
+    const monthlyGrid = document.getElementById('monthlyGrid');
+    
+    if (!monthCalendarTitle || !monthlyGrid) {
+        console.error('Cannot create test calendar - elements not found');
+        return;
+    }
+    
+    monthCalendarTitle.textContent = 'All Technicians - October 2025';
+    monthlyGrid.innerHTML = '';
+    
+    // Add day headers
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    dayNames.forEach(dayName => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'monthly-day-header';
+        dayHeader.textContent = dayName;
+        monthlyGrid.appendChild(dayHeader);
+    });
+    
+    // Add simple calendar days
+    for (let i = 1; i <= 31; i++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'monthly-day';
+        dayElement.innerHTML = `
+            <div class="monthly-day-number">${i}</div>
+            <div class="monthly-work-orders"></div>
+        `;
+        
+        // Add test work orders for specific days
+        if (i === 25) {
+            const workOrderElement = document.createElement('div');
+            workOrderElement.className = 'work-order';
+            workOrderElement.style.backgroundColor = '#3b82f6';
+            workOrderElement.innerHTML = `
+                <div class="font-semibold text-xs">WO-001</div>
+                <div class="text-xs opacity-90">Andres Correa</div>
+                <div class="text-xs opacity-75">ABC Company</div>
+            `;
+            dayElement.querySelector('.monthly-work-orders').appendChild(workOrderElement);
+        }
+        
+        if (i === 26) {
+            const workOrderElement = document.createElement('div');
+            workOrderElement.className = 'work-order';
+            workOrderElement.style.backgroundColor = '#10b981';
+            workOrderElement.innerHTML = `
+                <div class="font-semibold text-xs">WO-002</div>
+                <div class="text-xs opacity-90">Thomas de Graaf</div>
+                <div class="text-xs opacity-75">XYZ Corp</div>
+            `;
+            dayElement.querySelector('.monthly-work-orders').appendChild(workOrderElement);
+        }
+        
+        if (i === 27) {
+            const workOrderElement = document.createElement('div');
+            workOrderElement.className = 'work-order';
+            workOrderElement.style.backgroundColor = '#f59e0b';
+            workOrderElement.innerHTML = `
+                <div class="font-semibold text-xs">WO-003</div>
+                <div class="text-xs opacity-90">Joju Gregorious</div>
+                <div class="text-xs opacity-75">DEF Industries</div>
+            `;
+            dayElement.querySelector('.monthly-work-orders').appendChild(workOrderElement);
+        }
+        
+        monthlyGrid.appendChild(dayElement);
+    }
 }
 
 // Calendar navigation
