@@ -181,6 +181,44 @@
                 </div>
             </div>
         </div>
+
+        <!-- Quick Stats Section -->
+        <div id="quickStatsContainer" class="mt-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold mb-4">Quick Stats</h3>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <!-- Completed -->
+                    <div class="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div class="text-2xl font-bold text-green-600" id="statsCompleted">0</div>
+                        <div class="text-sm text-green-700 font-medium">Completed</div>
+                    </div>
+                    
+                    <!-- Overdue -->
+                    <div class="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                        <div class="text-2xl font-bold text-red-600" id="statsOverdue">0</div>
+                        <div class="text-sm text-red-700 font-medium">Overdue</div>
+                    </div>
+                    
+                    <!-- Waiting for Certs -->
+                    <div class="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <div class="text-2xl font-bold text-purple-600" id="statsWaitingCerts">0</div>
+                        <div class="text-sm text-purple-700 font-medium">Waiting for Certs</div>
+                    </div>
+                    
+                    <!-- In Progress -->
+                    <div class="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div class="text-2xl font-bold text-yellow-600" id="statsInProgress">0</div>
+                        <div class="text-sm text-yellow-700 font-medium">In Progress</div>
+                    </div>
+                    
+                    <!-- Avg Completion Rate -->
+                    <div class="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="text-2xl font-bold text-blue-600" id="statsAvgCompletion">0%</div>
+                        <div class="text-sm text-blue-700 font-medium">Avg Completion Rate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -976,11 +1014,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Try to render the consolidated monthly calendar
         renderConsolidatedMonthlyCalendar();
         
+        // Update stats for all technicians
+        updateQuickStats();
+        
         // Fallback - create a simple test calendar if the main one fails
         setTimeout(() => {
             const monthlyGrid = document.getElementById('monthlyGrid');
             if (monthlyGrid && monthlyGrid.children.length === 0) {
                 createTestCalendar();
+                // Update stats after creating test calendar
+                updateQuickStats();
             }
         }, 1000);
     }
@@ -1999,6 +2042,9 @@ function loadCalendar() {
             document.getElementById('weekCalendarContainer').classList.remove('hidden');
             renderConsolidatedWeeklyCalendar();
         }
+        
+        // Update stats for all technicians
+        updateQuickStats();
         return;
     }
     
@@ -2015,6 +2061,42 @@ function loadCalendar() {
         document.getElementById('weekCalendarContainer').classList.remove('hidden');
         renderWeeklyCalendar(technician);
     }
+    
+    // Update stats for selected technician
+    updateQuickStats();
+}
+
+// Calculate and update quick stats based on selected technician
+function updateQuickStats() {
+    const selectedTechnicianId = document.getElementById('technicianSelect').value;
+    
+    // Filter work orders based on selected technician
+    let filteredWorkOrders = workOrders;
+    if (selectedTechnicianId) {
+        filteredWorkOrders = workOrders.filter(wo => wo.technicianId.toString() === selectedTechnicianId);
+    }
+    
+    // Calculate stats
+    const completed = filteredWorkOrders.filter(wo => wo.status === 'completed').length;
+    const overdue = filteredWorkOrders.filter(wo => {
+        if (wo.status === 'completed') return false;
+        const dueDate = new Date(wo.startDate);
+        const today = new Date();
+        return dueDate < today;
+    }).length;
+    const waitingCerts = filteredWorkOrders.filter(wo => wo.status === 'waiting-on-certs').length;
+    const inProgress = filteredWorkOrders.filter(wo => wo.status === 'in-progress').length;
+    
+    // Calculate average completion rate
+    const totalWorkOrders = filteredWorkOrders.length;
+    const avgCompletionRate = totalWorkOrders > 0 ? Math.round((completed / totalWorkOrders) * 100) : 0;
+    
+    // Update the UI
+    document.getElementById('statsCompleted').textContent = completed;
+    document.getElementById('statsOverdue').textContent = overdue;
+    document.getElementById('statsWaitingCerts').textContent = waitingCerts;
+    document.getElementById('statsInProgress').textContent = inProgress;
+    document.getElementById('statsAvgCompletion').textContent = avgCompletionRate + '%';
 }
 
 function renderMonthlyCalendar(technician) {
