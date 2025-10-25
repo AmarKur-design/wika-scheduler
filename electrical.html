@@ -15,8 +15,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center py-4">
                     <div class="flex items-center">
-                        <img src="wika-logo.png" alt="WIKA Logo" class="h-8 w-auto">
-                        <h1 class="ml-3 text-2xl font-bold text-gray-900">Electrical Calibration System</h1>
+                        <h1 class="text-2xl font-bold text-gray-900">Electrical Calibration System</h1>
                     </div>
                     <div class="flex items-center space-x-4">
                         <a href="library.html" class="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
@@ -69,9 +68,17 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Test Standard</label>
-                                    <div class="flex gap-2">
-                                        <input id="testStandard" type="text" class="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="PWI-58" readonly>
-                                        <a href="PWI-101-TRACE-Calibration-Procedures.pdf" target="_blank" class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">View Standard</a>
+                                    <div class="flex flex-col gap-1">
+                                        <input id="testStandard" type="text" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="PWI-58" readonly>
+                                        <div class="flex gap-2">
+                                            <input type="file" id="standardUpload" accept=".pdf" class="hidden" onchange="handleStandardUpload(event)">
+                                            <button type="button" onclick="document.getElementById('standardUpload').click()" class="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                Upload Standard
+                                            </button>
+                                            <button type="button" id="viewStandardBtn" onclick="viewStandard()" class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 hidden">
+                                                View Standard
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
@@ -277,12 +284,50 @@
     <script>
         // Global variables
         let currentUser = { name: 'Admin' };
+        let uploadedStandard = null;
         
         // Load current user from localStorage
         function loadCurrentUser() {
             const userData = localStorage.getItem('currentUser');
             if (userData) {
                 currentUser = JSON.parse(userData);
+            }
+        }
+
+        // Handle standard upload
+        function handleStandardUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedStandard = {
+                        name: file.name,
+                        data: e.target.result
+                    };
+                    // Show the view button
+                    document.getElementById('viewStandardBtn').classList.remove('hidden');
+                    alert('Standard uploaded successfully!');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Please select a valid PDF file.');
+            }
+        }
+
+        // View uploaded standard
+        function viewStandard() {
+            if (uploadedStandard) {
+                const newWindow = window.open();
+                newWindow.document.write(`
+                    <html>
+                        <head><title>${uploadedStandard.name}</title></head>
+                        <body style="margin:0; padding:0;">
+                            <embed src="${uploadedStandard.data}" type="application/pdf" width="100%" height="100%" />
+                        </body>
+                    </html>
+                `);
+            } else {
+                alert('No standard uploaded yet.');
             }
         }
         let calibrationData = {

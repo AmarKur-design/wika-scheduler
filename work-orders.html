@@ -176,6 +176,22 @@
             </div>
         </div>
 
+        <!-- Import Work Orders Section -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Import Work Orders</h2>
+            <div class="flex items-center space-x-4">
+                <button onclick="showImportModal()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+                    <i class="fas fa-file-import mr-2"></i>
+                    Import from CSV/Excel
+                </button>
+                <button onclick="downloadTemplate()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded flex items-center">
+                    <i class="fas fa-download mr-2"></i>
+                    Download Template
+                </button>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">Import work orders from a CSV or Excel file. You can assign a technician to all imported orders, or include technician names in your CSV file.</p>
+        </div>
+
         <!-- Work Orders Table -->
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -267,6 +283,25 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Work Type</label>
                             <input id="editWorkType" type="text" required class="w-full border border-gray-300 rounded px-3 py-2">
                         </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div class="relative">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Item/Make</label>
+                                <input id="editItemMake" type="text" class="w-full border border-gray-300 rounded px-3 py-2" 
+                                       placeholder="Start typing..." 
+                                       oninput="showItemSuggestions()" 
+                                       onfocus="showItemSuggestions()"
+                                       autocomplete="off">
+                                <div id="itemSuggestions" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded-b shadow-lg max-h-48 overflow-y-auto"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                                <input id="editItemModel" type="text" class="w-full border border-gray-300 rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
+                                <input id="editItemSerial" type="text" class="w-full border border-gray-300 rounded px-3 py-2">
+                            </div>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
@@ -310,6 +345,66 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Work Orders Modal -->
+    <div id="importModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Import Work Orders</h3>
+                
+                <!-- File Upload Section -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select File</label>
+                    <input id="importFile" type="file" accept=".csv,.xlsx,.xls" class="w-full border border-gray-300 rounded px-3 py-2" onchange="handleFileSelect(event)">
+                    <p class="text-sm text-gray-500 mt-1">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                </div>
+
+                <!-- Technician Assignment Section -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign Technician to All Imported Orders</label>
+                    <select id="importTechnician" class="w-full border border-gray-300 rounded px-3 py-2">
+                        <option value="">No Technician Assignment</option>
+                    </select>
+                    <p class="text-sm text-gray-500 mt-1">Assign a technician to all imported work orders. If your CSV file contains a "Technician" column, those values will override this bulk assignment.</p>
+                </div>
+
+                <!-- Preview Section -->
+                <div id="importPreview" class="mb-6 hidden">
+                    <h4 class="text-md font-medium text-gray-900 mb-3">Preview (First 5 rows)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 border border-gray-300">
+                            <thead class="bg-gray-50">
+                                <tr id="previewHeaders">
+                                    <!-- Headers will be populated here -->
+                                </tr>
+                            </thead>
+                            <tbody id="previewRows" class="bg-white divide-y divide-gray-200">
+                                <!-- Preview rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Import Results -->
+                <div id="importResults" class="mb-6 hidden">
+                    <h4 class="text-md font-medium text-gray-900 mb-3">Import Results</h4>
+                    <div id="importResultsContent" class="p-4 bg-gray-50 rounded-lg">
+                        <!-- Results will be shown here -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closeImportModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button id="importButton" onclick="importWorkOrders()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded hidden">
+                        Import Work Orders
+                    </button>
                 </div>
             </div>
         </div>
@@ -523,6 +618,29 @@ let workOrders = [];
             const technician = technicians.find(t => t.id === workOrder.technicianId);
             const technicianName = technician ? technician.name : 'Unknown';
             
+            // Get item information if itemId exists
+            let itemInfo = '';
+            let calibrationButtons = '';
+            if (workOrder.itemId) {
+                const items = JSON.parse(localStorage.getItem('items') || '[]');
+                const item = items.find(i => i.id === workOrder.itemId);
+                if (item) {
+                    itemInfo = `
+                        <div><strong>Item:</strong> ${item.make} ${item.model}</div>
+                        <div><strong>Serial Number:</strong> ${item.serialNumber}</div>
+                        <div><strong>Barcode:</strong> ${item.barcode}</div>
+                    `;
+                }
+            } else if (workOrder.itemMake && workOrder.itemModel) {
+                itemInfo = `
+                    <div><strong>Item:</strong> ${workOrder.itemMake} ${workOrder.itemModel}</div>
+                    <div><strong>Serial Number:</strong> ${workOrder.itemSerialNumber || 'N/A'}</div>
+                `;
+            }
+            
+            // Always show calibration buttons - check if part has calibration type
+            calibrationButtons = generateCalibrationButtons(workOrder.workType, workOrderId);
+            
             const details = `
                 <div class="space-y-3">
                     <div><strong>Work Order #:</strong> ${workOrder.workOrderNumber}</div>
@@ -532,8 +650,10 @@ let workOrders = [];
                     <div><strong>Hours Required:</strong> ${workOrder.hoursRequired}h</div>
                     <div><strong>Start Date:</strong> ${new Date(workOrder.startDate).toLocaleDateString()}</div>
                     <div><strong>Status:</strong> <span class="status-badge ${getStatusClass(workOrder.status)}">${getStatusText(workOrder.status)}</span></div>
+                    ${itemInfo}
                     <div><strong>Notes:</strong> ${workOrder.notes || 'None'}</div>
                     <div><strong>Attachment:</strong> ${workOrder.attachment || 'None'}</div>
+                    <div class="mt-4 pt-3 border-t border-gray-200"><strong>Calibration Actions:</strong><div class="mt-2 flex flex-wrap gap-2">${calibrationButtons}</div></div>
                 </div>
             `;
             
@@ -606,6 +726,14 @@ let workOrders = [];
             document.getElementById('editStatus').value = workOrder.status || 'scheduled';
             document.getElementById('editNotes').value = workOrder.notes || '';
             
+            // Populate item fields if they exist
+            document.getElementById('editItemMake').value = workOrder.itemMake || '';
+            document.getElementById('editItemModel').value = workOrder.itemModel || '';
+            document.getElementById('editItemSerial').value = workOrder.itemSerial || '';
+            if (workOrder.itemId) {
+                document.getElementById('editItemMake').dataset.selectedItemId = workOrder.itemId;
+            }
+            
             // Populate technician dropdown
             const technicianSelect = document.getElementById('editTechnician');
             technicianSelect.innerHTML = '<option value="">Select Technician</option>';
@@ -637,6 +765,9 @@ let workOrders = [];
                 return;
             }
             
+            // Auto-create or link item
+            const itemId = autoCreateOrLinkItem();
+            
             // Get form data
             const updatedWorkOrder = {
                 id: workOrderId,
@@ -648,7 +779,12 @@ let workOrders = [];
                 startDate: document.getElementById('editStartDate').value,
                 status: document.getElementById('editStatus').value,
                 notes: document.getElementById('editNotes').value,
-                attachment: document.getElementById('editAttachment').files[0]?.name || workOrders[workOrderIndex].attachment || ''
+                attachment: document.getElementById('editAttachment').files[0]?.name || workOrders[workOrderIndex].attachment || '',
+                // Item fields
+                itemId: itemId,
+                itemMake: document.getElementById('editItemMake').value,
+                itemModel: document.getElementById('editItemModel').value,
+                itemSerial: document.getElementById('editItemSerial').value
             };
             
             // Update the work order
@@ -664,12 +800,138 @@ let workOrders = [];
             // Close modal
             closeEditModal();
             
-            alert('Work order updated successfully!');
+            if (itemId && !document.getElementById('editItemMake').dataset.selectedItemId) {
+                alert('Work order updated and new item created automatically!');
+            } else {
+                alert('Work order updated successfully!');
+            }
         }
 
         function closeEditModal() {
             document.getElementById('editWorkOrderModal').classList.add('hidden');
             document.getElementById('editWorkOrderForm').reset();
+            document.getElementById('itemSuggestions').classList.add('hidden');
+        }
+
+        // ============================================================================
+        // ITEM AUTOCOMPLETE FUNCTIONALITY
+        // ============================================================================
+        
+        function showItemSuggestions() {
+            const input = document.getElementById('editItemMake');
+            const query = input.value.toLowerCase().trim();
+            const suggestionsDiv = document.getElementById('itemSuggestions');
+            
+            if (query.length < 2) {
+                suggestionsDiv.classList.add('hidden');
+                return;
+            }
+            
+            // Load items from database
+            const items = JSON.parse(localStorage.getItem('items') || '[]');
+            
+            // Filter items by make, model, or serial number
+            const matches = items.filter(item => 
+                item.make.toLowerCase().includes(query) ||
+                item.model.toLowerCase().includes(query) ||
+                item.serialNumber.toLowerCase().includes(query) ||
+                item.barcode.toLowerCase().includes(query)
+            ).slice(0, 10); // Limit to 10 suggestions
+            
+            if (matches.length === 0) {
+                suggestionsDiv.innerHTML = `
+                    <div class="px-4 py-2 text-sm text-gray-500 italic">
+                        No existing items found. Keep typing to create new item.
+                    </div>
+                `;
+                suggestionsDiv.classList.remove('hidden');
+                return;
+            }
+            
+            suggestionsDiv.innerHTML = matches.map(item => `
+                <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                     onclick="selectExistingItem(${item.id})">
+                    <div class="font-semibold text-sm">${item.make} ${item.model}</div>
+                    <div class="text-xs text-gray-600">SN: ${item.serialNumber} | Barcode: ${item.barcode}</div>
+                </div>
+            `).join('');
+            
+            suggestionsDiv.classList.remove('hidden');
+        }
+        
+        function selectExistingItem(itemId) {
+            const items = JSON.parse(localStorage.getItem('items') || '[]');
+            const item = items.find(i => i.id === itemId);
+            
+            if (item) {
+                document.getElementById('editItemMake').value = item.make;
+                document.getElementById('editItemModel').value = item.model;
+                document.getElementById('editItemSerial').value = item.serialNumber;
+                document.getElementById('editItemMake').dataset.selectedItemId = item.id;
+                document.getElementById('itemSuggestions').classList.add('hidden');
+            }
+        }
+        
+        // Close suggestions when clicking outside
+        document.addEventListener('click', function(event) {
+            const suggestionsDiv = document.getElementById('itemSuggestions');
+            const input = document.getElementById('editItemMake');
+            
+            if (suggestionsDiv && input && 
+                !suggestionsDiv.contains(event.target) && 
+                event.target !== input) {
+                suggestionsDiv.classList.add('hidden');
+            }
+        });
+        
+        function autoCreateOrLinkItem() {
+            const make = document.getElementById('editItemMake').value.trim();
+            const model = document.getElementById('editItemModel').value.trim();
+            const serial = document.getElementById('editItemSerial').value.trim();
+            const selectedItemId = document.getElementById('editItemMake').dataset.selectedItemId;
+            
+            if (!make || !model || !serial) {
+                return null; // No item data entered
+            }
+            
+            // Check if user selected an existing item
+            if (selectedItemId) {
+                return parseInt(selectedItemId);
+            }
+            
+            // Check if item already exists in database
+            let items = JSON.parse(localStorage.getItem('items') || '[]');
+            const existingItem = items.find(item => 
+                item.make === make && 
+                item.model === model && 
+                item.serialNumber === serial
+            );
+            
+            if (existingItem) {
+                return existingItem.id;
+            }
+            
+            // Create new item
+            const newItem = {
+                id: Date.now(),
+                barcode: generateBarcode(),
+                make: make,
+                model: model,
+                serialNumber: serial,
+                createdDate: new Date().toISOString(),
+                createdFrom: 'work-order'
+            };
+            
+            items.push(newItem);
+            localStorage.setItem('items', JSON.stringify(items));
+            
+            console.log('Auto-created new item:', newItem);
+            return newItem.id;
+        }
+        
+        function generateBarcode() {
+            // Generate simple barcode (can be enhanced)
+            return 'WIKA' + Date.now().toString().slice(-8);
         }
 
         // Week filtering helper function
@@ -720,6 +982,399 @@ let workOrders = [];
                 ? `Showing all ${workOrders.length} work orders (${totalAllHours.toFixed(1)}h total)`
                 : `Showing ${filteredWorkOrders.length} of ${workOrders.length} work orders (${totalFilteredHours.toFixed(1)}h filtered)`;
             document.getElementById('filteredSummary').textContent = summary;
+        }
+
+        // Import functionality
+        let importData = [];
+        let importHeaders = [];
+
+        function showImportModal() {
+            // Populate technician dropdown
+            const technicianSelect = document.getElementById('importTechnician');
+            technicianSelect.innerHTML = '<option value="">No Technician Assignment</option>';
+            
+            technicians.forEach(tech => {
+                const option = document.createElement('option');
+                option.value = tech.id;
+                option.textContent = tech.name;
+                technicianSelect.appendChild(option);
+            });
+
+            // Reset modal state
+            document.getElementById('importFile').value = '';
+            document.getElementById('importPreview').classList.add('hidden');
+            document.getElementById('importResults').classList.add('hidden');
+            document.getElementById('importButton').classList.add('hidden');
+            
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+            importData = [];
+            importHeaders = [];
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                
+                if (file.name.endsWith('.csv')) {
+                    parseCSV(content);
+                } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                    // For Excel files, we'll use a simple approach
+                    alert('Excel file parsing requires additional libraries. Please convert to CSV format for now.');
+                    return;
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function parseCSV(content) {
+            const lines = content.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+                alert('File must contain at least a header row and one data row.');
+                return;
+            }
+
+            // Parse headers
+            importHeaders = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
+            // Parse data rows
+            importData = [];
+            for (let i = 1; i < Math.min(lines.length, 6); i++) { // Show first 5 rows for preview
+                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                if (values.length === importHeaders.length) {
+                    importData.push(values);
+                }
+            }
+
+            showPreview();
+        }
+
+        function showPreview() {
+            const previewDiv = document.getElementById('importPreview');
+            const headersRow = document.getElementById('previewHeaders');
+            const rowsBody = document.getElementById('previewRows');
+
+            // Clear previous content
+            headersRow.innerHTML = '';
+            rowsBody.innerHTML = '';
+
+            // Add headers
+            importHeaders.forEach(header => {
+                const th = document.createElement('th');
+                th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                th.textContent = header;
+                headersRow.appendChild(th);
+            });
+
+            // Add preview rows
+            importData.forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-900';
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                rowsBody.appendChild(tr);
+            });
+
+            previewDiv.classList.remove('hidden');
+            document.getElementById('importButton').classList.remove('hidden');
+        }
+
+        function importWorkOrders() {
+            const selectedTechnicianId = document.getElementById('importTechnician').value;
+            let importedCount = 0;
+            let errorCount = 0;
+            const errors = [];
+
+            // Parse all data (not just preview)
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file first.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const lines = content.split('\n').filter(line => line.trim());
+                
+                if (lines.length < 2) {
+                    alert('File must contain at least a header row and one data row.');
+                    return;
+                }
+
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                
+                // Process all data rows
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                    
+                    if (values.length !== headers.length) {
+                        errorCount++;
+                        errors.push(`Row ${i + 1}: Column count mismatch`);
+                        continue;
+                    }
+
+                    try {
+                        const workOrder = createWorkOrderFromRow(headers, values, selectedTechnicianId);
+                        if (workOrder) {
+                            workOrders.push(workOrder);
+                            importedCount++;
+                        } else {
+                            errorCount++;
+                            errors.push(`Row ${i + 1}: Invalid data`);
+                        }
+                    } catch (error) {
+                        errorCount++;
+                        errors.push(`Row ${i + 1}: ${error.message}`);
+                    }
+                }
+
+                // Save data
+                localStorage.setItem('workOrders', JSON.stringify(workOrders));
+                
+                // Show results
+                showImportResults(importedCount, errorCount, errors);
+                
+                // Refresh the page
+                refreshData();
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function createWorkOrderFromRow(headers, values, bulkTechnicianId) {
+            const workOrder = {
+                id: Date.now() + Math.random(), // Unique ID
+                workOrderNumber: '',
+                salesOrderNumber: '',
+                customerPO: '',
+                priority: 'standard',
+                technicianId: bulkTechnicianId ? parseInt(bulkTechnicianId) : null,
+                partNumber: '',
+                workType: '',
+                customerName: '',
+                customerAccount: '',
+                customerStreet: '',
+                customerCity: '',
+                hoursRequired: 1,
+                startDate: new Date().toISOString().split('T')[0],
+                startTime: '09:00',
+                status: 'scheduled',
+                location: 'in-lab',
+                certificationType: 'TRACE',
+                notes: '',
+                attachment: '',
+                itemMake: '',
+                itemModel: '',
+                itemSerialNumber: '',
+                itemId: null
+            };
+
+            // Map CSV columns to work order fields
+            headers.forEach((header, index) => {
+                const value = values[index];
+                const headerLower = header.toLowerCase();
+
+                if (headerLower.includes('work order') || headerLower.includes('wo')) {
+                    workOrder.workOrderNumber = value;
+                } else if (headerLower.includes('sales order') || headerLower.includes('so')) {
+                    workOrder.salesOrderNumber = value;
+                } else if (headerLower.includes('customer po') || headerLower.includes('po')) {
+                    workOrder.customerPO = value;
+                } else if (headerLower.includes('customer') && !headerLower.includes('po')) {
+                    workOrder.customerName = value;
+                } else if (headerLower.includes('work type') || headerLower.includes('type')) {
+                    workOrder.workType = value;
+                } else if (headerLower.includes('hours') || headerLower.includes('hour')) {
+                    workOrder.hoursRequired = parseFloat(value) || 1;
+                } else if (headerLower.includes('date') || headerLower.includes('start date')) {
+                    workOrder.startDate = value;
+                } else if (headerLower.includes('status')) {
+                    workOrder.status = value.toLowerCase();
+                } else if (headerLower.includes('technician')) {
+                    // Find technician by name and set technicianId (overrides bulk assignment)
+                    const technician = technicians.find(tech => tech.name.toLowerCase() === value.toLowerCase());
+                    if (technician) {
+                        workOrder.technicianId = technician.id;
+                    }
+                } else if (headerLower.includes('make') || headerLower.includes('item make')) {
+                    workOrder.itemMake = value;
+                } else if (headerLower.includes('model') || headerLower.includes('item model')) {
+                    workOrder.itemModel = value;
+                } else if (headerLower.includes('serial') || headerLower.includes('serial number')) {
+                    workOrder.itemSerialNumber = value;
+                } else if (headerLower.includes('notes') || headerLower.includes('note')) {
+                    workOrder.notes = value;
+                } else if (headerLower.includes('priority')) {
+                    workOrder.priority = value.toLowerCase();
+                } else if (headerLower.includes('certification') || headerLower.includes('cert')) {
+                    workOrder.certificationType = value.toUpperCase();
+                }
+            });
+
+            // Validate required fields
+            if (!workOrder.workOrderNumber) {
+                workOrder.workOrderNumber = 'WO-' + Date.now().toString().slice(-6);
+            }
+            if (!workOrder.customerName) {
+                workOrder.customerName = 'Imported Customer';
+            }
+            if (!workOrder.workType) {
+                workOrder.workType = 'Calibration';
+            }
+
+            return workOrder;
+        }
+
+        function showImportResults(importedCount, errorCount, errors) {
+            const resultsDiv = document.getElementById('importResults');
+            const resultsContent = document.getElementById('importResultsContent');
+            
+            let html = `
+                <div class="mb-4">
+                    <div class="text-lg font-semibold text-green-600 mb-2">✓ ${importedCount} work orders imported successfully</div>
+                    ${errorCount > 0 ? `<div class="text-lg font-semibold text-red-600 mb-2">✗ ${errorCount} errors occurred</div>` : ''}
+                </div>
+            `;
+            
+            if (errors.length > 0) {
+                html += `
+                    <div class="mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">Errors:</h5>
+                        <ul class="list-disc list-inside text-sm text-gray-600">
+                            ${errors.map(error => `<li>${error}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            resultsContent.innerHTML = html;
+            resultsDiv.classList.remove('hidden');
+        }
+
+        function downloadTemplate() {
+            const headers = [
+                'Work Order Number',
+                'Sales Order Number', 
+                'Customer PO',
+                'Customer Name',
+                'Work Type',
+                'Hours Required',
+                'Start Date',
+                'Status',
+                'Technician',
+                'Item Make',
+                'Item Model',
+                'Serial Number',
+                'Notes',
+                'Priority',
+                'Certification Type'
+            ];
+
+            const sampleData = [
+                'WO-001',
+                'SO-001',
+                'PO-12345',
+                'Sample Customer',
+                'Calibration',
+                '2',
+                '2025-10-25',
+                'scheduled',
+                'Andres Correa',
+                'Fluke',
+                '8846A',
+                'SN123456',
+                'Sample work order',
+                'standard',
+                'TRACE'
+            ];
+
+            const csvContent = [headers.join(','), sampleData.join(',')].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'work_orders_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function generateCalibrationButtons(workType, workOrderId) {
+            // Get parts database to check calibration types
+            const partsDatabase = JSON.parse(localStorage.getItem('partsDatabase') || '[]');
+            
+            // Find if any part matches this work type and has a calibration type
+            const matchingPart = partsDatabase.find(part => 
+                part.workType && part.workType.toLowerCase().includes(workType.toLowerCase()) && 
+                part.calibrationType
+            );
+            
+            const baseUrl = window.location.origin;
+            let buttonsHtml = '';
+
+            const calibrationPages = {
+                'torque-trace': `${baseUrl}/torque-trace.html?workOrderId=${workOrderId}`,
+                'electrical': `${baseUrl}/electrical.html?workOrderId=${workOrderId}`,
+                'dimensional': `${baseUrl}/dimensional.html?workOrderId=${workOrderId}`,
+                'pressure': `${baseUrl}/pressure.html?workOrderId=${workOrderId}`,
+                'temperature': `${baseUrl}/temperature.html?workOrderId=${workOrderId}`
+            };
+
+            const buttonLabels = {
+                'torque-trace': 'Go to Torque Calibration',
+                'electrical': 'Go to Electrical Calibration',
+                'dimensional': 'Go to Dimensional Calibration',
+                'pressure': 'Go to Pressure Calibration',
+                'temperature': 'Go to Temperature Calibration'
+            };
+
+            const buttonColors = {
+                'torque-trace': 'bg-blue-500 hover:bg-blue-700',
+                'electrical': 'bg-green-500 hover:bg-green-700',
+                'dimensional': 'bg-purple-500 hover:bg-purple-700',
+                'pressure': 'bg-red-500 hover:bg-red-700',
+                'temperature': 'bg-yellow-500 hover:bg-yellow-700'
+            };
+
+            const disabledColors = {
+                'torque-trace': 'bg-gray-300 text-gray-500 cursor-not-allowed',
+                'electrical': 'bg-gray-300 text-gray-500 cursor-not-allowed',
+                'dimensional': 'bg-gray-300 text-gray-500 cursor-not-allowed',
+                'pressure': 'bg-gray-300 text-gray-500 cursor-not-allowed',
+                'temperature': 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            };
+
+            // Always show all calibration buttons
+            Object.keys(calibrationPages).forEach(calibrationType => {
+                const isActive = matchingPart && matchingPart.calibrationType === calibrationType;
+                const buttonClass = isActive ? buttonColors[calibrationType] : disabledColors[calibrationType];
+                const buttonText = isActive ? buttonLabels[calibrationType] : `${buttonLabels[calibrationType]} (Not Linked)`;
+                const onClick = isActive ? `href="${calibrationPages[calibrationType]}" target="_blank"` : 'href="#" onclick="return false;"';
+                
+                buttonsHtml += `
+                    <a ${onClick} class="${buttonClass} text-white px-3 py-1 rounded text-sm flex items-center">
+                        <i class="fas fa-flask mr-1"></i> ${buttonText}
+                    </a>
+                `;
+            });
+
+            return buttonsHtml;
         }
     </script>
 </body>
