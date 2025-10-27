@@ -176,6 +176,9 @@
                         <button type="button" onclick="openBarcodeScanner()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
                             <i class="fas fa-qrcode"></i>
                         </button>
+                        <button type="button" id="printBarcodeBtn" onclick="printBarcodeFromModal()" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded" disabled>
+                            <i class="fas fa-print"></i> Print
+                        </button>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-4">
@@ -1075,19 +1078,6 @@ function renderOutboundList() {
                 `).join('')}
             </tbody>
         </table>
-        <div class="mt-4 px-4 flex justify-between items-center">
-            <div>
-                <button onclick="groupSelectedBySO()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">
-                    <i class="fas fa-box mr-2"></i>Group by Sales Order
-                </button>
-                <button onclick="groupSelected()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
-                    <i class="fas fa-boxes mr-2"></i>Group Selected Items
-                </button>
-            </div>
-            <div class="text-sm text-gray-600">
-                <span id="selectedCount">0</span> items selected
-            </div>
-        </div>
     `;
 }
 
@@ -2553,12 +2543,24 @@ function renderCollectionHistory() {
     let filteredHistory = collectionHistory.filter(item => {
         const matchCompany = !companyFilter || item.companyName.toLowerCase().includes(companyFilter);
         const matchCollector = !collectorFilter || (item.collectorName && item.collectorName.toLowerCase().includes(collectorFilter));
-        const matchDate = !dateFilter || new Date(item.pickedUpDate).toISOString().split('T')[0] === dateFilter;
+        const matchDate = !dateFilter || (() => {
+            const dateStr = item.pickedUpDate || item.collectedDate || item.collectionDate;
+            if (!dateStr) return false;
+            try {
+                return new Date(dateStr).toISOString().split('T')[0] === dateFilter;
+            } catch (e) {
+                return false;
+            }
+        })();
         return matchCompany && matchCollector && matchDate;
     });
     
     // Sort by picked up date (newest first)
-    filteredHistory.sort((a, b) => new Date(b.pickedUpDate) - new Date(a.pickedUpDate));
+    filteredHistory.sort((a, b) => {
+        const dateA = new Date(a.pickedUpDate || a.collectedDate || a.collectionDate || 0);
+        const dateB = new Date(b.pickedUpDate || b.collectedDate || b.collectionDate || 0);
+        return dateB - dateA;
+    });
     
     container.innerHTML = `
         <table class="w-full">
@@ -2593,8 +2595,16 @@ function renderCollectionHistory() {
                         <td class="px-4 py-3 text-sm text-gray-600">${item.connoteNumber || '-'}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.collectorName || '-'}</td>
                         <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                            ${new Date(item.pickedUpDate).toLocaleDateString()}<br>
-                            ${new Date(item.pickedUpDate).toLocaleTimeString()}
+                            ${(() => {
+                                const dateStr = item.pickedUpDate || item.collectedDate || item.collectionDate;
+                                if (!dateStr) return '-';
+                                try {
+                                    const date = new Date(dateStr);
+                                    return date.toLocaleDateString() + '<br>' + date.toLocaleTimeString();
+                                } catch (e) {
+                                    return '-';
+                                }
+                            })()}
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.pickedUpBy}</td>
                         <td class="px-4 py-3 text-center">

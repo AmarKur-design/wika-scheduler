@@ -39,7 +39,6 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
                 <div class="flex items-center">
-                    <img src="wika-logo.png" alt="WIKA Logo" class="h-8 w-auto mr-4">
                     <h1 class="text-2xl font-bold text-gray-900">Outbound Items</h1>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -54,6 +53,29 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Search Bar -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search by Sales Order</label>
+                    <input id="searchSalesOrder" type="text" oninput="filterOutboundItems()" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Sales Order #">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search by Company Name</label>
+                    <input id="searchCompanyName" type="text" oninput="filterOutboundItems()" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Company Name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search by Date</label>
+                    <input id="searchDate" type="date" oninput="filterOutboundItems()" class="w-full border border-gray-300 rounded px-3 py-2">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="clearSearch()" class="w-full bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-times mr-2"></i>Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Actions Bar -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -92,20 +114,24 @@
                         <input id="outboundCompanyName" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Company Name">
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sales Order Number</label>
+                        <input id="outboundSalesOrderNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Sales Order #">
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Work Order Number</label>
                         <input id="outboundWoNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="WO Number">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Make *</label>
-                        <input id="outboundMake" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Manufacturer">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Make</label>
+                        <input id="outboundMake" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Manufacturer">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Model *</label>
-                        <input id="outboundModel" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Model Number">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                        <input id="outboundModel" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Model Number">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number *</label>
-                        <input id="outboundSerialNumber" type="text" required class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Serial Number">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
+                        <input id="outboundSerialNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Serial Number">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
@@ -269,10 +295,59 @@
         </div>
     </div>
 
+    <!-- Collection Signature Modal -->
+    <div id="collectionModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Item Collected</h2>
+                <button onclick="closeCollectionModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded">
+                    <p class="text-sm text-gray-600 mb-2"><strong>Item Details:</strong></p>
+                    <div id="collectedItemDetails" class="text-sm text-gray-800"></div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
+                    <input id="customerName" type="text" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="Customer name">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Customer Signature</label>
+                    <div class="border-2 border-gray-300 rounded">
+                        <canvas id="signatureCanvas" width="500" height="200" style="touch-action: none; cursor: crosshair;"></canvas>
+                    </div>
+                    <button type="button" onclick="clearSignature()" class="mt-2 bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-undo mr-2"></i>Clear Signature
+                    </button>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-4">
+                    <button onclick="closeCollectionModal()" class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button onclick="confirmCollection()" class="bg-green-500 hover:bg-green-700 text-white px-6 py-2 rounded">
+                        <i class="fas fa-check mr-2"></i>Confirm Collection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <script>
 const currentUser = JSON.parse(sessionStorage.getItem('currentUser')) || { name: 'Test User', role: 'admin' };
 
+let currentCollectionIndex = null;
+let collectionCanvas = null;
+let collectionCtx = null;
+let isDrawing = false;
+
 let outboundItems = [];
+let filteredOutboundItems = [];
 let html5QrCode = null;
 let outboundImageData = null;
 let outboundCameraStream = null;
@@ -280,13 +355,38 @@ let outboundCameraStream = null;
 document.addEventListener('DOMContentLoaded', function() {
     setupUserInfo();
     loadWarehouseData();
+    filterOutboundItems(); // Initialize filtered list
     renderOutboundList();
 });
+
+function filterOutboundItems() {
+    const salesOrderSearch = document.getElementById('searchSalesOrder')?.value.toLowerCase() || '';
+    const companySearch = document.getElementById('searchCompanyName')?.value.toLowerCase() || '';
+    const dateSearch = document.getElementById('searchDate')?.value || '';
+    
+    filteredOutboundItems = outboundItems.filter(item => {
+        const salesOrderMatch = !salesOrderSearch || (item.salesOrderNumber || '').toLowerCase().includes(salesOrderSearch);
+        const companyMatch = !companySearch || (item.companyName || '').toLowerCase().includes(companySearch);
+        const dateMatch = !dateSearch || item.readyDate.startsWith(dateSearch);
+        
+        return salesOrderMatch && companyMatch && dateMatch;
+    });
+    
+    renderOutboundList();
+}
+
+function clearSearch() {
+    document.getElementById('searchSalesOrder').value = '';
+    document.getElementById('searchCompanyName').value = '';
+    document.getElementById('searchDate').value = '';
+    filterOutboundItems();
+}
 
 // Refresh data when page becomes visible (when user switches back to this tab)
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
         loadWarehouseData();
+        filterOutboundItems();
         renderOutboundList();
     }
 });
@@ -294,6 +394,7 @@ document.addEventListener('visibilitychange', function() {
 // Also refresh when window gains focus
 window.addEventListener('focus', function() {
     loadWarehouseData();
+    filterOutboundItems();
     renderOutboundList();
 });
 
@@ -330,7 +431,7 @@ function saveWarehouseData() {
 function renderOutboundList() {
     const container = document.getElementById('outboundList');
     
-    if (outboundItems.length === 0) {
+    if (filteredOutboundItems.length === 0) {
         container.innerHTML = `
             <div class="text-center text-gray-500 py-12">
                 <i class="fas fa-shipping-fast text-6xl mb-4"></i>
@@ -345,46 +446,63 @@ function renderOutboundList() {
         <table class="w-full">
             <thead class="bg-gray-50 sticky top-0">
                 <tr class="border-b border-gray-200">
+                    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 uppercase">
+                        <input type="checkbox" id="selectAllOutbound" onchange="toggleSelectAllOutbound(this.checked)">
+                    </th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Sales Order</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">WO #</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Make</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Model</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Serial Number</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Barcode</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">PO/Quote</th>
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Collection</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Ready Date</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Signature</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Signed By</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date/Time</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-                ${outboundItems.map((item, index) => `
-                    <tr class="hover:bg-gray-50 transition">
+                ${filteredOutboundItems.map((item, index) => {
+                    const originalIndex = outboundItems.indexOf(item);
+                    return `
+                    <tr class="hover:bg-gray-50 transition ${item.groupedForPickup ? 'bg-blue-50' : ''}">
+                        <td class="px-2 py-3 text-center">
+                            <input type="checkbox" class="outbound-checkbox" data-index="${originalIndex}" onchange="updateSelectedCount()">
+                        </td>
                         <td class="px-4 py-3 text-sm text-gray-900">${item.companyName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.contactPerson || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.email || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.salesOrderNumber || item.poNumber || '-'}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.woNumber || '-'}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.make}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.model}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${item.serialNumber}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">${item.barcode || '-'}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">
-                            ${item.contactPerson ? `<div>${item.contactPerson}</div>` : ''}
-                            ${item.phoneNumber ? `<div class="text-xs">${item.phoneNumber}</div>` : ''}
-                            ${item.email ? `<div class="text-xs">${item.email}</div>` : ''}
-                            ${!item.contactPerson && !item.phoneNumber && !item.email ? '-' : ''}
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-600">${item.poNumber || '-'}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">
                             <span class="px-2 py-1 rounded text-xs ${item.collectionMethod === 'Customer Pickup' ? 'bg-blue-100 text-blue-800' : item.collectionMethod === 'Delivery' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${item.collectionMethod || '-'}</span>
                         </td>
-                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(item.readyDate).toLocaleDateString()}<br>${new Date(item.readyDate).toLocaleTimeString()}</td>
+                        <td class="px-4 py-3">
+                            ${item.signature ? `<div class="text-green-600"><i class="fas fa-check-circle"></i> Signed</div>` : 
+                            `<button onclick="markAsCollected(${index})" class="text-blue-500 hover:text-blue-700 text-sm"><i class="fas fa-signature"></i> Sign</button>`}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${item.customerName || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                            ${(item.collectedDate || item.collectionDate) ? 
+                                (() => {
+                                    try {
+                                        const date = new Date(item.collectedDate || item.collectionDate);
+                                        return date.toLocaleDateString() + '<br>' + date.toLocaleTimeString();
+                                    } catch (e) {
+                                        return '-';
+                                    }
+                                })() : '-'}
+                        </td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex justify-end space-x-1">
                                 <button onclick="editOutboundItem(${index})" title="Edit Item" class="bg-gray-500 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs">
                                     <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="markAsCollected(${index})" title="Mark as Collected" class="bg-green-500 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">
-                                    <i class="fas fa-check"></i>
                                 </button>
                                 <button onclick="deleteOutboundItem(${index})" title="Delete Item" class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
                                     <i class="fas fa-trash"></i>
@@ -392,9 +510,23 @@ function renderOutboundList() {
                             </div>
                         </td>
                     </tr>
-                `).join('')}
+                `;
+                }).join('')}
             </tbody>
         </table>
+        <div class="mt-4 px-4 flex justify-between items-center">
+            <div>
+                <button onclick="groupSelectedBySO()" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">
+                    <i class="fas fa-box mr-2"></i>Group by Sales Order
+                </button>
+                <button onclick="groupSelected()" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-boxes mr-2"></i>Group Selected Items
+                </button>
+            </div>
+            <div class="text-sm text-gray-600">
+                <span id="selectedCount">0</span> items selected
+            </div>
+        </div>
     `;
 }
 
@@ -422,6 +554,7 @@ function saveOutboundItem(event) {
     const outboundItem = {
         id: Date.now() + Math.random(),
         companyName: document.getElementById('outboundCompanyName').value,
+        salesOrderNumber: document.getElementById('outboundSalesOrderNumber').value,
         woNumber: document.getElementById('outboundWoNumber').value,
         make: document.getElementById('outboundMake').value,
         model: document.getElementById('outboundModel').value,
@@ -682,34 +815,255 @@ function editOutboundItem(index) {
 }
 
 function markAsCollected(index) {
-    const item = outboundItems[index];
-    item.status = 'collected';
-    item.collectedDate = new Date().toISOString();
+    // Check if we're handling a group
+    if (window.currentGroupIndices && window.currentGroupIndices.length > 0) {
+        // Already prepared by groupSelectedBySO
+        // Just show the modal
+    } else {
+        // Handle single item
+        const item = filteredOutboundItems[index];
+        currentCollectionIndex = outboundItems.indexOf(item);
+        
+        // Show item details
+        document.getElementById('collectedItemDetails').innerHTML = `
+            <div><strong>Company:</strong> ${item.companyName}</div>
+            <div><strong>Item:</strong> ${item.make} ${item.model}</div>
+            <div><strong>Serial:</strong> ${item.serialNumber}</div>
+            ${item.salesOrderNumber ? `<div><strong>Sales Order:</strong> ${item.salesOrderNumber}</div>` : ''}
+            ${item.woNumber ? `<div><strong>Work Order:</strong> ${item.woNumber}</div>` : ''}
+        `;
+        
+        // Reset form
+        document.getElementById('customerName').value = '';
+        clearSignature();
+        
+        // Initialize signature canvas
+        setupSignatureCanvas();
+        
+        // Show modal
+        document.getElementById('collectionModal').classList.add('show');
+    }
+}
+
+function setupSignatureCanvas() {
+    collectionCanvas = document.getElementById('signatureCanvas');
+    collectionCtx = collectionCanvas.getContext('2d');
     
-    // Move to collection history
-    const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
-    const collectionHistory = data.collectionHistory || [];
-    collectionHistory.push(item);
+    collectionCanvas.addEventListener('mousedown', startDrawing);
+    collectionCanvas.addEventListener('mousemove', draw);
+    collectionCanvas.addEventListener('mouseup', stopDrawing);
+    collectionCanvas.addEventListener('mouseout', stopDrawing);
     
-    // Remove from outbound
-    outboundItems.splice(index, 1);
+    // Touch events for mobile
+    collectionCanvas.addEventListener('touchstart', handleTouch);
+    collectionCanvas.addEventListener('touchmove', handleTouch);
+    collectionCanvas.addEventListener('touchend', stopDrawing);
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = collectionCanvas.getBoundingClientRect();
+    collectionCtx.beginPath();
+    collectionCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+function handleTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0] || e.changedTouches[0];
+    const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'touchmove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+    });
+    collectionCanvas.dispatchEvent(mouseEvent);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    const rect = collectionCanvas.getBoundingClientRect();
+    collectionCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    collectionCtx.lineWidth = 2;
+    collectionCtx.lineCap = 'round';
+    collectionCtx.strokeStyle = '#000';
+    collectionCtx.stroke();
+}
+
+function stopDrawing() {
+    if (isDrawing) {
+        collectionCtx.stroke();
+        isDrawing = false;
+    }
+}
+
+function clearSignature() {
+    if (collectionCanvas && collectionCtx) {
+        collectionCtx.clearRect(0, 0, collectionCanvas.width, collectionCanvas.height);
+    }
+}
+
+function closeCollectionModal() {
+    document.getElementById('collectionModal').classList.remove('show');
+    currentCollectionIndex = null;
+}
+
+function confirmCollection() {
+    if (window.currentGroupIndices && window.currentGroupIndices.length > 0) {
+        // Handle grouped collection
+        const signature = collectionCanvas.toDataURL();
+        const customerName = document.getElementById('customerName').value;
+        const collectedDate = new Date().toISOString();
+        
+        // Get the items before removal - use original indices from outboundItems
+        const itemsToCollect = window.currentGroupIndices.map(index => {
+            return { ...outboundItems[index] }; // Create a copy
+        });
+        
+        // Update each item with collection data
+        itemsToCollect.forEach(item => {
+            item.signature = signature;
+            item.customerName = customerName;
+            item.collectedDate = collectedDate;
+            item.collectionDate = collectedDate; // Also set collectionDate for backward compatibility
+            item.status = 'collected';
+        });
+        
+        // Move all items to collection history
+        const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+        const collectionHistory = data.collectionHistory || [];
+        
+        // Remove items from outbound in reverse order to maintain correct indices
+        const sortedIndices = [...window.currentGroupIndices].sort((a, b) => b - a);
+        sortedIndices.forEach(index => {
+            outboundItems.splice(index, 1);
+        });
+        
+        // Add all collected items to history
+        collectionHistory.push(...itemsToCollect);
+        
+        // Save data
+        data.collectionHistory = collectionHistory;
+        data.outboundItems = outboundItems;
+        localStorage.setItem('warehouseData', JSON.stringify(data));
+        
+        alert(`Successfully collected ${window.currentGroupIndices.length} item(s) for Sales Order: ${window.currentGroupSO}!`);
+        
+        window.currentGroupIndices = null;
+        window.currentGroupSO = null;
+    } else if (currentCollectionIndex !== null) {
+        // Handle single item collection (existing logic)
+        const item = outboundItems[currentCollectionIndex];
+        const collectedDate = new Date().toISOString();
+        item.status = 'collected';
+        item.collectedDate = collectedDate;
+        item.collectionDate = collectedDate; // Also set collectionDate for backward compatibility
+        item.customerName = document.getElementById('customerName').value;
+        item.signature = collectionCanvas.toDataURL();
+        
+        // Move to collection history
+        const data = JSON.parse(localStorage.getItem('warehouseData') || '{}');
+        const collectionHistory = data.collectionHistory || [];
+        collectionHistory.push(item);
+        
+        // Remove from outbound
+        outboundItems.splice(currentCollectionIndex, 1);
+        
+        // Save data
+        data.collectionHistory = collectionHistory;
+        data.outboundItems = outboundItems;
+        localStorage.setItem('warehouseData', JSON.stringify(data));
+        
+        alert('Item marked as collected successfully!');
+    }
     
-    // Save data
-    data.collectionHistory = collectionHistory;
-    data.outboundItems = outboundItems;
-    localStorage.setItem('warehouseData', JSON.stringify(data));
-    
+    filterOutboundItems();
     renderOutboundList();
-    alert('Item marked as collected successfully!');
+    closeCollectionModal();
 }
 
 function deleteOutboundItem(index) {
     if (confirm('Are you sure you want to delete this item?')) {
         outboundItems.splice(index, 1);
         saveWarehouseData();
+        filterOutboundItems();
         renderOutboundList();
         alert('Item deleted successfully!');
     }
+}
+
+function toggleSelectAllOutbound(checked) {
+    const checkboxes = document.querySelectorAll('.outbound-checkbox');
+    checkboxes.forEach(cb => cb.checked = checked);
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const selected = document.querySelectorAll('.outbound-checkbox:checked').length;
+    const countElement = document.getElementById('selectedCount');
+    if (countElement) {
+        countElement.textContent = selected;
+    }
+}
+
+function groupSelectedBySO() {
+    const checkboxes = document.querySelectorAll('.outbound-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('Please select items to group');
+        return;
+    }
+    
+    const salesOrders = new Map();
+    
+    checkboxes.forEach(checkbox => {
+        const index = parseInt(checkbox.getAttribute('data-index'));
+        const item = outboundItems[index];
+        const soNumber = item.salesOrderNumber || item.poNumber || 'No SO';
+        
+        if (!salesOrders.has(soNumber)) {
+            salesOrders.set(soNumber, []);
+        }
+        salesOrders.get(soNumber).push(index);
+    });
+    
+    // Group items by their sales orders
+    salesOrders.forEach((indices, soNumber) => {
+        const items = indices.map(idx => outboundItems[idx]);
+        
+        // Show signature modal for the entire group
+        showGroupSignatureModal(soNumber, items, indices);
+    });
+}
+
+function showGroupSignatureModal(soNumber, items, indices) {
+    // Prepare item details for display
+    const detailsHtml = items.map((item, idx) => `
+        <div class="mb-2 p-2 bg-gray-50 rounded">
+            <strong>Item ${idx + 1}:</strong> ${item.companyName} - ${item.make} ${item.model} (${item.serialNumber})
+        </div>
+    `).join('');
+    
+    // Update modal content
+    document.getElementById('collectedItemDetails').innerHTML = `
+        <div><strong>Sales Order:</strong> ${soNumber}</div>
+        <div><strong>Total Items:</strong> ${items.length}</div>
+        <div class="mt-2">${detailsHtml}</div>
+    `;
+    
+    // Store indices for confirmation
+    window.currentGroupIndices = indices;
+    window.currentGroupSO = soNumber;
+    
+    // Reset form
+    document.getElementById('customerName').value = '';
+    clearSignature();
+    
+    // Initialize signature canvas
+    setupSignatureCanvas();
+    
+    // Show modal
+    document.getElementById('collectionModal').classList.add('show');
+}
+
+function groupSelected() {
+    groupSelectedBySO(); // For now, use same logic
 }
 </script>
 
